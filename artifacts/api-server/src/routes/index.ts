@@ -1,0 +1,48 @@
+import { Router, type IRouter } from "express";
+import healthRouter from "./health";
+import gigsRouter from "./gigs";
+import authRouter from "./auth";
+import attendanceRouter from "./attendance";
+import blacklistRouter from "./blacklist";
+import ratingsRouter from "./ratings";
+import adminRouter from "./admin";
+import adminOpsRouter from "./admin-ops";
+import boronganRouter from "./borongan";
+import emergencyRouter from "./emergency";
+import applicationsRouter from "./applications";
+import chatRouter from "./chat";
+import notificationsRouter from "./notifications";
+import escrowProjectsRouter from "./escrow-projects";
+import monetizationRouter from "./monetization";
+import geoRouter from "./geo";
+import subscriptionRouter from "./subscription";
+import manualFinanceRouter from "./manual-finance";
+import midtransRouter from "./midtrans";
+import companyBranchesRouter from "./company-branches";
+import realtimeRouter from "./realtime";
+
+const router: IRouter = Router();
+
+router.use(healthRouter);
+router.use(authRouter);
+router.use(gigsRouter);
+router.use(attendanceRouter);
+router.use(blacklistRouter);
+router.use(ratingsRouter);
+router.use(adminRouter);
+router.use(adminOpsRouter);
+router.use(boronganRouter);
+router.use(emergencyRouter);
+router.use(applicationsRouter);
+router.use(chatRouter);
+router.use(notificationsRouter);
+router.use(escrowProjectsRouter);
+router.use(monetizationRouter);
+router.use(geoRouter);
+router.use(subscriptionRouter);
+router.use(manualFinanceRouter);
+router.use(midtransRouter);
+router.use(companyBranchesRouter);
+router.use(realtimeRouter);
+
+export default router;

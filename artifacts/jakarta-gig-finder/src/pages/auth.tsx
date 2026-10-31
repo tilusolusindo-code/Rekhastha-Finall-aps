@@ -1,0 +1,426 @@
+import { useEffect, useState } from "react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, ShieldCheck, Building2, Home, Landmark, MapPin, IdCard, FileText } from "lucide-react";
+import { AuthUser, UserRole, EmployerCategory } from "@/types/auth";
+import RoleSelectModal from "@/components/role-select-modal";
+import TermsModal from "@/components/terms-modal";
+import { RekhasthaLogo } from "@/components/rekhastha-logo";
+import { AuthError, fetchGoogleAuthAvailability, login, loginWithGoogle, register, startGoogleLogin, type RegisterPayload } from "@/lib/auth-client";
+
+interface AuthPageProps {
+  onComplete: (user: AuthUser) => void;
+  onBack: () => void;
+  initialTab: AuthTab;
+}
+
+type AuthTab = "masuk" | "daftar";
+
+export default function AuthPage({ onComplete, onBack, initialTab }: AuthPageProps) {
+  const [tab, setTab] = useState<AuthTab>(initialTab);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Employer registration sub-category state (Daftar as Perusahaan)
+  const [isEmployer, setIsEmployer] = useState(false);
+  const [employerCategory, setEmployerCategory] = useState<EmployerCategory>("corporate");
+  // Corporate
+  const [namaPerusahaan, setNamaPerusahaan] = useState("");
+  const [npwpPerusahaan, setNpwpPerusahaan] = useState("");
+  // Rumah Tangga / Individu
+  const [namaKtp, setNamaKtp] = useState("");
+  const [alamat, setAlamat] = useState("");
+  // Organisasi Politik
+  const [namaOrganisasi, setNamaOrganisasi] = useState("");
+  const [kodeWilayah, setKodeWilayah] = useState("");
+
+  // Role selection state — the role modal is shown for registration (and for a
+  // first-time Google login) so the user picks pekerja vs perusahaan.
+  const [pendingRegister, setPendingRegister] = useState<Omit<RegisterPayload, "role"> | null>(null);
+  const [pendingGoogle, setPendingGoogle] = useState(false);
+  const [googleCode, setGoogleCode] = useState<string | null>(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("google_code");
+    const googleError = url.searchParams.get("google_error");
+    if (code) {
+      setGoogleCode(code);
+      setPendingGoogle(true);
+      setShowRoleModal(true);
+    }
+    if (googleError) {
+      const errors: Record<string, string> = {
+        not_configured: "Login Google belum aktif. Admin perlu mengatur konfigurasi OAuth Google.",
+        access_denied: "Login Google dibatalkan.",
+        invalid_state: "Sesi login Google berakhir. Silakan coba lagi.",
+        email_unverified: "Akun Google harus menggunakan email yang sudah terverifikasi.",
+        oauth_failed: "Verifikasi Google gagal. Silakan coba lagi.",
+        invalid_host: "Alamat aplikasi tidak cocok dengan konfigurasi login Google.",
+        account_suspended: "Akun Anda ditangguhkan. Hubungi dukungan Rekhastha.",
+      };
+      setError(errors[googleError] ?? "Login Google gagal. Silakan coba lagi.");
+    }
+    if (code || googleError) {
+      url.searchParams.delete("google_code");
+      url.searchParams.delete("google_error");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetchGoogleAuthAvailability().then((enabled) => {
+      if (active) setGoogleEnabled(enabled);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const describeError = (e: unknown, fallback: string) =>
+    e instanceof AuthError ? e.message : fallback;
+
+  const handleRoleSelected = async (role: UserRole) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const user = pendingGoogle
+        ? googleCode
+          ? await loginWithGoogle(googleCode, role)
+          : null
+        : pendingRegister
+          ? await register({ ...pendingRegister, role })
+          : null;
+      if (user) {
+        setShowRoleModal(false);
+        onComplete(user);
+      }
+    } catch (e) {
+      setShowRoleModal(false);
+      setError(describeError(e, "Gagal membuat akun."));
+    } finally {
+      setLoading(false);
+      setPendingGoogle(false);
+      setGoogleCode(null);
+      setPendingRegister(null);
+    }
+  };
+
+  const handleConventional = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!email.includes("@")) { setError("Email tidak valid."); return; }
+    if (password.length < 6) { setError("Password minimal 6 karakter."); return; }
+    if (tab === "daftar" && password.length < 12) {
+      setError("Gunakan kata sandi minimal 12 karakter untuk akun baru.");
+      return;
+    }
+
+    if (tab === "masuk") {
+      setLoading(true);
+      try {
+        onComplete(await login(email, password));
+      } catch (e) {
+        setError(describeError(e, "Gagal masuk."));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Registration: validate, stash the payload, then ask for a role.
+    if (!name.trim()) { setError("Nama akun wajib diisi."); return; }
+    const employerFields = isEmployer ? buildEmployerFields() : {};
+    setPendingRegister({
+      name: name.trim(),
+      email,
+      password,
+      whatsapp: whatsapp || undefined,
+      ...employerFields,
+    });
+    setShowRoleModal(true);
+  };
+
+  const buildEmployerFields = (): Partial<AuthUser> => {
+    switch (employerCategory) {
+      case "corporate":
+        return {
+          employerCategory,
+          namaPerusahaan: namaPerusahaan.trim() || undefined,
+          npwpPerusahaan: npwpPerusahaan.trim() || undefined,
+        };
+      case "household":
+        return {
+          employerCategory,
+          namaKtp: namaKtp.trim() || undefined,
+          alamat: alamat.trim() || undefined,
+        };
+      case "political":
+        return {
+          employerCategory,
+          namaOrganisasi: namaOrganisasi.trim() || undefined,
+          kodeWilayah: kodeWilayah.trim() || undefined,
+        };
+    }
+  };
+
+  const handleGoogle = () => {
+    setError(null);
+    startGoogleLogin();
+  };
+
+  return (
+    <div className="flex flex-col h-[100dvh] w-full overflow-hidden" style={{ background: "#F8FAFC" }}>
+
+      {/* ── Top brand strip ──────────────────────────────── */}
+      <div
+        className="flex-shrink-0 flex flex-col items-center justify-end pb-12 pt-16 px-6 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, #065F46 0%, #059669 55%, #10B981 100%)",
+        }}
+      >
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(#ffffff 2px, transparent 2px)", backgroundSize: "24px 24px" }}></div>
+        <div className="relative z-10 mb-4">
+          <RekhasthaLogo size={48} variant="light" showSubtitle wordmarkClassName="text-3xl font-display" />
+        </div>
+        <p className="relative z-10 text-sm text-emerald-100 text-center leading-relaxed">
+          Temukan dan kelola pekerjaan harian di seluruh Indonesia
+        </p>
+      </div>
+
+      {/* ── Form card ────────────────────────────────────── */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y px-5 pb-8 relative z-20"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="bg-white rounded-3xl p-6 shadow-lg -mt-6">
+
+        <button
+          type="button"
+          onClick={onBack}
+          data-testid="button-back-to-landing"
+          className="mb-4 text-xs font-semibold text-emerald-700 hover:underline"
+        >
+          Kembali ke beranda
+        </button>
+
+        {/* Tab switcher */}
+        <div className="flex bg-gray-100 p-1 rounded-[14px] mb-5 relative">
+          <div className="absolute inset-y-1 w-[calc(50%-4px)] bg-white rounded-[10px] shadow-sm transition-transform duration-300 ease-out" 
+               style={{ transform: tab === "masuk" ? "translateX(2px)" : "translateX(calc(100% + 2px))" }} />
+          <button onClick={() => { setTab("masuk"); setError(null); }}
+            className={`flex-1 relative py-2.5 text-sm font-bold rounded-xl transition-colors ${tab === "masuk" ? "text-primary" : "text-gray-500"}`}>
+            Masuk
+          </button>
+          <button onClick={() => { setTab("daftar"); setError(null); }}
+            className={`flex-1 relative py-2.5 text-sm font-bold rounded-xl transition-colors ${tab === "daftar" ? "text-primary" : "text-gray-500"}`}>
+            Daftar Baru
+          </button>
+        </div>
+
+        {/* Show Google sign-in only after server-side OAuth credentials are set. */}
+        {googleEnabled && <button
+          type="button"
+          onClick={handleGoogle} disabled={loading}
+          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 rounded-2xl py-3.5 mb-4 hover:shadow-md active:scale-[0.98] transition-all"
+          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
+        >
+          {/* Google G logo */}
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+            <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+            <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+            <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+          </svg>
+          <span className="text-sm font-semibold text-gray-700">Lanjutkan dengan Google</span>
+        </button>}
+
+        {/* Divider */}
+        {googleEnabled && <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs text-gray-400 font-medium">atau</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>}
+
+        {/* Form */}
+        <form onSubmit={handleConventional} className="space-y-3">
+          {tab === "daftar" && (
+            <InputField icon={<User className="w-4 h-4" />} type="text" placeholder="Nama Akun Lengkap"
+              value={name} onChange={setName} />
+          )}
+          <InputField icon={<Mail className="w-4 h-4" />} type="email" placeholder="Alamat Email"
+            value={email} onChange={setEmail} />
+          {tab === "daftar" && (
+            <InputField icon={<Phone className="w-4 h-4" />} type="tel" placeholder="Nomor WhatsApp (opsional)"
+              value={whatsapp} onChange={setWhatsapp} />
+          )}
+
+          {tab === "daftar" && (
+            <div className="rounded-2xl border border-gray-200 bg-white px-3.5 py-3">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isEmployer}
+                  onChange={(e) => setIsEmployer(e.target.checked)}
+                  className="w-4 h-4 accent-emerald-600"
+                  data-testid="checkbox-employer"
+                />
+                <span className="text-xs font-semibold text-gray-700">
+                  Saya mendaftar sebagai Pemberi Kerja (Perusahaan / Individu / Organisasi)
+                </span>
+              </label>
+
+              {isEmployer && (
+                <div className="mt-3 space-y-3">
+                  <p className="text-[11px] font-semibold text-gray-500 px-0.5">Kategori Pemberi Kerja</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <CategoryRadio
+                      icon={<Building2 className="w-4 h-4" />}
+                      label="Corporate"
+                      selected={employerCategory === "corporate"}
+                      onClick={() => setEmployerCategory("corporate")}
+                      testId="radio-corporate"
+                    />
+                    <CategoryRadio
+                      icon={<Home className="w-4 h-4" />}
+                      label="Rumah Tangga"
+                      selected={employerCategory === "household"}
+                      onClick={() => setEmployerCategory("household")}
+                      testId="radio-household"
+                    />
+                    <CategoryRadio
+                      icon={<Landmark className="w-4 h-4" />}
+                      label="Org. Politik"
+                      selected={employerCategory === "political"}
+                      onClick={() => setEmployerCategory("political")}
+                      testId="radio-political"
+                    />
+                  </div>
+
+                  {employerCategory === "corporate" && (
+                    <div className="space-y-3" data-testid="fields-corporate">
+                      <InputField icon={<Building2 className="w-4 h-4" />} type="text" placeholder="Nama PT / CV"
+                        value={namaPerusahaan} onChange={setNamaPerusahaan} />
+                      <InputField icon={<FileText className="w-4 h-4" />} type="text" placeholder="Nomor NPWP Perusahaan"
+                        value={npwpPerusahaan} onChange={setNpwpPerusahaan} />
+                    </div>
+                  )}
+
+                  {employerCategory === "household" && (
+                    <div className="space-y-3" data-testid="fields-household">
+                      <InputField icon={<IdCard className="w-4 h-4" />} type="text" placeholder="Nama Lengkap Sesuai KTP"
+                        value={namaKtp} onChange={setNamaKtp} />
+                      <InputField icon={<MapPin className="w-4 h-4" />} type="text" placeholder="Alamat"
+                        value={alamat} onChange={setAlamat} />
+                    </div>
+                  )}
+
+                  {employerCategory === "political" && (
+                    <div className="space-y-3" data-testid="fields-political">
+                      <InputField icon={<Landmark className="w-4 h-4" />} type="text" placeholder="Nama Organisasi / Sayap Partai"
+                        value={namaOrganisasi} onChange={setNamaOrganisasi} />
+                      <InputField icon={<MapPin className="w-4 h-4" />} type="text" placeholder="Kode Wilayah / Dapil"
+                        value={kodeWilayah} onChange={setKodeWilayah} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+              <Lock className="w-4 h-4" />
+            </span>
+            <input
+              type={showPass ? "text" : "password"} value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={tab === "daftar" ? "Kata sandi (min. 12 karakter)" : "Kata sandi"}
+              className="w-full pl-11 pr-11 py-3.5 border border-gray-200 rounded-2xl text-sm text-gray-900 placeholder-gray-400 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition-all"
+              required
+            />
+            <button type="button" onClick={() => setShowPass((p) => !p)}
+              aria-label={showPass ? "Sembunyikan password" : "Tampilkan password"}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {error && (
+            <p className="text-xs text-red-500 font-medium px-1">{error}</p>
+          )}
+
+          <button type="submit" disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl mt-1 transition-all active:scale-[0.98] disabled:opacity-60"
+            style={{ boxShadow: "0 4px 14px rgba(5,150,105,0.35)" }}>
+            {loading
+              ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <>
+                  {tab === "masuk" ? "Masuk ke Rekhastha" : "Buat Akun Baru"}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+            }
+          </button>
+        </form>
+
+        <p className="text-center text-[10px] text-gray-400 mt-4 leading-relaxed">
+          Dokumen hukum belum difinalkan; pendaftaran publik belum siap.{" "}
+          <button
+            type="button"
+            data-testid="link-terms"
+            onClick={() => setShowTerms(true)}
+            className="text-emerald-600 font-semibold hover:underline"
+          >
+            Baca ringkasan operasional (draf)
+          </button>{" "}
+          Kebijakan Privasi final belum tersedia.
+        </p>
+      </div>
+
+      {showRoleModal && (
+        <RoleSelectModal onSelect={handleRoleSelected} isGoogle={pendingGoogle} />
+      )}
+
+      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}`}</style>
+    </div>
+    </div>
+  );
+}
+
+function CategoryRadio({ icon, label, selected, onClick, testId }: {
+  icon: React.ReactNode; label: string; selected: boolean; onClick: () => void; testId?: string;
+}) {
+  return (
+    <button type="button" onClick={onClick} data-testid={testId}
+      className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl border-2 transition-all active:scale-[0.97] ${
+        selected
+          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+      }`}>
+      <span className={selected ? "text-white" : "text-emerald-500"}>{icon}</span>
+      <span className="text-[10px] font-bold leading-tight text-center">{label}</span>
+    </button>
+  );
+}
+
+function InputField({ icon, type, placeholder, value, onChange }: {
+  icon: React.ReactNode; type: string; placeholder: string; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div className="relative">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">{icon}</span>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+        className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-2xl text-sm text-gray-900 placeholder-gray-400 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition-all"
+      />
+    </div>
+  );
+}

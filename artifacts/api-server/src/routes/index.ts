@@ -20,6 +20,7 @@ import manualFinanceRouter from "./manual-finance";
 import midtransRouter from "./midtrans";
 import companyBranchesRouter from "./company-branches";
 import realtimeRouter from "./realtime";
+import passwordResetRouter from "./password-reset";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(manualFinanceRouter);
 router.use(midtransRouter);
 router.use(companyBranchesRouter);
 router.use(realtimeRouter);
+router.use(passwordResetRouter);
 
 export default router;

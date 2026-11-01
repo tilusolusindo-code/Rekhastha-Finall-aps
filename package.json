@@ -6,7 +6,7 @@
                     "build":  "pnpm run typecheck \u0026\u0026 pnpm -r --if-present run build",
                     "typecheck:libs":  "tsc --build",
                     "typecheck":  "pnpm run typecheck:libs \u0026\u0026 pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-                    "build:vercel":  "pnpm --filter @workspace/jakarta-gig-finder run build \u0026\u0026 pnpm --filter @workspace/api-server run build:vercel"
+                    "build:vercel":  "cd artifacts/jakarta-gig-finder \u0026\u0026 npx vite build --config vite.config.ts \u0026\u0026 cd ../.. \u0026\u0026 cd artifacts/api-server \u0026\u0026 node ./build-vercel.mjs"
                 },
     "private":  true,
     "devDependencies":  {

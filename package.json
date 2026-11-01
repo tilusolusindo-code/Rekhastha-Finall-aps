@@ -1,17 +1,17 @@
 {
-    "name":  "workspace",
-    "version":  "0.0.0",
-    "license":  "MIT",
-    "scripts":  {
-                    "build":  "pnpm run typecheck \u0026\u0026 pnpm -r --if-present run build",
-                    "typecheck:libs":  "tsc --build",
-                    "typecheck":  "pnpm run typecheck:libs \u0026\u0026 pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
-                    "build:vercel":  "npm install --legacy-peer-deps --prefix artifacts/jakarta-gig-finder \u0026\u0026 npm install --legacy-peer-deps --prefix artifacts/api-server \u0026\u0026 npm install --legacy-peer-deps --prefix lib/db \u0026\u0026 cd artifacts/jakarta-gig-finder \u0026\u0026 npx vite build --config vite.config.ts \u0026\u0026 cd ../api-server \u0026\u0026 node ./build-vercel.mjs"
-                },
-    "private":  true,
-    "devDependencies":  {
-                            "prettier":  "^3.9.10",
-                            "typescript":  "~5.9.3"
-                        },
-    "packageManager":  "pnpm@9.15.0"
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "build:vercel": "pnpm --filter @workspace/jakarta-gig-finder run build && pnpm --filter @workspace/api-server run build:vercel"
+  },
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3"
+  }
 }

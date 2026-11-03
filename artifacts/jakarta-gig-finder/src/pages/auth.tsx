@@ -15,7 +15,7 @@ interface AuthPageProps {
 type AuthTab = "masuk" | "daftar";
 type AuthMode = "main" | "forgot" | "reset" | "reset_done";
 
-async function requestPasswordReset(email: string): Promise<{ ok: boolean; token?: string; name?: string; error?: string }> {
+async function requestPasswordReset(email: string): Promise<{ ok: boolean; message?: string; error?: string }> {
   const res = await fetch("/api/auth/forgot-password", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -174,13 +174,13 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
     setLoading(true);
     try {
       const result = await requestPasswordReset(forgotEmail);
-      if (result.token) {
-        // Token langsung dikembalikan (belum ada email service)
-        setResetToken(result.token);
-        setForgotMessage(`Halo ${result.name ?? ""}! Token reset kata sandi Anda sudah siap.`);
-        setMode("reset");
+      if (result.ok === false && result.error) {
+        setError(result.error);
       } else {
-        setForgotMessage("Jika email terdaftar, instruksi reset telah dikirim.");
+        // Tautan reset hanya dikirim ke email pemilik akun (tidak pernah di respons API).
+        setForgotMessage(
+          "Jika email terdaftar, tautan reset kata sandi sudah dikirim. Cek kotak masuk (dan folder spam) Anda; tautan berlaku 15 menit.",
+        );
       }
     } catch {
       setError("Gagal memproses permintaan. Coba lagi.");
@@ -233,17 +233,22 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
               </div>
             </div>
             <h2 className="text-lg font-bold text-gray-900 text-center mb-1">Lupa Kata Sandi?</h2>
-            <p className="text-xs text-gray-500 text-center mb-5">Masukkan email yang terdaftar, kami akan memberikan token reset.</p>
+            <p className="text-xs text-gray-500 text-center mb-5">Masukkan email yang terdaftar, kami akan mengirim tautan untuk membuat kata sandi baru.</p>
             <form onSubmit={handleForgotPassword} className="space-y-3">
               <InputField icon={<Mail className="w-4 h-4" />} type="email" placeholder="Alamat email terdaftar"
                 value={forgotEmail} onChange={setForgotEmail} />
               {error && <p className="text-xs text-red-500 font-medium px-1">{error}</p>}
+              {forgotMessage && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                  <p className="text-xs text-emerald-700 font-medium text-center">{forgotMessage}</p>
+                </div>
+              )}
               <button type="submit" disabled={loading}
                 className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-60"
                 style={{ boxShadow: "0 4px 14px rgba(5,150,105,0.35)" }}>
                 {loading
                   ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <><KeyRound className="w-4 h-4" /> Kirim Token Reset</>}
+                  : <><KeyRound className="w-4 h-4" /> Kirim Tautan Reset</>}
               </button>
             </form>
           </div>

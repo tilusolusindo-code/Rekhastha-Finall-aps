@@ -2,6 +2,9 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
+import { revokeAllUserSessions } from "../lib/auth";
+import { sendPasswordResetEmail } from "../lib/mailer";
+import { keepAlive } from "../lib/vercel-context";
 import { eq } from "drizzle-orm";
 import {
   createPasswordResetToken,
@@ -17,11 +20,11 @@ const router: IRouter = Router();
  * Rate limit per IP: maks 5 request reset per 15 menit.
  * Disimpan di ephemeral_kv supaya berlaku di semua instance Vercel.
  */
-async function checkResetRateLimit(ip: string): Promise<boolean> {
-  const key = `reset:limit:${ip}`;
+async function checkResetRateLimit(scopeKey: string, max: number, windowMs: number): Promise<boolean> {
+  const key = `reset:limit:${scopeKey}`;
   const count = (await kvGet<number>(key)) ?? 0;
-  if (count >= 5) return false;
-  await kvPut(key, count + 1, 15 * 60 * 1000);
+  if (count >= max) return false;
+  await kvPut(key, count + 1, windowMs);
   return true;
 }
 
@@ -32,19 +35,19 @@ async function checkResetRateLimit(ip: string): Promise<boolean> {
  * Selalu kembalikan respons yang sama untuk cegah user enumeration:
  * "Kalau email terdaftar, link reset sudah dikirim."
  * 
- * Di produksi tanpa email service, token dikembalikan langsung ke client
- * supaya bisa dipakai di form reset. Di masa depan bisa diganti dengan
- * kiriman email (Resend, Nodemailer, dll).
+ * Token reset HANYA dikirim lewat email (lib/mailer.ts, Resend) dan tidak
+ * pernah dikembalikan di respons HTTP.
  */
 router.post("/auth/forgot-password", async (req, res): Promise<void> => {
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? req.ip ?? "unknown";
-  
+  // `req.ip` honours `trust proxy` (Vercel edge); never trust a raw client header.
+  const ip = req.ip ?? "unknown";
+  const generic = { ok: true, message: "Jika email terdaftar, tautan reset telah dikirim ke email tersebut." };
+
   await purgeExpiredResetTokens();
 
-  const allowed = await checkResetRateLimit(ip);
-  if (!allowed) {
-    // Tetap kembalikan 200 supaya tidak bocorkan info rate limit
-    res.json({ ok: true, message: "Jika email terdaftar, instruksi reset telah dikirim." });
+  if (!(await checkResetRateLimit(`ip:${ip}`, 5, 15 * 60 * 1000))) {
+    // Same 200 body so the limiter is not an oracle.
+    res.json(generic);
     return;
   }
 
@@ -53,17 +56,33 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Format email tidak valid." });
     return;
   }
+  const email = parsed.data.email.toLowerCase().trim();
 
-  const result = await createPasswordResetToken(parsed.data.email);
+  // Per-address cap stops someone from mail-bombing a victim from many IPs.
+  if (!(await checkResetRateLimit(`email:${email}`, 3, 60 * 60 * 1000))) {
+    res.json(generic);
+    return;
+  }
 
-  // Selalu kembalikan respons yang sama (anti user-enumeration)
-  res.json({
-    ok: true,
-    message: "Jika email terdaftar, instruksi reset telah dikirim.",
-    // Token dikembalikan langsung karena belum ada email service.
-    // Hapus baris ini setelah integrasi email service.
-    ...(result ? { token: result.token, name: result.name } : {}),
-  });
+  const result = await createPasswordResetToken(email);
+  if (result) {
+    // The reset secret is delivered ONLY to the mailbox owner. It must never be
+    // part of this HTTP response: anyone could otherwise request a token for
+    // any email address and take over the account.
+    keepAlive(sendPasswordResetEmail(email, result.name, result.token).then(() => undefined));
+
+    // Local development only, when no mail provider is configured.
+    if (
+      process.env["NODE_ENV"] !== "production" &&
+      process.env["DEV_RETURN_RESET_TOKEN"] === "true"
+    ) {
+      res.json({ ...generic, token: result.token });
+      return;
+    }
+  }
+
+  // Identical body whether or not the email exists (anti user-enumeration).
+  res.json(generic);
 });
 
 /**
@@ -97,6 +116,8 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     .where(eq(usersTable.id, userId));
 
   await consumePasswordResetToken(parsed.data.token);
+  // Whoever held the old password (or a stolen cookie) is signed out everywhere.
+  await revokeAllUserSessions(userId);
 
   res.json({ ok: true, message: "Kata sandi berhasil diperbarui. Silakan login." });
 });

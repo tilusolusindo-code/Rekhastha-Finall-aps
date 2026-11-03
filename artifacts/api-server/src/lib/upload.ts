@@ -84,6 +84,36 @@ export function isSafeUploadFilename(filename: string): boolean {
   return /^[a-f0-9]{32}\.(?:jpg|jpeg|png|pdf|bin)$/.test(filename);
 }
 
+/**
+ * Check the leading bytes of a file against the content type it claims.
+ * Used for browser-to-storage uploads (application attachments), where the
+ * server never sees the bytes until the upload is "completed".
+ */
+export function matchesDeclaredSignature(contentType: string, bytes: Uint8Array): boolean {
+  const buf = Buffer.from(bytes);
+  switch (contentType) {
+    case "image/jpeg":
+    case "image/png":
+    case "application/pdf":
+      return hasValidFileSignature({ mimetype: contentType, buffer: buf } as Express.Multer.File);
+    case "image/webp":
+      return (
+        buf.length >= 12 &&
+        buf.subarray(0, 4).toString("ascii") === "RIFF" &&
+        buf.subarray(8, 12).toString("ascii") === "WEBP"
+      );
+    case "application/msword": // legacy .doc = OLE2 compound file
+      return (
+        buf.length >= 8 &&
+        buf.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]))
+      );
+    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document": // .docx = ZIP
+      return buf.length >= 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+    default:
+      return false;
+  }
+}
+
 function hasValidFileSignature(file: Express.Multer.File): boolean {
   const bytes = file.buffer;
   if (!bytes) return false;

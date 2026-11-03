@@ -9,9 +9,12 @@ import { createClient, type RealtimeChannel, type SupabaseClient } from "@supaba
  * `onclose`, `readyState`, `close()` and the static OPEN/CONNECTING constants —
  * so every existing handler keeps working unchanged.
  *
- *  - `feed` (public): gigs, attendance, SOS, payouts — the old global fan-out.
- *  - `user:<id>` (private): applications, status changes and chat, delivered
- *    only to the signed-in participant. The browser gets a short-lived token
+ *  - `feed` (public): gig listings only — anyone can read it.
+ *  - `user:<id>` (private): applications, status changes, chat and attendance,
+ *    delivered only to the signed-in participant.
+ *  - `admin` (private): SOS, payouts, attendance — only for the admin console
+ *    (`new RealtimeSocket({ admin: true })`), authorised by an admin-cookie
+ *    backed token. The browser gets a short-lived token
  *    from `GET /api/realtime/token` (which reads the session cookie), so a
  *    private channel needs a socket opened AFTER login — `reconnectWs()` in
  *    central-server.ts already does exactly that.
@@ -20,6 +23,7 @@ import { createClient, type RealtimeChannel, type SupabaseClient } from "@supaba
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const FEED_TOPIC = "feed";
+const ADMIN_TOPIC = "admin";
 const TOKEN_REFRESH_MS = 45 * 60 * 1000;
 
 let client: SupabaseClient | null = null;
@@ -39,9 +43,12 @@ interface SessionToken {
   userId: string | null;
 }
 
-async function fetchToken(): Promise<SessionToken> {
+async function fetchToken(admin: boolean): Promise<SessionToken> {
   try {
-    const res = await fetch("/api/realtime/token", { credentials: "same-origin", cache: "no-store" });
+    const res = await fetch(`/api/realtime/token${admin ? "?scope=admin" : ""}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
     if (!res.ok) return { token: null, userId: null };
     return (await res.json()) as SessionToken;
   } catch {
@@ -124,19 +131,22 @@ export class RealtimeSocket {
   private refreshTimer: number | null = null;
   private closedEventSent = false;
 
-  constructor() {
+  private readonly admin: boolean;
+
+  constructor(options: { admin?: boolean } = {}) {
+    this.admin = options.admin === true;
     void this.start();
   }
 
   private async start(): Promise<void> {
     try {
-      const session = await fetchToken();
+      const session = await this.fetchSessionToken();
       if (this.readyState === RealtimeSocket.CLOSED) return;
       const supabase = getClient();
       if (session.token) {
         supabase.realtime.setAuth(session.token);
         this.refreshTimer = window.setInterval(() => {
-          void fetchToken().then((next) => {
+          void this.fetchSessionToken().then((next) => {
             if (next.token) supabase.realtime.setAuth(next.token);
           });
         }, TOKEN_REFRESH_MS);
@@ -150,8 +160,10 @@ export class RealtimeSocket {
         joinTopic(FEED_TOPIC, false, deliver, (status) => this.onFeedStatus(status)),
       );
       if (session.token && session.userId) {
+        // Admin tokens only join the `admin` channel; user tokens only their own.
+        const privateTopic = this.admin ? ADMIN_TOPIC : `user:${session.userId}`;
         this.leaveFns.push(
-          joinTopic(`user:${session.userId}`, true, deliver, () => {
+          joinTopic(privateTopic, true, deliver, () => {
             /* private-channel status is not surfaced; the feed drives open/close */
           }),
         );
@@ -159,6 +171,10 @@ export class RealtimeSocket {
     } catch {
       this.fail();
     }
+  }
+
+  private fetchSessionToken(): Promise<SessionToken> {
+    return fetchToken(this.admin);
   }
 
   private onFeedStatus(status: string): void {

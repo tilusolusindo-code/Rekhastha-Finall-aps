@@ -9,8 +9,14 @@ import { keepAlive } from "./vercel-context";
  * serverless). Instead it publishes each event to Supabase over REST and
  * browsers subscribe directly to Supabase:
  *
- *  - topic `feed`          public channel — gigs, attendance, SOS, payouts
- *                          (same audience as the old open `/api/ws`).
+ *  - topic `feed`          public channel — gig listings ONLY. The anon key
+ *                          ships in the browser bundle, so anything sent here
+ *                          is readable by anyone on the internet.
+ *  - topic `admin`         PRIVATE channel — SOS (worker phone/address),
+ *                          payouts, attendance. Readable only with a token
+ *                          carrying the `app_role: "admin"` claim, minted by
+ *                          `GET /api/realtime/token?scope=admin` after an
+ *                          admin-cookie check.
  *  - topic `user:<userId>` PRIVATE channel — participant-scoped delivery
  *                          (applications with masked KYC data, chat, status).
  *                          Row-level security on `realtime.messages` only lets
@@ -22,6 +28,7 @@ import { keepAlive } from "./vercel-context";
  */
 
 export const FEED_TOPIC = "feed";
+export const ADMIN_TOPIC = "admin";
 export const userTopic = (userId: string): string => `user:${userId}`;
 
 const REALTIME_TOKEN_TTL_SECONDS = 60 * 60;
@@ -63,6 +70,10 @@ function broadcast(payload: unknown): void {
   send(FEED_TOPIC, payload, false);
 }
 
+function sendToAdmin(payload: unknown): void {
+  send(ADMIN_TOPIC, payload, true);
+}
+
 function sendToUser(userId: string, payload: unknown): void {
   if (!userId) return;
   send(userTopic(userId), payload, true);
@@ -72,7 +83,10 @@ function sendToUser(userId: string, payload: unknown): void {
  * Mint a short-lived JWT the browser hands to Supabase Realtime so it can join
  * its own private `user:<id>` channel. Signed with the project's JWT secret.
  */
-export function mintRealtimeToken(userId: string): string | null {
+export function mintRealtimeToken(
+  userId: string,
+  extraClaims: Record<string, string> = {},
+): string | null {
   const secret = process.env["SUPABASE_JWT_SECRET"];
   if (!secret) return null;
   const now = Math.floor(Date.now() / 1000);
@@ -81,6 +95,7 @@ export function mintRealtimeToken(userId: string): string | null {
     aud: "authenticated",
     role: "authenticated",
     sub: userId,
+    ...extraClaims,
     iat: now,
     exp: now + REALTIME_TOKEN_TTL_SECONDS,
   })}`;
@@ -98,24 +113,33 @@ export function broadcastInstantActivated(gig: unknown): void {
   broadcast({ type: "instant_order_activated", gig });
 }
 
-/** A worker scanned an employer's masuk/pulang QR. */
-export function broadcastAttendance(attendance: unknown): void {
-  broadcast({ type: "attendance", attendance });
+/**
+ * A worker scanned an employer's masuk/pulang QR. Delivered only to the worker,
+ * the job's employer and the admin console — never to the public feed.
+ */
+export function broadcastAttendance(
+  attendance: unknown,
+  parties: { workerId: string; employerId?: string | null },
+): void {
+  const frame = { type: "attendance", attendance };
+  sendToUser(parties.workerId, frame);
+  if (parties.employerId) sendToUser(parties.employerId, frame);
+  sendToAdmin(frame);
 }
 
 /** Worker SOS incident — the Admin Command Center raises its alarm. */
 export function broadcastEmergency(incident: unknown): void {
-  broadcast({ type: "emergency_active", incident });
+  sendToAdmin({ type: "emergency_active", incident });
 }
 
 /** An SOS incident was resolved so alarms can clear. */
 export function broadcastEmergencyResolved(id: number): void {
-  broadcast({ type: "emergency_resolved", id });
+  sendToAdmin({ type: "emergency_resolved", id });
 }
 
 /** On-site daily fractional payout for the admin tracker. */
 export function broadcastDailyPayout(payout: unknown): void {
-  broadcast({ type: "daily_payout", payout });
+  sendToAdmin({ type: "daily_payout", payout });
 }
 
 /** New application → only the owning employer (keeps masked NIK/NPWP private). */

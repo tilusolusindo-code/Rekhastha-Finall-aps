@@ -217,7 +217,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     })
     .returning();
 
-  const token = await createSession(user.id);
+  const token = await createSession(user.id, req.cookies?.[SESSION_COOKIE]);
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
   res.status(201).json(toAuthUser(user));
 });
@@ -259,7 +259,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   await resetAttempts(throttleKey);
-  const token = await createSession(user.id);
+  const token = await createSession(user.id, req.cookies?.[SESSION_COOKIE]);
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
   res.json(toAuthUser(user));
 });
@@ -386,7 +386,7 @@ router.get("/auth/google/callback", async (req, res): Promise<void> => {
           },
         })
         .where(eq(usersTable.id, existing.id));
-      const session = await createSession(existing.id);
+      const session = await createSession(existing.id, req.cookies?.[SESSION_COOKIE]);
       res.cookie(SESSION_COOKIE, session, sessionCookieOptions());
       res.redirect(303, "/");
       return;
@@ -438,7 +438,7 @@ router.post("/auth/google/complete", async (req, res): Promise<void> => {
         },
       })
       .where(eq(usersTable.id, existing.id));
-    const session = await createSession(existing.id);
+    const session = await createSession(existing.id, req.cookies?.[SESSION_COOKIE]);
     res.cookie(SESSION_COOKIE, session, sessionCookieOptions());
     res.json(toAuthUser(existing));
     return;
@@ -465,7 +465,7 @@ router.post("/auth/google/complete", async (req, res): Promise<void> => {
     })
     .returning();
   await kvDelete(googleChallengeKey(parsed.data.code));
-  const session = await createSession(user.id);
+  const session = await createSession(user.id, req.cookies?.[SESSION_COOKIE]);
   res.cookie(SESSION_COOKIE, session, sessionCookieOptions());
   res.status(201).json(toAuthUser(user));
 });

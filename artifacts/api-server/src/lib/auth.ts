@@ -38,7 +38,19 @@ export function toAuthUser(user: User): Record<string, unknown> {
   };
 }
 
-export async function createSession(userId: string): Promise<string> {
+/**
+ * Issue a brand-new server-generated session id. Session ids are never taken
+ * from the client, so classic session fixation is impossible; on top of that,
+ * `previousToken` (the cookie the browser presented at login) is revoked so a
+ * stale or planted cookie cannot outlive the login that replaced it.
+ */
+export async function createSession(
+  userId: string,
+  previousToken?: string,
+): Promise<string> {
+  if (typeof previousToken === "string" && previousToken) {
+    await db.delete(sessionsTable).where(eq(sessionsTable.token, previousToken));
+  }
   const token = randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await db.insert(sessionsTable).values({ token, userId, expiresAt });
@@ -59,6 +71,11 @@ export async function getSessionUser(
     );
 
   return row?.user ?? null;
+}
+
+/** Revoke every session of a user (password reset, forced sign-out). */
+export async function revokeAllUserSessions(userId: string): Promise<void> {
+  await db.delete(sessionsTable).where(eq(sessionsTable.userId, userId));
 }
 
 export async function deleteSession(token: string | undefined): Promise<void> {

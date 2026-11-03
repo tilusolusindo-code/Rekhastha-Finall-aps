@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 import { db, emergencyIncidentsTable } from "@workspace/db";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import { ADMIN_COOKIE, isAdminSession } from "../lib/admin";
+import { kvPutIfAbsent } from "../lib/ephemeral";
 import {
   broadcastEmergency,
   broadcastEmergencyResolved,
@@ -20,13 +21,16 @@ const router: IRouter = Router();
  * Admin Command Center raises its full-screen alarm and acts as the dispatcher.
  */
 const reportBody = z.object({
-  jobId: z.coerce.number().optional(),
-  workerPhone: z.string().optional(),
-  jobTitle: z.string().optional(),
-  employerName: z.string().optional(),
-  projectAddress: z.string().optional(),
+  jobId: z.coerce.number().int().positive().optional(),
+  workerPhone: z.string().trim().max(32).optional(),
+  jobTitle: z.string().trim().max(200).optional(),
+  employerName: z.string().trim().max(200).optional(),
+  projectAddress: z.string().trim().max(500).optional(),
   boronganType: z.enum(["remote", "onsite"]).optional(),
 });
+
+/** One SOS per worker per window: stops alarm spam against the dispatcher. */
+const SOS_COOLDOWN_MS = 30_000;
 
 router.post("/emergency", async (req, res): Promise<void> => {
   const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
@@ -34,9 +38,18 @@ router.post("/emergency", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Tidak terautentikasi." });
     return;
   }
+  // Only workers can raise an SOS (employers/other roles cannot trigger alarms).
+  if (user.role !== "pekerja") {
+    res.status(403).json({ error: "Hanya pekerja yang dapat mengirim laporan darurat." });
+    return;
+  }
   const parsed = reportBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    res.status(400).json({ error: "Data laporan darurat tidak valid." });
+    return;
+  }
+  if (!(await kvPutIfAbsent(`sos:cooldown:${user.id}`, { at: Date.now() }, SOS_COOLDOWN_MS))) {
+    res.status(429).json({ error: "Laporan darurat sudah terkirim. Tim kami sedang menanganinya." });
     return;
   }
 
@@ -45,7 +58,7 @@ router.post("/emergency", async (req, res): Promise<void> => {
     .values({
       jobId: parsed.data.jobId ?? null,
       workerName: user.name,
-      workerPhone: parsed.data.workerPhone ?? "",
+      workerPhone: parsed.data.workerPhone || user.whatsapp || "",
       jobTitle: parsed.data.jobTitle ?? "",
       employerName: parsed.data.employerName ?? "",
       projectAddress: parsed.data.projectAddress ?? "",

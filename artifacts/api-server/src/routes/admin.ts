@@ -91,7 +91,10 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   }
 
   await resetAttempts(ip);
-  const session = await createAdminSession(parsed.data.adminId.trim());
+  const session = await createAdminSession(
+    parsed.data.adminId.trim(),
+    req.cookies?.[ADMIN_COOKIE],
+  );
   res.cookie(ADMIN_COOKIE, session, adminCookieOptions());
   res.json({ ok: true });
 });
@@ -115,7 +118,12 @@ router.post("/admin/change-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const result = await changeAdminPassword(adminId, parsed.data.oldPassword, parsed.data.newPassword);
+  const result = await changeAdminPassword(
+    adminId,
+    parsed.data.oldPassword,
+    parsed.data.newPassword,
+    req.cookies?.[ADMIN_COOKIE],
+  );
   if ("error" in result) {
     res.status(400).json(result);
     return;

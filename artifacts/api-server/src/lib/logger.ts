@@ -8,6 +8,16 @@ export const logger = pino({
     "req.headers.authorization",
     "req.headers.cookie",
     "res.headers['set-cookie']",
+    // Never let secrets or credentials reach the logs, even if an error or
+    // request object carrying them is logged by mistake.
+    "*.password",
+    "*.newPassword",
+    "*.oldPassword",
+    "*.token",
+    "*.recoveryToken",
+    "*.serviceKey",
+    "*.apiKey",
+    "*.connectionString",
   ],
   ...(isProduction
     ? {}

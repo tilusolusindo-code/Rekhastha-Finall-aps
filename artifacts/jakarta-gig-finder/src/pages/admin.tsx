@@ -64,7 +64,7 @@ function useAdminRealtimeRefresh(
 
     const connect = () => {
       if (disposed) return;
-      const nextSocket = new RealtimeSocket();
+      const nextSocket = new RealtimeSocket({ admin: true });
       socket = nextSocket;
 
       nextSocket.onopen = () => {
@@ -983,7 +983,7 @@ function EscrowTab({ trainingPassed, requireAcademy }: { trainingPassed: boolean
   useEffect(() => {
     void load();
     // Live: refetch whenever any device posts a gig or scans attendance.
-    const ws = new RealtimeSocket();
+    const ws = new RealtimeSocket({ admin: true });
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data) as { type?: string };
@@ -2107,7 +2107,7 @@ function ResolutionTab() {
 
   useEffect(() => {
     void load();
-    const ws = new RealtimeSocket();
+    const ws = new RealtimeSocket({ admin: true });
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data) as { type?: string };
@@ -2250,7 +2250,7 @@ function OnsiteTab() {
 
   useEffect(() => {
     void load();
-    const ws = new RealtimeSocket();
+    const ws = new RealtimeSocket({ admin: true });
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data) as { type?: string };

@@ -97,7 +97,7 @@ export function EmergencyAlarm() {
         /* no active incidents / unauthorized — ignore */
       });
 
-    const ws = new RealtimeSocket();
+    const ws = new RealtimeSocket({ admin: true });
     ws.onmessage = (ev) => {
       try {
         const msg = JSON.parse(ev.data) as {

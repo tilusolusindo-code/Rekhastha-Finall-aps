@@ -334,7 +334,12 @@ router.post("/attendance/scan", async (req, res): Promise<void> => {
     });
     return;
   }
-  broadcastAttendance(row);
+  const [ownerGig] = await db
+    .select({ employerId: gigsTable.employerId })
+    .from(gigsTable)
+    .where(eq(gigsTable.id, rec.jobId))
+    .limit(1);
+  broadcastAttendance(row, { workerId: user.id, employerId: ownerGig?.employerId ?? null });
   res.status(201).json(row);
 });
 

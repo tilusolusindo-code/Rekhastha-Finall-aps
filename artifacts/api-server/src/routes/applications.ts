@@ -13,8 +13,11 @@ import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
   createPrivateDownloadUrl,
   createPrivateUploadTarget,
+  deletePrivateObject,
+  readPrivateObjectHead,
   verifyPrivateObjectExists,
 } from "../lib/private-application-storage";
+import { matchesDeclaredSignature } from "../lib/upload";
 import {
   broadcastApplication,
   broadcastApplicationStatus,
@@ -153,6 +156,21 @@ router.post("/applications/uploads/:id/complete", async (req, res): Promise<void
       res.status(400).json({ error: "Berkas belum selesai diunggah." });
       return;
     }
+
+    // The browser uploaded straight to storage, so the declared content type is
+    // only a claim. Verify the real leading bytes before accepting the file;
+    // a renamed executable (or anything else) is deleted on the spot.
+    const head = await readPrivateObjectHead(upload.objectPath, 16);
+    if (!head || !matchesDeclaredSignature(upload.contentType, head)) {
+      await deletePrivateObject(upload.objectPath);
+      await db
+        .delete(applicationUploadsTable)
+        .where(eq(applicationUploadsTable.id, upload.id));
+      res.status(400).json({
+        error: "Isi berkas tidak sesuai dengan jenisnya. Unggah PDF, DOC, DOCX, JPG, PNG, atau WEBP yang asli.",
+      });
+      return;
+    }
     await db
       .update(applicationUploadsTable)
       .set({ uploaded: true })
@@ -213,7 +231,14 @@ router.get("/applications/files/:id", async (req, res): Promise<void> => {
 
   try {
     res.setHeader("Cache-Control", "private, no-store");
-    res.redirect(302, await createPrivateDownloadUrl(upload.objectPath));
+    const isImage = upload.contentType.startsWith("image/");
+    res.redirect(
+      302,
+      await createPrivateDownloadUrl(
+        upload.objectPath,
+        isImage ? undefined : upload.fileName.replace(/[^\w.\- ]+/g, "_"),
+      ),
+    );
   } catch (error) {
     req.log.error({ err: error, uploadId: upload.id }, "Failed to create application file download URL");
     res.status(503).json({ error: "Berkas sementara tidak dapat dibuka." });

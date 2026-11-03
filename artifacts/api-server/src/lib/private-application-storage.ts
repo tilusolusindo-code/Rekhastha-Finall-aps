@@ -112,7 +112,41 @@ export async function verifyPrivateObjectExists(
   return typeof info.size !== "number" || info.size === expectedSize;
 }
 
-export async function createPrivateDownloadUrl(objectPath: string): Promise<string> {
+/** First `length` bytes of a stored object (service-role read), or null if unreadable. */
+export async function readPrivateObjectHead(
+  objectPath: string,
+  length = 16,
+): Promise<Uint8Array | null> {
+  const { baseUrl, serviceKey, bucket } = storageConfig();
+  const response = await fetch(
+    `${baseUrl}/storage/v1/object/authenticated/${bucket}/${objectNameFor(objectPath)}`,
+    {
+      headers: { ...authHeaders(serviceKey), Range: `bytes=0-${length - 1}` },
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+  if (!response.ok) return null;
+  const body = new Uint8Array(await response.arrayBuffer());
+  return body.subarray(0, length);
+}
+
+export async function deletePrivateObject(objectPath: string): Promise<void> {
+  const { baseUrl, serviceKey, bucket } = storageConfig();
+  await fetch(`${baseUrl}/storage/v1/object/${bucket}/${objectNameFor(objectPath)}`, {
+    method: "DELETE",
+    headers: authHeaders(serviceKey),
+    signal: AbortSignal.timeout(15_000),
+  }).catch(() => undefined);
+}
+
+/**
+ * `downloadName` forces `Content-Disposition: attachment`, so documents are
+ * saved rather than rendered in the site's origin context.
+ */
+export async function createPrivateDownloadUrl(
+  objectPath: string,
+  downloadName?: string,
+): Promise<string> {
   const { baseUrl, serviceKey, bucket } = storageConfig();
   const response = await fetch(
     `${baseUrl}/storage/v1/object/sign/${bucket}/${objectNameFor(objectPath)}`,
@@ -130,5 +164,8 @@ export async function createPrivateDownloadUrl(objectPath: string): Promise<stri
   if (typeof result.signedURL !== "string") {
     throw new Error("URL unduhan tidak tersedia.");
   }
-  return `${baseUrl}/storage/v1${result.signedURL.startsWith("/") ? "" : "/"}${result.signedURL}`;
+  const signed = `${baseUrl}/storage/v1${result.signedURL.startsWith("/") ? "" : "/"}${result.signedURL}`;
+  return downloadName
+    ? `${signed}${signed.includes("?") ? "&" : "?"}download=${encodeURIComponent(downloadName)}`
+    : signed;
 }

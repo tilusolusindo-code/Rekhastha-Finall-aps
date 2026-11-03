@@ -1,6 +1,6 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { CookieOptions } from "express";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, lte, ne } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db, adminUsersTable, adminSessionsTable, adminLoginAttemptsTable } from "@workspace/db";
 
@@ -66,6 +66,7 @@ export async function changeAdminPassword(
   adminId: string,
   oldPassword: string,
   newPassword: string,
+  keepSessionToken?: string,
 ): Promise<{ ok: true } | { error: string }> {
   const valid = await verifyAdminPassword(adminId, oldPassword);
   if (!valid) return { error: "Kata sandi lama tidak sesuai." };
@@ -75,6 +76,18 @@ export async function changeAdminPassword(
     .update(adminUsersTable)
     .set({ passwordHash, mustChangePassword: false, updatedAt: new Date() })
     .where(eq(adminUsersTable.adminId, adminId));
+
+  // A new password signs out every other admin session (stolen cookies die).
+  await db
+    .delete(adminSessionsTable)
+    .where(
+      keepSessionToken
+        ? and(
+            eq(adminSessionsTable.adminId, adminId),
+            ne(adminSessionsTable.token, keepSessionToken),
+          )
+        : eq(adminSessionsTable.adminId, adminId),
+    );
 
   return { ok: true };
 }
@@ -153,7 +166,13 @@ export function adminCookieOptions(): CookieOptions {
 }
 
 // ── Postgres-backed admin session store ──────────────────────────
-export async function createAdminSession(adminId: string): Promise<string> {
+export async function createAdminSession(
+  adminId: string,
+  previousToken?: string,
+): Promise<string> {
+  if (typeof previousToken === "string" && previousToken) {
+    await db.delete(adminSessionsTable).where(eq(adminSessionsTable.token, previousToken));
+  }
   const token = randomUUID();
   await db.insert(adminSessionsTable).values({
     token,

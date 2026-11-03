@@ -1,5 +1,6 @@
+import "./auth.css";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, ShieldCheck, Building2, Home, Landmark, MapPin, IdCard, FileText, KeyRound, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, ShieldCheck, Building2, Home, Landmark, MapPin, IdCard, FileText, KeyRound, CheckCircle2, Sparkles } from "lucide-react";
 import { AuthUser, UserRole, EmployerCategory } from "@/types/auth";
 import RoleSelectModal from "@/components/role-select-modal";
 import TermsModal from "@/components/terms-modal";
@@ -17,20 +18,16 @@ type AuthMode = "main" | "forgot" | "reset" | "reset_done";
 
 async function requestPasswordReset(email: string): Promise<{ ok: boolean; message?: string; error?: string }> {
   const res = await fetch("/api/auth/forgot-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-    body: JSON.stringify({ email }),
+    method: "POST", headers: { "Content-Type": "application/json" },
+    credentials: "same-origin", body: JSON.stringify({ email }),
   });
   return res.json();
 }
 
 async function submitPasswordReset(token: string, newPassword: string): Promise<{ ok: boolean; error?: string }> {
   const res = await fetch("/api/auth/reset-password", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-    body: JSON.stringify({ token, newPassword }),
+    method: "POST", headers: { "Content-Type": "application/json" },
+    credentials: "same-origin", body: JSON.stringify({ token, newPassword }),
   });
   return res.json();
 }
@@ -47,7 +44,6 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Forgot password state
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -55,7 +51,6 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
   const [showNewPass, setShowNewPass] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
 
-  // Employer registration
   const [isEmployer, setIsEmployer] = useState(false);
   const [employerCategory, setEmployerCategory] = useState<EmployerCategory>("corporate");
   const [namaPerusahaan, setNamaPerusahaan] = useState("");
@@ -65,7 +60,6 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
   const [namaOrganisasi, setNamaOrganisasi] = useState("");
   const [kodeWilayah, setKodeWilayah] = useState("");
 
-  // Role selection
   const [pendingRegister, setPendingRegister] = useState<Omit<RegisterPayload, "role"> | null>(null);
   const [pendingGoogle, setPendingGoogle] = useState(false);
   const [googleCode, setGoogleCode] = useState<string | null>(null);
@@ -76,20 +70,12 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
     const url = new URL(window.location.href);
     const code = url.searchParams.get("google_code");
     const googleError = url.searchParams.get("google_error");
-    // Check for password reset token in URL
     const resetTokenParam = url.searchParams.get("reset_token");
-    if (resetTokenParam) {
-      setResetToken(resetTokenParam);
-      setMode("reset");
-    }
-    if (code) {
-      setGoogleCode(code);
-      setPendingGoogle(true);
-      setShowRoleModal(true);
-    }
+    if (resetTokenParam) { setResetToken(resetTokenParam); setMode("reset"); }
+    if (code) { setGoogleCode(code); setPendingGoogle(true); setShowRoleModal(true); }
     if (googleError) {
       const errors: Record<string, string> = {
-        not_configured: "Login Google belum aktif. Admin perlu mengatur konfigurasi OAuth Google.",
+        not_configured: "Login Google belum aktif.",
         access_denied: "Login Google dibatalkan.",
         invalid_state: "Sesi login Google berakhir. Silakan coba lagi.",
         email_unverified: "Akun Google harus menggunakan email yang sudah terverifikasi.",
@@ -109,9 +95,7 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
 
   useEffect(() => {
     let active = true;
-    void fetchGoogleAuthAvailability().then((enabled) => {
-      if (active) setGoogleEnabled(enabled);
-    });
+    void fetchGoogleAuthAvailability().then((enabled) => { if (active) setGoogleEnabled(enabled); });
     return () => { active = false; };
   }, []);
 
@@ -119,33 +103,21 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
     e instanceof AuthError ? e.message : fallback;
 
   const handleRoleSelected = async (role: UserRole) => {
-    setError(null);
-    setLoading(true);
+    setError(null); setLoading(true);
     try {
       const user = pendingGoogle
         ? googleCode ? await loginWithGoogle(googleCode, role) : null
         : pendingRegister ? await register({ ...pendingRegister, role }) : null;
       if (user) { setShowRoleModal(false); onComplete(user); }
-    } catch (e) {
-      setShowRoleModal(false);
-      setError(describeError(e, "Gagal membuat akun."));
-    } finally {
-      setLoading(false);
-      setPendingGoogle(false);
-      setGoogleCode(null);
-      setPendingRegister(null);
-    }
+    } catch (e) { setShowRoleModal(false); setError(describeError(e, "Gagal membuat akun.")); }
+    finally { setLoading(false); setPendingGoogle(false); setGoogleCode(null); setPendingRegister(null); }
   };
 
   const handleConventional = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault(); setError(null);
     if (!email.includes("@")) { setError("Email tidak valid."); return; }
     if (password.length < 6) { setError("Password minimal 6 karakter."); return; }
-    if (tab === "daftar" && password.length < 12) {
-      setError("Gunakan kata sandi minimal 12 karakter untuk akun baru.");
-      return;
-    }
+    if (tab === "daftar" && password.length < 12) { setError("Gunakan kata sandi minimal 12 karakter untuk akun baru."); return; }
     if (tab === "masuk") {
       setLoading(true);
       try { onComplete(await login(email, password)); }
@@ -168,377 +140,286 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault(); setError(null);
     if (!forgotEmail.includes("@")) { setError("Format email tidak valid."); return; }
     setLoading(true);
     try {
       const result = await requestPasswordReset(forgotEmail);
-      if (result.ok === false && result.error) {
-        setError(result.error);
-      } else {
-        // Tautan reset hanya dikirim ke email pemilik akun (tidak pernah di respons API).
-        setForgotMessage(
-          "Jika email terdaftar, tautan reset kata sandi sudah dikirim. Cek kotak masuk (dan folder spam) Anda; tautan berlaku 15 menit.",
-        );
-      }
-    } catch {
-      setError("Gagal memproses permintaan. Coba lagi.");
-    } finally {
-      setLoading(false);
-    }
+      if (result.ok === false && result.error) setError(result.error);
+      else setForgotMessage("Cek kotak masuk Anda — tautan reset berlaku 15 menit. Periksa folder spam jika tidak muncul.");
+    } catch { setError("Gagal memproses permintaan. Coba lagi."); }
+    finally { setLoading(false); }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault(); setError(null);
     if (newPassword.length < 8) { setError("Kata sandi minimal 8 karakter."); return; }
     if (newPassword !== newPasswordConfirm) { setError("Konfirmasi kata sandi tidak cocok."); return; }
     setLoading(true);
     try {
       const result = await submitPasswordReset(resetToken, newPassword);
-      if (result.ok) {
-        setMode("reset_done");
-      } else {
-        setError(result.error ?? "Gagal mereset kata sandi.");
-      }
-    } catch {
-      setError("Gagal mereset kata sandi. Coba lagi.");
-    } finally {
-      setLoading(false);
-    }
+      if (result.ok) setMode("reset_done");
+      else setError(result.error ?? "Gagal mereset kata sandi.");
+    } catch { setError("Gagal mereset kata sandi. Coba lagi."); }
+    finally { setLoading(false); }
   };
 
-  // ── Forgot Password Screen ────────────────────────────
-  if (mode === "forgot") {
-    return (
-      <div className="flex flex-col h-[100dvh] w-full overflow-hidden" style={{ background: "#F8FAFC" }}>
-        <div className="flex-shrink-0 flex flex-col items-center justify-end pb-12 pt-16 px-6 relative overflow-hidden"
-          style={{ background: "linear-gradient(160deg, #065F46 0%, #059669 55%, #10B981 100%)" }}>
-          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(#ffffff 2px, transparent 2px)", backgroundSize: "24px 24px" }}></div>
-          <div className="relative z-10 mb-4">
-            <RekhasthaLogo size={48} variant="light" showSubtitle wordmarkClassName="text-3xl font-display" />
-          </div>
-          <p className="relative z-10 text-sm text-emerald-100 text-center">Reset Kata Sandi</p>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 relative z-20">
-          <div className="bg-white rounded-3xl p-6 shadow-lg -mt-6">
-            <button type="button" onClick={() => { setMode("main"); setError(null); }}
-              className="mb-4 text-xs font-semibold text-emerald-700 hover:underline">
-              ← Kembali ke masuk
-            </button>
-            <div className="flex justify-center mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                <KeyRound className="w-7 h-7 text-emerald-600" />
-              </div>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 text-center mb-1">Lupa Kata Sandi?</h2>
-            <p className="text-xs text-gray-500 text-center mb-5">Masukkan email yang terdaftar, kami akan mengirim tautan untuk membuat kata sandi baru.</p>
-            <form onSubmit={handleForgotPassword} className="space-y-3">
-              <InputField icon={<Mail className="w-4 h-4" />} type="email" placeholder="Alamat email terdaftar"
-                value={forgotEmail} onChange={setForgotEmail} />
-              {error && <p className="text-xs text-red-500 font-medium px-1">{error}</p>}
-              {forgotMessage && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-                  <p className="text-xs text-emerald-700 font-medium text-center">{forgotMessage}</p>
-                </div>
-              )}
-              <button type="submit" disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-60"
-                style={{ boxShadow: "0 4px 14px rgba(5,150,105,0.35)" }}>
-                {loading
-                  ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <><KeyRound className="w-4 h-4" /> Kirim Tautan Reset</>}
-              </button>
-            </form>
-          </div>
-        </div>
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}`}</style>
-      </div>
-    );
-  }
-
-  // ── Reset Password Screen ─────────────────────────────
-  if (mode === "reset") {
-    return (
-      <div className="flex flex-col h-[100dvh] w-full overflow-hidden" style={{ background: "#F8FAFC" }}>
-        <div className="flex-shrink-0 flex flex-col items-center justify-end pb-12 pt-16 px-6 relative overflow-hidden"
-          style={{ background: "linear-gradient(160deg, #065F46 0%, #059669 55%, #10B981 100%)" }}>
-          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(#ffffff 2px, transparent 2px)", backgroundSize: "24px 24px" }}></div>
-          <div className="relative z-10 mb-4">
-            <RekhasthaLogo size={48} variant="light" showSubtitle wordmarkClassName="text-3xl font-display" />
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 relative z-20">
-          <div className="bg-white rounded-3xl p-6 shadow-lg -mt-6">
-            <div className="flex justify-center mb-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                <KeyRound className="w-7 h-7 text-emerald-600" />
-              </div>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 text-center mb-1">Buat Kata Sandi Baru</h2>
-            {forgotMessage && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
-                <p className="text-xs text-emerald-700 font-medium text-center">{forgotMessage}</p>
-              </div>
-            )}
-            <form onSubmit={handleResetPassword} className="space-y-3">
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  <Lock className="w-4 h-4" />
-                </span>
-                <input type={showNewPass ? "text" : "password"} value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Kata sandi baru (min. 8 karakter)"
-                  className="w-full pl-11 pr-11 py-3.5 border border-gray-200 rounded-2xl text-sm text-gray-900 placeholder-gray-400 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition-all"
-                  required />
-                <button type="button" onClick={() => setShowNewPass(p => !p)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <InputField icon={<Lock className="w-4 h-4" />} type="password"
-                placeholder="Konfirmasi kata sandi baru"
-                value={newPasswordConfirm} onChange={setNewPasswordConfirm} />
-              {error && <p className="text-xs text-red-500 font-medium px-1">{error}</p>}
-              <button type="submit" disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl transition-all active:scale-[0.98] disabled:opacity-60"
-                style={{ boxShadow: "0 4px 14px rgba(5,150,105,0.35)" }}>
-                {loading
-                  ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <><ShieldCheck className="w-4 h-4" /> Simpan Kata Sandi Baru</>}
-              </button>
-            </form>
-          </div>
-        </div>
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}`}</style>
-      </div>
-    );
-  }
-
-  // ── Reset Done Screen ─────────────────────────────────
-  if (mode === "reset_done") {
-    return (
-      <div className="flex flex-col h-[100dvh] w-full overflow-hidden" style={{ background: "#F8FAFC" }}>
-        <div className="flex-shrink-0 flex flex-col items-center justify-end pb-12 pt-16 px-6 relative overflow-hidden"
-          style={{ background: "linear-gradient(160deg, #065F46 0%, #059669 55%, #10B981 100%)" }}>
-          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(#ffffff 2px, transparent 2px)", backgroundSize: "24px 24px" }}></div>
-          <div className="relative z-10 mb-4">
-            <RekhasthaLogo size={48} variant="light" showSubtitle wordmarkClassName="text-3xl font-display" />
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 relative z-20">
-          <div className="bg-white rounded-3xl p-6 shadow-lg -mt-6 text-center">
-            <div className="flex justify-center mb-4 mt-2">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
-                <CheckCircle2 className="w-9 h-9 text-emerald-600" />
-              </div>
-            </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Kata Sandi Berhasil Diubah!</h2>
-            <p className="text-sm text-gray-500 mb-6">Silakan masuk dengan kata sandi baru Anda.</p>
-            <button type="button"
-              onClick={() => { setMode("main"); setPassword(""); setNewPassword(""); setNewPasswordConfirm(""); setResetToken(""); }}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl transition-all"
-              style={{ boxShadow: "0 4px 14px rgba(5,150,105,0.35)" }}>
-              <ArrowRight className="w-4 h-4" /> Masuk Sekarang
-            </button>
-          </div>
+  // ── Shell: green header + white card ──────────────────
+  const Shell = ({ subtitle, children }: { subtitle?: string; children: React.ReactNode }) => (
+    <div className="rk-auth-shell">
+      <div className="rk-auth-header">
+        <div className="rk-auth-dots" aria-hidden="true" />
+        <div className="rk-auth-brand">
+          <RekhasthaLogo size={44} variant="light" showSubtitle wordmarkClassName="text-[28px] font-display" />
+          {subtitle && <p className="rk-auth-subtitle">{subtitle}</p>}
         </div>
       </div>
-    );
-  }
-
-  // ── Main Login/Register Screen ────────────────────────
-  return (
-    <div className="flex flex-col h-[100dvh] w-full overflow-hidden" style={{ background: "#F8FAFC" }}>
-      <div className="flex-shrink-0 flex flex-col items-center justify-end pb-12 pt-16 px-6 relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #065F46 0%, #059669 55%, #10B981 100%)" }}>
-        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(#ffffff 2px, transparent 2px)", backgroundSize: "24px 24px" }}></div>
-        <div className="relative z-10 mb-4">
-          <RekhasthaLogo size={48} variant="light" showSubtitle wordmarkClassName="text-3xl font-display" />
-        </div>
-        <p className="relative z-10 text-sm text-emerald-100 text-center leading-relaxed">
-          Temukan dan kelola pekerjaan harian di seluruh Indonesia
-        </p>
+      <div className="rk-auth-body">
+        <div className="rk-auth-card">{children}</div>
       </div>
+    </div>
+  );
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain touch-pan-y px-5 pb-8 relative z-20"
-        style={{ WebkitOverflowScrolling: "touch" }}>
-        <div className="bg-white rounded-3xl p-6 shadow-lg -mt-6">
-          <button type="button" onClick={onBack} data-testid="button-back-to-landing"
-            className="mb-4 text-xs font-semibold text-emerald-700 hover:underline">
-            Kembali ke beranda
+  // ── Forgot ─────────────────────────────────────────────
+  if (mode === "forgot") return (
+    <Shell subtitle="Reset kata sandi">
+      <button type="button" onClick={() => { setMode("main"); setError(null); }} className="rk-auth-back">
+        ← Kembali masuk
+      </button>
+      <div className="rk-auth-icon-wrap"><KeyRound className="rk-auth-icon" /></div>
+      <h2 className="rk-auth-title">Lupa kata sandi?</h2>
+      <p className="rk-auth-desc">Masukkan email terdaftar. Kami kirim tautan untuk membuat kata sandi baru.</p>
+      {!forgotMessage ? (
+        <form onSubmit={handleForgotPassword} className="rk-auth-form">
+          <Field icon={<Mail />} type="email" placeholder="Alamat email terdaftar"
+            value={forgotEmail} onChange={setForgotEmail} autoComplete="email" />
+          {error && <ErrorMsg>{error}</ErrorMsg>}
+          <SubmitBtn loading={loading} icon={<KeyRound />}>Kirim Tautan Reset</SubmitBtn>
+        </form>
+      ) : (
+        <div className="rk-auth-success">
+          <CheckCircle2 className="rk-success-icon" />
+          <p>{forgotMessage}</p>
+          <button type="button" onClick={() => { setMode("main"); setForgotEmail(""); setForgotMessage(""); setError(null); }}
+            className="rk-auth-link-btn">
+            Kembali ke halaman masuk →
           </button>
-
-          <div className="flex bg-gray-100 p-1 rounded-[14px] mb-5 relative">
-            <div className="absolute inset-y-1 w-[calc(50%-4px)] bg-white rounded-[10px] shadow-sm transition-transform duration-300 ease-out"
-              style={{ transform: tab === "masuk" ? "translateX(2px)" : "translateX(calc(100% + 2px))" }} />
-            <button onClick={() => { setTab("masuk"); setError(null); }}
-              className={`flex-1 relative py-2.5 text-sm font-bold rounded-xl transition-colors ${tab === "masuk" ? "text-primary" : "text-gray-500"}`}>
-              Masuk
-            </button>
-            <button onClick={() => { setTab("daftar"); setError(null); }}
-              className={`flex-1 relative py-2.5 text-sm font-bold rounded-xl transition-colors ${tab === "daftar" ? "text-primary" : "text-gray-500"}`}>
-              Daftar Baru
-            </button>
-          </div>
-
-          {googleEnabled && <button type="button" onClick={() => { setError(null); startGoogleLogin(); }} disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 rounded-2xl py-3.5 mb-4 hover:shadow-md active:scale-[0.98] transition-all"
-            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
-            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-              <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
-              <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
-              <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
-              <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
-            </svg>
-            <span className="text-sm font-semibold text-gray-700">Lanjutkan dengan Google</span>
-          </button>}
-
-          {googleEnabled && <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">atau</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>}
-
-          <form onSubmit={handleConventional} className="space-y-3">
-            {tab === "daftar" && (
-              <InputField icon={<User className="w-4 h-4" />} type="text" placeholder="Nama Akun Lengkap"
-                value={name} onChange={setName} />
-            )}
-            <InputField icon={<Mail className="w-4 h-4" />} type="email" placeholder="Alamat Email"
-              value={email} onChange={setEmail} />
-            {tab === "daftar" && (
-              <InputField icon={<Phone className="w-4 h-4" />} type="tel" placeholder="Nomor WhatsApp (opsional)"
-                value={whatsapp} onChange={setWhatsapp} />
-            )}
-
-            {tab === "daftar" && (
-              <div className="rounded-2xl border border-gray-200 bg-white px-3.5 py-3">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={isEmployer} onChange={(e) => setIsEmployer(e.target.checked)}
-                    className="w-4 h-4 accent-emerald-600" data-testid="checkbox-employer" />
-                  <span className="text-xs font-semibold text-gray-700">
-                    Saya mendaftar sebagai Pemberi Kerja (Perusahaan / Individu / Organisasi)
-                  </span>
-                </label>
-                {isEmployer && (
-                  <div className="mt-3 space-y-3">
-                    <p className="text-[11px] font-semibold text-gray-500 px-0.5">Kategori Pemberi Kerja</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <CategoryRadio icon={<Building2 className="w-4 h-4" />} label="Corporate"
-                        selected={employerCategory === "corporate"} onClick={() => setEmployerCategory("corporate")} testId="radio-corporate" />
-                      <CategoryRadio icon={<Home className="w-4 h-4" />} label="Rumah Tangga"
-                        selected={employerCategory === "household"} onClick={() => setEmployerCategory("household")} testId="radio-household" />
-                      <CategoryRadio icon={<Landmark className="w-4 h-4" />} label="Org. Politik"
-                        selected={employerCategory === "political"} onClick={() => setEmployerCategory("political")} testId="radio-political" />
-                    </div>
-                    {employerCategory === "corporate" && (
-                      <div className="space-y-3" data-testid="fields-corporate">
-                        <InputField icon={<Building2 className="w-4 h-4" />} type="text" placeholder="Nama PT / CV"
-                          value={namaPerusahaan} onChange={setNamaPerusahaan} />
-                        <InputField icon={<FileText className="w-4 h-4" />} type="text" placeholder="Nomor NPWP Perusahaan"
-                          value={npwpPerusahaan} onChange={setNpwpPerusahaan} />
-                      </div>
-                    )}
-                    {employerCategory === "household" && (
-                      <div className="space-y-3" data-testid="fields-household">
-                        <InputField icon={<IdCard className="w-4 h-4" />} type="text" placeholder="Nama Lengkap Sesuai KTP"
-                          value={namaKtp} onChange={setNamaKtp} />
-                        <InputField icon={<MapPin className="w-4 h-4" />} type="text" placeholder="Alamat"
-                          value={alamat} onChange={setAlamat} />
-                      </div>
-                    )}
-                    {employerCategory === "political" && (
-                      <div className="space-y-3" data-testid="fields-political">
-                        <InputField icon={<Landmark className="w-4 h-4" />} type="text" placeholder="Nama Organisasi / Sayap Partai"
-                          value={namaOrganisasi} onChange={setNamaOrganisasi} />
-                        <InputField icon={<MapPin className="w-4 h-4" />} type="text" placeholder="Kode Wilayah / Dapil"
-                          value={kodeWilayah} onChange={setKodeWilayah} />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                <Lock className="w-4 h-4" />
-              </span>
-              <input type={showPass ? "text" : "password"} value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={tab === "daftar" ? "Kata sandi (min. 12 karakter)" : "Kata sandi"}
-                className="w-full pl-11 pr-11 py-3.5 border border-gray-200 rounded-2xl text-sm text-gray-900 placeholder-gray-400 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition-all"
-                required />
-              <button type="button" onClick={() => setShowPass((p) => !p)}
-                aria-label={showPass ? "Sembunyikan password" : "Tampilkan password"}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {/* Lupa Password link - hanya tampil di tab masuk */}
-            {tab === "masuk" && (
-              <div className="text-right">
-                <button type="button" onClick={() => { setMode("forgot"); setForgotEmail(email); setError(null); }}
-                  className="text-xs text-emerald-600 font-semibold hover:underline">
-                  Lupa kata sandi?
-                </button>
-              </div>
-            )}
-
-            {error && <p className="text-xs text-red-500 font-medium px-1">{error}</p>}
-
-            <button type="submit" disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl mt-1 transition-all active:scale-[0.98] disabled:opacity-60"
-              style={{ boxShadow: "0 4px 14px rgba(5,150,105,0.35)" }}>
-              {loading
-                ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <>{tab === "masuk" ? "Masuk ke Rekhastha" : "Buat Akun Baru"}<ArrowRight className="w-4 h-4" /></>}
-            </button>
-          </form>
-
-          <p className="text-center text-[10px] text-gray-400 mt-4 leading-relaxed">
-            Dokumen hukum belum difinalkan; pendaftaran publik belum siap.{" "}
-            <button type="button" data-testid="link-terms" onClick={() => setShowTerms(true)}
-              className="text-emerald-600 font-semibold hover:underline">
-              Baca ringkasan operasional (draf)
-            </button>{" "}
-            Kebijakan Privasi final belum tersedia.
-          </p>
         </div>
+      )}
+    </Shell>
+  );
+
+  // ── Reset ──────────────────────────────────────────────
+  if (mode === "reset") return (
+    <Shell>
+      <div className="rk-auth-icon-wrap"><KeyRound className="rk-auth-icon" /></div>
+      <h2 className="rk-auth-title">Buat kata sandi baru</h2>
+      <p className="rk-auth-desc">Gunakan minimal 8 karakter.</p>
+      <form onSubmit={handleResetPassword} className="rk-auth-form">
+        <PasswordField placeholder="Kata sandi baru (min. 8 karakter)" value={newPassword}
+          onChange={setNewPassword} show={showNewPass} toggle={() => setShowNewPass(p => !p)} autoComplete="new-password" />
+        <Field icon={<Lock />} type="password" placeholder="Konfirmasi kata sandi"
+          value={newPasswordConfirm} onChange={setNewPasswordConfirm} autoComplete="new-password" />
+        {error && <ErrorMsg>{error}</ErrorMsg>}
+        <SubmitBtn loading={loading} icon={<ShieldCheck />}>Simpan Kata Sandi</SubmitBtn>
+      </form>
+    </Shell>
+  );
+
+  // ── Reset Done ─────────────────────────────────────────
+  if (mode === "reset_done") return (
+    <Shell>
+      <div className="rk-auth-success rk-auth-success--centered">
+        <div className="rk-auth-icon-wrap rk-auth-icon-wrap--green"><CheckCircle2 className="rk-auth-icon" /></div>
+        <h2 className="rk-auth-title">Kata sandi diperbarui!</h2>
+        <p className="rk-auth-desc">Silakan masuk dengan kata sandi baru Anda.</p>
+        <SubmitBtn loading={false} icon={<ArrowRight />}
+          onClick={() => { setMode("main"); setPassword(""); setNewPassword(""); setNewPasswordConfirm(""); setResetToken(""); }}>
+          Masuk sekarang
+        </SubmitBtn>
       </div>
+    </Shell>
+  );
+
+  // ── Main ───────────────────────────────────────────────
+  return (
+    <Shell subtitle="Temukan dan kelola pekerjaan harian">
+      <button type="button" onClick={onBack} data-testid="button-back-to-landing" className="rk-auth-back">
+        ← Beranda
+      </button>
+
+      {/* Tab switcher */}
+      <div className="rk-auth-tabs" role="tablist">
+        <div className="rk-auth-tab-indicator" style={{ transform: tab === "masuk" ? "translateX(2px)" : "translateX(calc(100% + 2px))" }} />
+        <button role="tab" aria-selected={tab === "masuk"} onClick={() => { setTab("masuk"); setError(null); }}
+          className={`rk-auth-tab ${tab === "masuk" ? "rk-auth-tab--active" : ""}`}>Masuk</button>
+        <button role="tab" aria-selected={tab === "daftar"} onClick={() => { setTab("daftar"); setError(null); }}
+          className={`rk-auth-tab ${tab === "daftar" ? "rk-auth-tab--active" : ""}`}>Daftar Baru</button>
+      </div>
+
+      {/* Google */}
+      {googleEnabled && (
+        <button type="button" onClick={() => { setError(null); startGoogleLogin(); }} disabled={loading}
+          className="rk-google-btn">
+          <GoogleIcon />
+          <span>Lanjutkan dengan Google</span>
+        </button>
+      )}
+      {googleEnabled && <Divider />}
+
+      {/* Form */}
+      <form onSubmit={handleConventional} className="rk-auth-form">
+        {tab === "daftar" && (
+          <Field icon={<User />} type="text" placeholder="Nama lengkap" value={name} onChange={setName} autoComplete="name" />
+        )}
+        <Field icon={<Mail />} type="email" placeholder="Alamat email" value={email} onChange={setEmail} autoComplete="email" />
+        {tab === "daftar" && (
+          <Field icon={<Phone />} type="tel" placeholder="Nomor WhatsApp (opsional)" value={whatsapp} onChange={setWhatsapp} autoComplete="tel" />
+        )}
+        <PasswordField placeholder={tab === "daftar" ? "Kata sandi (min. 12 karakter)" : "Kata sandi"}
+          value={password} onChange={setPassword} show={showPass} toggle={() => setShowPass(p => !p)}
+          autoComplete={tab === "daftar" ? "new-password" : "current-password"} />
+
+        {tab === "masuk" && (
+          <div className="rk-auth-forgot-row">
+            <button type="button" onClick={() => { setMode("forgot"); setForgotEmail(email); setError(null); }}
+              className="rk-auth-link-btn">Lupa kata sandi?</button>
+          </div>
+        )}
+
+        {/* Employer toggle */}
+        {tab === "daftar" && (
+          <div className="rk-employer-box">
+            <label className="rk-employer-toggle">
+              <input type="checkbox" checked={isEmployer} onChange={e => setIsEmployer(e.target.checked)}
+                className="rk-checkbox" data-testid="checkbox-employer" />
+              <Sparkles className="rk-employer-spark" />
+              <span className="rk-employer-label">Saya Pemberi Kerja</span>
+              <span className="rk-employer-sub">Perusahaan / Individu / Organisasi</span>
+            </label>
+            {isEmployer && (
+              <div className="rk-employer-fields">
+                <div className="rk-category-grid">
+                  {([
+                    { id: "corporate" as EmployerCategory, icon: <Building2 />, label: "Perusahaan" },
+                    { id: "household" as EmployerCategory, icon: <Home />, label: "Rumah Tangga" },
+                    { id: "political" as EmployerCategory, icon: <Landmark />, label: "Organisasi" },
+                  ]).map(c => (
+                    <button key={c.id} type="button" onClick={() => setEmployerCategory(c.id)}
+                      data-testid={`radio-${c.id}`}
+                      className={`rk-category-btn ${employerCategory === c.id ? "rk-category-btn--active" : ""}`}>
+                      <span className="rk-category-icon">{c.icon}</span>
+                      <span>{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="rk-auth-form">
+                  {employerCategory === "corporate" && <>
+                    <Field icon={<Building2 />} type="text" placeholder="Nama PT / CV" value={namaPerusahaan} onChange={setNamaPerusahaan} />
+                    <Field icon={<FileText />} type="text" placeholder="Nomor NPWP (opsional)" value={npwpPerusahaan} onChange={setNpwpPerusahaan} />
+                  </>}
+                  {employerCategory === "household" && <>
+                    <Field icon={<IdCard />} type="text" placeholder="Nama sesuai KTP" value={namaKtp} onChange={setNamaKtp} />
+                    <Field icon={<MapPin />} type="text" placeholder="Alamat" value={alamat} onChange={setAlamat} />
+                  </>}
+                  {employerCategory === "political" && <>
+                    <Field icon={<Landmark />} type="text" placeholder="Nama organisasi / sayap partai" value={namaOrganisasi} onChange={setNamaOrganisasi} />
+                    <Field icon={<MapPin />} type="text" placeholder="Kode wilayah / dapil" value={kodeWilayah} onChange={setKodeWilayah} />
+                  </>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {error && <ErrorMsg>{error}</ErrorMsg>}
+
+        <SubmitBtn loading={loading} icon={<ArrowRight />}>
+          {tab === "masuk" ? "Masuk ke Rekhastha" : "Buat Akun"}
+        </SubmitBtn>
+      </form>
+
+      <p className="rk-auth-legal">
+        Dengan mendaftar Anda menyetujui{" "}
+        <button type="button" onClick={() => setShowTerms(true)} className="rk-auth-link-btn">
+          syarat penggunaan (draf)
+        </button>.{" "}
+        Kebijakan privasi final sedang disiapkan.
+      </p>
 
       {showRoleModal && <RoleSelectModal onSelect={handleRoleSelected} isGoogle={pendingGoogle} />}
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}`}</style>
+    </Shell>
+  );
+}
+
+// ── Sub-components ─────────────────────────────────────────────────
+
+function Field({ icon, type, placeholder, value, onChange, autoComplete }: {
+  icon: React.ReactNode; type: string; placeholder: string; value: string;
+  onChange: (v: string) => void; autoComplete?: string;
+}) {
+  return (
+    <div className="rk-field">
+      <span className="rk-field-icon" aria-hidden="true">{icon}</span>
+      <input type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} autoComplete={autoComplete}
+        className="rk-field-input" />
     </div>
   );
 }
 
-function CategoryRadio({ icon, label, selected, onClick, testId }: {
-  icon: React.ReactNode; label: string; selected: boolean; onClick: () => void; testId?: string;
+function PasswordField({ placeholder, value, onChange, show, toggle, autoComplete }: {
+  placeholder: string; value: string; onChange: (v: string) => void;
+  show: boolean; toggle: () => void; autoComplete?: string;
 }) {
   return (
-    <button type="button" onClick={onClick} data-testid={testId}
-      className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl border-2 transition-all active:scale-[0.97] ${
-        selected ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-      }`}>
-      <span className={selected ? "text-white" : "text-emerald-500"}>{icon}</span>
-      <span className="text-[10px] font-bold leading-tight text-center">{label}</span>
+    <div className="rk-field">
+      <span className="rk-field-icon" aria-hidden="true"><Lock /></span>
+      <input type={show ? "text" : "password"} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} autoComplete={autoComplete} className="rk-field-input rk-field-input--pw" />
+      <button type="button" onClick={toggle} aria-label={show ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+        className="rk-field-eye">
+        {show ? <EyeOff /> : <Eye />}
+      </button>
+    </div>
+  );
+}
+
+function SubmitBtn({ loading, icon, children, onClick }: {
+  loading: boolean; icon: React.ReactNode; children: React.ReactNode; onClick?: () => void;
+}) {
+  return (
+    <button type={onClick ? "button" : "submit"} disabled={loading} onClick={onClick}
+      className="rk-submit-btn">
+      {loading
+        ? <span className="rk-spinner" aria-hidden="true" />
+        : <>{children}<span className="rk-submit-icon">{icon}</span></>}
     </button>
   );
 }
 
-function InputField({ icon, type, placeholder, value, onChange }: {
-  icon: React.ReactNode; type: string; placeholder: string; value: string; onChange: (v: string) => void;
-}) {
+function ErrorMsg({ children }: { children: React.ReactNode }) {
+  return <p role="alert" className="rk-error">{children}</p>;
+}
+
+function Divider() {
   return (
-    <div className="relative">
-      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">{icon}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-2xl text-sm text-gray-900 placeholder-gray-400 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition-all" />
+    <div className="rk-divider" aria-hidden="true">
+      <span />
+      <small>atau</small>
+      <span />
     </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+      <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+      <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+      <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+    </svg>
   );
 }

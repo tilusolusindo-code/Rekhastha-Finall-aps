@@ -1,5 +1,5 @@
 import "./auth.css";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, ShieldCheck, Building2, Home, Landmark, MapPin, IdCard, FileText, KeyRound, CheckCircle2, Sparkles } from "lucide-react";
 import { AuthUser, UserRole, EmployerCategory } from "@/types/auth";
 import RoleSelectModal from "@/components/role-select-modal";
@@ -359,12 +359,30 @@ function Field({ icon, type, placeholder, value, onChange, autoComplete }: {
   icon: React.ReactNode; type: string; placeholder: string; value: string;
   onChange: (v: string) => void; autoComplete?: string;
 }) {
+  // Gunakan uncontrolled + sync pattern:
+  // defaultValue + ref untuk mencegah input kehilangan fokus
+  // saat parent re-render (masalah umum di SPA besar)
+  const ref = useRef<HTMLInputElement>(null);
+
+  // Sync value dari luar hanya jika berbeda (misalnya saat reset form)
+  useEffect(() => {
+    if (ref.current && ref.current.value !== value) {
+      ref.current.value = value;
+    }
+  }, [value]);
+
   return (
     <div className="rk-field">
       <span className="rk-field-icon" aria-hidden="true">{icon}</span>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder} autoComplete={autoComplete}
-        className="rk-field-input" />
+      <input
+        ref={ref}
+        type={type}
+        defaultValue={value}
+        onInput={e => onChange((e.target as HTMLInputElement).value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className="rk-field-input"
+      />
     </div>
   );
 }
@@ -373,11 +391,26 @@ function PasswordField({ placeholder, value, onChange, show, toggle, autoComplet
   placeholder: string; value: string; onChange: (v: string) => void;
   show: boolean; toggle: () => void; autoComplete?: string;
 }) {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ref.current && ref.current.value !== value) {
+      ref.current.value = value;
+    }
+  }, [value]);
+
   return (
     <div className="rk-field">
       <span className="rk-field-icon" aria-hidden="true"><Lock /></span>
-      <input type={show ? "text" : "password"} value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder} autoComplete={autoComplete} className="rk-field-input rk-field-input--pw" />
+      <input
+        ref={ref}
+        type={show ? "text" : "password"}
+        defaultValue={value}
+        onInput={e => onChange((e.target as HTMLInputElement).value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className="rk-field-input rk-field-input--pw"
+      />
       <button type="button" onClick={toggle} aria-label={show ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
         className="rk-field-eye">
         {show ? <EyeOff /> : <Eye />}

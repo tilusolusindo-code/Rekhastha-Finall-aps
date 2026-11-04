@@ -230,7 +230,7 @@ export async function sendPasswordResetEmail(
 }
 
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
-  const base = appBaseUrl() ?? "https://rekhastha-finall-aps.vercel.app";
+  const base = appBaseUrl() ?? "https://rekhastha.my.id";
   const safeName = escapeHtml(name || "Pengguna");
   return sendViaGmailApi({
     to,
@@ -252,7 +252,7 @@ export async function sendApplicationStatusEmail(params: {
   gigTitle: string;
   status: "diterima" | "ditolak";
 }): Promise<boolean> {
-  const base = appBaseUrl() ?? "https://rekhastha-finall-aps.vercel.app";
+  const base = appBaseUrl() ?? "https://rekhastha.my.id";
   const { to, workerName, gigTitle, status } = params;
   const safe = (s: string): string => escapeHtml(s);
   const accepted = status === "diterima";

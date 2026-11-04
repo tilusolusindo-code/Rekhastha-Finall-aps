@@ -1622,13 +1622,17 @@ export default function Home() {
         />
       );
     }
+    // Render AuthPage di luar overflow:hidden shell agar bisa scroll
+    // onBack dan onComplete di-wrap dengan useCallback di atas
     return (
-      <AuthPage
-        key={authScreen}
-        initialTab={authScreen}
-        onBack={() => setAuthScreen("landing")}
-        onComplete={handleAuthComplete}
-      />
+      <div style={{ position: "fixed", inset: 0, zIndex: 100, overflowY: "auto", background: "#f4f6f4" }}>
+        <AuthPage
+          key={authScreen}
+          initialTab={authScreen}
+          onBack={() => setAuthScreen("landing")}
+          onComplete={handleAuthComplete}
+        />
+      </div>
     );
   }
 

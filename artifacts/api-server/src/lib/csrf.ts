@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 
 /**
  * Defence-in-depth CSRF guard for cookie-authenticated, state-changing calls.
+ * Domain utama: rekhastha.my.id
  *
  * `SameSite=Lax` already withholds cookies from cross-site POSTs; this adds a
  * second layer that does not depend on browser cookie behaviour:
@@ -18,6 +19,8 @@ import type { RequestHandler } from "express";
 const UNSAFE = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function allowedHosts(): Set<string> {
+  // Domain produksi selalu diizinkan
+  const defaults = ["rekhastha.my.id", "rekhastha-finall-aps.vercel.app"];
   const extra = (process.env["ALLOWED_ORIGINS"] ?? "")
     .split(",")
     .map((value) => value.trim())
@@ -29,7 +32,7 @@ function allowedHosts(): Set<string> {
         return value;
       }
     });
-  return new Set(extra);
+  return new Set([...defaults, ...extra]);
 }
 
 export const originGuard: RequestHandler = (req, res, next) => {

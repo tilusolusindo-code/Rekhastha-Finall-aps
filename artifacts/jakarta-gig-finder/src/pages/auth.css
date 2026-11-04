@@ -6,11 +6,19 @@
 
 /* Shell */
 .rk-auth-shell {
-  display: flex;
-  flex-direction: column;
+  /* Scroll fix: gunakan block biasa bukan flex agar tidak
+     terjebak di dalam overflow:hidden container parent.
+     Natural document flow memungkinkan scroll normal. */
+  display: block;
   min-height: 100dvh;
   background: #f4f6f4;
   font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  /* Pastikan overflow bisa terjadi secara natural */
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Kalau dirender di dalam fixed/absolute parent, paksa keluar */
+  position: relative;
+  z-index: 10;
 }
 
 /* ── Header ──────────────────────────────────────────── */
@@ -22,7 +30,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex-shrink: 0;
 }
 
 .rk-auth-dots {
@@ -64,10 +71,8 @@
 
 /* ── Body / Card ─────────────────────────────────────── */
 .rk-auth-body {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
+  /* Jangan pakai overflow-y:auto di sini karena scroll
+     sudah ditangani oleh rk-auth-shell atau window */
   padding: 0 16px 32px;
   margin-top: -6px;
   position: relative;

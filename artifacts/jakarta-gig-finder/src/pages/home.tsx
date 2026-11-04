@@ -778,9 +778,8 @@ export default function Home() {
   }, [mode]);
 
   // ── Auth complete ───────────────────────────────────────────────
-  const handleAuthComplete = useCallback((user: AuthUser) 
   const handleAuthBack = useCallback(() => setAuthScreen("landing"), []);
-=> {
+  const handleAuthComplete = useCallback((user: AuthUser) => {
     setAuthRestoreError(null);
     setCurrentUser(user);
     setWorkerProfile(user.role === "pekerja" ? user.workerProfile ?? null : null);

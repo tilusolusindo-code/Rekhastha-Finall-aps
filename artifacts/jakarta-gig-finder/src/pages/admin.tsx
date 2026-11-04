@@ -18,6 +18,7 @@ import {
   adminLogin, adminLogout, adminMe, adminChangePassword, adminResetPassword,
   fetchLedger, forceRelease, fetchFeeMigrationStatus, runFeeMigration,
   fetchAdminUsers, toggleSuspend, AdminError,
+  type AdminUserPagination,
   fetchDisputes, refund, fetchOnsite,
   fetchAcademy, submitAcademy,
   fetchAcademyQuestions, createAcademyQuestion, updateAcademyQuestion,
@@ -1179,9 +1180,28 @@ function UsersTab() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  // ── Pagination & filter state ─────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<AdminUserPagination | null>(null);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [onlySuspended, setOnlySuspended] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+
+  const LIMIT = 50;
+
+  const load = useCallback(async (p: number, q: string, role: string, susp: boolean) => {
+    setLoading(true);
     try {
-      setRows(await fetchAdminUsers());
+      const res = await fetchAdminUsers({
+        page: p,
+        limit: LIMIT,
+        q: q || undefined,
+        role: role === "all" ? undefined : role,
+        suspended: susp || undefined,
+      });
+      setRows(res.users);
+      setPagination(res.pagination);
     } catch {
       /* keep last known rows */
     } finally {
@@ -1189,7 +1209,13 @@ function UsersTab() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(page, search, roleFilter, onlySuspended); }, [load, page, search, roleFilter, onlySuspended]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    setSearch(searchInput);
+  };
 
   const handleToggle = async (u: AdminUserRow) => {
     setBusyId(u.id);
@@ -1205,15 +1231,63 @@ function UsersTab() {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-      <div className="px-5 py-3.5 border-b border-gray-100">
-        <h3 className="font-black text-gray-900 flex items-center gap-2">
-          <Users className="w-4 h-4 text-emerald-700" /> Manajemen Pengguna &amp; Blacklist
+      {/* Header */}
+      <div className="px-5 py-3.5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3">
+        <h3 className="font-black text-gray-900 flex items-center gap-2 flex-1">
+          <Users className="w-4 h-4 text-emerald-700" /> Manajemen Pengguna
+          {pagination && (
+            <span className="text-xs font-semibold text-gray-400 ml-1">({pagination.total} total)</span>
+          )}
         </h3>
+        {/* Search */}
+        <form onSubmit={handleSearch} className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              placeholder="Cari nama / email…"
+              className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 w-44"
+            />
+          </div>
+          <button type="submit" className="px-3 py-1.5 text-xs font-bold bg-emerald-700 text-white rounded-lg hover:bg-emerald-600">
+            Cari
+          </button>
+          {search && (
+            <button type="button" onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}
+              className="px-3 py-1.5 text-xs font-bold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
+              Reset
+            </button>
+          )}
+        </form>
       </div>
+
+      {/* Filters */}
+      <div className="px-5 py-2.5 border-b border-gray-100 flex flex-wrap items-center gap-3 bg-gray-50/60">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="text-gray-500 font-semibold">Peran:</span>
+          {[["all","Semua"],["pekerja","Pekerja"],["perusahaan","Perusahaan"]].map(([v,l]) => (
+            <button key={v} onClick={() => { setRoleFilter(v); setPage(1); }}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                roleFilter === v ? "bg-emerald-700 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-emerald-400"
+              }`}>{l}</button>
+          ))}
+        </div>
+        <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+          <input type="checkbox" checked={onlySuspended} onChange={e => { setOnlySuspended(e.target.checked); setPage(1); }}
+            className="accent-emerald-600 w-3.5 h-3.5" />
+          <span className="font-semibold">Hanya Ditangguhkan</span>
+        </label>
+      </div>
+
+      {/* Table */}
       {loading ? (
         <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
       ) : rows.length === 0 ? (
-        <div className="py-16 text-center text-sm text-gray-400">Belum ada pengguna terdaftar.</div>
+        <div className="py-16 text-center text-sm text-gray-400">
+          {search ? `Tidak ada hasil untuk "${search}".` : "Belum ada pengguna terdaftar."}
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -1222,7 +1296,7 @@ function UsersTab() {
                 <th className="px-4 py-2.5 font-bold">Nama</th>
                 <th className="px-4 py-2.5 font-bold">Email</th>
                 <th className="px-4 py-2.5 font-bold">Peran</th>
-                <th className="px-4 py-2.5 font-bold text-center">Rating Negatif</th>
+                <th className="px-4 py-2.5 font-bold text-center">Rating ⚠</th>
                 <th className="px-4 py-2.5 font-bold text-center">Status</th>
                 <th className="px-4 py-2.5 font-bold text-right">Aksi</th>
               </tr>
@@ -1231,7 +1305,7 @@ function UsersTab() {
               {rows.map((u) => (
                 <tr key={u.id} data-testid={`user-row-${u.id}`} className={u.suspended ? "bg-red-50/50" : "hover:bg-gray-50/60"}>
                   <td className="px-4 py-3 font-semibold text-gray-900">{u.displayName}</td>
-                  <td className="px-4 py-3 text-gray-600">{u.email}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                       u.role === "perusahaan" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
@@ -1241,11 +1315,11 @@ function UsersTab() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {u.negativeRatings > 0 ? (
-                      <span className="inline-flex items-center gap-1 text-red-600 font-bold">
+                      <span className="inline-flex items-center gap-1 text-red-600 font-bold text-xs">
                         <AlertTriangle className="w-3.5 h-3.5" /> {u.negativeRatings}
                       </span>
                     ) : (
-                      <span className="text-gray-300">0</span>
+                      <span className="text-gray-300 text-xs">0</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -1261,9 +1335,7 @@ function UsersTab() {
                       onClick={() => void handleToggle(u)}
                       disabled={busyId === u.id}
                       className={`inline-flex items-center gap-1.5 rounded-lg text-[11px] font-bold px-2.5 py-1.5 disabled:opacity-50 ${
-                        u.suspended
-                          ? "bg-emerald-700 text-white hover:bg-emerald-600"
-                          : "bg-red-600 text-white hover:bg-red-500"
+                        u.suspended ? "bg-emerald-700 text-white hover:bg-emerald-600" : "bg-red-600 text-white hover:bg-red-500"
                       }`}
                     >
                       {busyId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : u.suspended ? <CheckCircle2 className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
@@ -1274,6 +1346,44 @@ function UsersTab() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination controls */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+          <span className="text-xs text-gray-400">
+            Hal. {pagination.page} dari {pagination.totalPages} &nbsp;·&nbsp; {pagination.total} pengguna
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={!pagination.hasPrev || loading}
+              className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+            >
+              ← Sebelumnya
+            </button>
+            {/* Page number buttons — show at most 5 */}
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              const start = Math.max(1, Math.min(pagination.page - 2, pagination.totalPages - 4));
+              const pn = start + i;
+              return (
+                <button key={pn} onClick={() => setPage(pn)} disabled={loading}
+                  className={`w-8 h-8 text-xs font-bold rounded-lg ${
+                    pn === pagination.page ? "bg-emerald-700 text-white" : "border border-gray-200 hover:bg-gray-50 text-gray-600"
+                  }`}>
+                  {pn}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+              disabled={!pagination.hasNext || loading}
+              className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+            >
+              Berikutnya →
+            </button>
+          </div>
         </div>
       )}
     </div>

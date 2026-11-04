@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request } from "express";
-import { and, desc, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -488,17 +488,64 @@ router.post("/admin/force-release", async (req, res): Promise<void> => {
 });
 
 // ── User management ──────────────────────────────────────────────
+/**
+ * GET /admin/users
+ *
+ * Supports pagination and search to avoid loading all users at once.
+ *   ?page=1        1-based page number (default 1)
+ *   ?limit=50      rows per page, max 100 (default 50)
+ *   ?q=keyword     search across name and email (case-insensitive)
+ *   ?role=pekerja  filter by role: "pekerja" | "perusahaan" | "all" (default all)
+ *   ?suspended=1   filter suspended only
+ */
 router.get("/admin/users", async (req, res): Promise<void> => {
   if (!(await requireAdmin(req))) {
     res.status(401).json({ error: "Sesi admin tidak valid." });
     return;
   }
 
-  const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
-  const negativeRatings = await db
-    .select()
-    .from(ratingsTable)
-    .where(lte(ratingsTable.score, 2));
+  // ── Parse query params ───────────────────────────────────────
+  const page   = Math.max(1, Number(req.query["page"])  || 1);
+  const limit  = Math.min(100, Math.max(1, Number(req.query["limit"]) || 50));
+  const offset = (page - 1) * limit;
+  const q      = typeof req.query["q"] === "string" ? req.query["q"].trim() : "";
+  const role   = typeof req.query["role"] === "string" ? req.query["role"].trim() : "";
+  const onlySuspended = req.query["suspended"] === "1";
+
+  // ── Build WHERE ──────────────────────────────────────────────
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (q) {
+    conditions.push(or(ilike(usersTable.name, `%${q}%`), ilike(usersTable.email, `%${q}%`)) as ReturnType<typeof eq>);
+  }
+  if (role === "pekerja" || role === "perusahaan") {
+    conditions.push(eq(usersTable.role, role) as ReturnType<typeof eq>);
+  }
+  if (onlySuspended) {
+    conditions.push(eq(usersTable.suspended, true) as ReturnType<typeof eq>);
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  // ── Fetch users (paginated) + total count in parallel ────────
+  const [users, [totalRow], negativeRatings] = await Promise.all([
+    db
+      .select()
+      .from(usersTable)
+      .where(where)
+      .orderBy(desc(usersTable.createdAt))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ total: count() })
+      .from(usersTable)
+      .where(where),
+    db
+      .select()
+      .from(ratingsTable)
+      .where(lte(ratingsTable.score, 2)),
+  ]);
+
+  const total = totalRow?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const negByName = new Map<string, number>();
   for (const r of negativeRatings) {
@@ -526,7 +573,17 @@ router.get("/admin/users", async (req, res): Promise<void> => {
     };
   });
 
-  res.json(rows);
+  res.json({
+    users: rows,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  });
 });
 
 const suspendBody = z.object({

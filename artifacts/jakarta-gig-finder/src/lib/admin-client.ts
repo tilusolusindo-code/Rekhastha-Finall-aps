@@ -175,8 +175,35 @@ export function forceRelease(jobId: number): Promise<{ ok: true }> {
   return request("/admin/force-release", "POST", { jobId });
 }
 
-export function fetchAdminUsers(): Promise<AdminUserRow[]> {
-  return request("/admin/users", "GET");
+export interface AdminUserPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUserRow[];
+  pagination: AdminUserPagination;
+}
+
+export function fetchAdminUsers(params?: {
+  page?: number;
+  limit?: number;
+  q?: string;
+  role?: string;
+  suspended?: boolean;
+}): Promise<AdminUsersResponse> {
+  const qs = new URLSearchParams();
+  if (params?.page)      qs.set("page",      String(params.page));
+  if (params?.limit)     qs.set("limit",     String(params.limit));
+  if (params?.q)         qs.set("q",         params.q);
+  if (params?.role)      qs.set("role",      params.role);
+  if (params?.suspended) qs.set("suspended", "1");
+  const query = qs.toString();
+  return request(`/admin/users${query ? "?" + query : ""}`, "GET");
 }
 
 export function toggleSuspend(

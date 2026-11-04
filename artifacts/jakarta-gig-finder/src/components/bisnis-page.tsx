@@ -1,12 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import {
   Crown, CheckCircle2, Star, QrCode, Calculator, Users, Shield,
   Zap, Clock, RefreshCw, AlertCircle, ChevronRight, X, Sparkles,
 } from "lucide-react";
-import type { FC } from "react";
-import { lazy, Suspense, useState as useStateLazy } from "react";
-const TaxCalculator = lazy(() => import("./tax-calculator"));
-const TeamManager   = lazy(() => import("./team-manager"));
 import { AuthUser } from "@/types/auth";
 import {
   fetchSubscriptionPlans,
@@ -15,6 +11,9 @@ import {
   type SubscriptionPlan,
   type BisnisStatus,
 } from "@/lib/monetization-client";
+
+const TaxCalculator = lazy(() => import("./tax-calculator"));
+const TeamManager   = lazy(() => import("./team-manager"));
 
 interface BisnisPageProps {
   currentUser: AuthUser;
@@ -209,6 +208,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
   }, null);
 
   return (
+    <>
     <div className="flex-1 overflow-y-auto" style={{ background: "#F8FAFC" }}>
 
       {/* ── Header ── */}
@@ -520,16 +520,17 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
       )}
     </div>
 
-  {/* Modals */}
-  {showTax && (
-    <Suspense fallback={null}>
-      <TaxCalculator onClose={() => setShowTax(false)} />
-    </Suspense>
-  )}
-  {showTeam && (
-    <Suspense fallback={null}>
-      <TeamManager onClose={() => setShowTeam(false)} />
-    </Suspense>
-  )}
+    {/* Modals */}
+    {showTax && (
+      <Suspense fallback={null}>
+        <TaxCalculator onClose={() => setShowTax(false)} />
+      </Suspense>
+    )}
+    {showTeam && (
+      <Suspense fallback={null}>
+        <TeamManager onClose={() => setShowTeam(false)} />
+      </Suspense>
+    )}
+    </>
   );
 }

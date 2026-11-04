@@ -141,8 +141,8 @@ const FEATURES = PLAN_FEATURES.filter(f => f.minMonths === 1);
 type BuyStep = "idle" | "confirm" | "paying" | "success" | "error";
 
 export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPageProps) {
-  const [showTax, setShowTax] = useStateLazy(false);
-  const [showTeam, setShowTeam] = useStateLazy(false);
+  const [showTax, setShowTax] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [status, setStatus] = useState<BisnisStatus | null>(null);
   const [loading, setLoading] = useState(true);

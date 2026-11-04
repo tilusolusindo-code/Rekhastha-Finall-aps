@@ -778,7 +778,9 @@ export default function Home() {
   }, [mode]);
 
   // ── Auth complete ───────────────────────────────────────────────
-  const handleAuthComplete = useCallback((user: AuthUser) => {
+  const handleAuthComplete = useCallback((user: AuthUser) 
+  const handleAuthBack = useCallback(() => setAuthScreen("landing"), []);
+=> {
     setAuthRestoreError(null);
     setCurrentUser(user);
     setWorkerProfile(user.role === "pekerja" ? user.workerProfile ?? null : null);
@@ -1622,14 +1624,16 @@ export default function Home() {
         />
       );
     }
-    // Render AuthPage di luar overflow:hidden shell agar bisa scroll
-    // onBack dan onComplete di-wrap dengan useCallback di atas
+    // AuthPage dirender di fixed overlay terpisah agar:
+    // 1. Tidak terkurung di overflow:hidden shell Home
+    // 2. Tidak ter-trigger re-render oleh nowTick timer Home
+    // onBack & onComplete stabil karena AuthPage di-memo
     return (
-      <div style={{ position: "fixed", inset: 0, zIndex: 100, overflowY: "auto", background: "#f4f6f4" }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 100, overflowY: "auto", WebkitOverflowScrolling: "touch", background: "#f4f6f4" }}>
         <AuthPage
           key={authScreen}
           initialTab={authScreen}
-          onBack={() => setAuthScreen("landing")}
+          onBack={handleAuthBack}
           onComplete={handleAuthComplete}
         />
       </div>

@@ -5,6 +5,8 @@ import router from "./routes";
 import uploadsRouter from "./routes/uploads";
 import { logger } from "./lib/logger";
 import googleAdminRouter from "./routes/google-admin";
+import taxRouter from "./routes/tax";
+import teamRouter from "./routes/team";
 import { originGuard } from "./lib/csrf";
 
 const app: Express = express();

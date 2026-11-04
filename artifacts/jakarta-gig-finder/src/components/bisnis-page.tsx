@@ -3,6 +3,10 @@ import {
   Crown, CheckCircle2, Star, QrCode, Calculator, Users, Shield,
   Zap, Clock, RefreshCw, AlertCircle, ChevronRight, X, Sparkles,
 } from "lucide-react";
+import type { FC } from "react";
+import { lazy, Suspense, useState as useStateLazy } from "react";
+const TaxCalculator = lazy(() => import("./tax-calculator"));
+const TeamManager   = lazy(() => import("./team-manager"));
 import { AuthUser } from "@/types/auth";
 import {
   fetchSubscriptionPlans,
@@ -20,40 +24,126 @@ interface BisnisPageProps {
 const fmt = (n: number) =>
   "Rp " + Math.round(n).toLocaleString("id-ID");
 
-const FEATURES = [
+/**
+ * Fitur per tier — dicocokkan dengan durasi paket dari database:
+ *   Starter  = 1 bln  (~30 hari)
+ *   Growth   = 3 bln  (~90 hari)
+ *   Pro      = 6 bln  (~180 hari)
+ *   Business = 12 bln (~365 hari)
+ *
+ * Setiap tier mewarisi semua fitur tier di bawahnya.
+ */
+interface PlanFeature {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  color: string;
+  bg: string;
+  minMonths: number; // tier minimum yang mendapat fitur ini
+  badge?: string;    // label opsional di sudut fitur
+}
+
+const PLAN_FEATURES: PlanFeature[] = [
+  // ── Starter (semua paket) ──────────────────────────────
   {
     icon: <QrCode className="w-5 h-5" />,
     title: "QR Presensi GPS",
-    desc: "Generate QR absensi berbasis lokasi untuk karyawan harian Anda.",
+    desc: "Generate QR absensi berbasis lokasi untuk karyawan harian. Pekerja hanya bisa clock-in dalam radius yang ditentukan.",
     color: "text-emerald-600",
     bg: "bg-emerald-50",
+    minMonths: 1,
   },
   {
     icon: <Calculator className="w-5 h-5" />,
     title: "Kalkulator Gaji Harian",
-    desc: "Hitung upah bersih dan kotor secara otomatis untuk setiap shift.",
+    desc: "Hitung upah bersih dan kotor secara otomatis untuk setiap shift, termasuk lembur dan potongan.",
     color: "text-blue-600",
     bg: "bg-blue-50",
+    minMonths: 1,
   },
   {
     icon: <Users className="w-5 h-5" />,
     title: "Kontak Pelamar Tanpa Batas",
-    desc: "Lihat nomor HP & data lengkap semua pelamar — tanpa batasan 3 gratis.",
+    desc: "Lihat nomor WhatsApp & data lengkap semua pelamar — tanpa batasan 3 kontak gratis.",
     color: "text-violet-600",
     bg: "bg-violet-50",
+    minMonths: 1,
   },
   {
     icon: <Shield className="w-5 h-5" />,
     title: "Badge Perusahaan Terverifikasi",
-    desc: "Tanda centang hijau di profil perusahaan Anda untuk kepercayaan pelamar.",
+    desc: "Tanda centang hijau di profil perusahaan Anda. Meningkatkan kepercayaan pelamar secara signifikan.",
     color: "text-amber-600",
     bg: "bg-amber-50",
+    minMonths: 1,
+  },
+  // ── Growth (3 bln ke atas) ──────────────────────────────
+  {
+    icon: <Zap className="w-5 h-5" />,
+    title: "Posting Gig Prioritas",
+    desc: "Lowongan Anda ditampilkan di urutan teratas pencarian selama masa aktif langganan.",
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    minMonths: 3,
+    badge: "Growth+",
+  },
+  {
+    icon: <Star className="w-5 h-5" />,
+    title: "Statistik Lamaran Detail",
+    desc: "Lihat berapa orang yang melihat, menyimpan, dan melamar gig Anda. Optimalkan deskripsi gig berdasarkan data.",
+    color: "text-yellow-600",
+    bg: "bg-yellow-50",
+    minMonths: 3,
+    badge: "Growth+",
+  },
+  // ── Pro (6 bln ke atas) ────────────────────────────────
+  {
+    icon: <RefreshCw className="w-5 h-5" />,
+    title: "Undang Pekerja Favorit",
+    desc: "Simpan pekerja terbaik dan undang langsung ke gig baru tanpa menunggu lamaran masuk.",
+    color: "text-teal-600",
+    bg: "bg-teal-50",
+    minMonths: 6,
+    badge: "Pro+",
+  },
+  {
+    icon: <Clock className="w-5 h-5" />,
+    title: "Laporan Kehadiran PDF",
+    desc: "Export laporan presensi dan penggajian bulanan dalam format PDF siap cetak.",
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    minMonths: 6,
+    badge: "Pro+",
+  },
+  // ── Business (12 bln) ─────────────────────────────────
+  {
+    icon: <ChevronRight className="w-5 h-5" />,
+    title: "Multi-Cabang & Tim",
+    desc: "Tambahkan akun tim Anda (HRD, pengawas) dengan akses terbatas per cabang. Kelola hingga 5 lokasi sekaligus.",
+    color: "text-rose-600",
+    bg: "bg-rose-50",
+    minMonths: 12,
+    badge: "Business",
+  },
+  {
+    icon: <Calculator className="w-5 h-5" />,
+    title: "Kalkulasi Potongan Pajak",
+    desc: "Hitung PPh 21 dan BPJS TK/Kesehatan otomatis sesuai regulasi terkini. Unduh slip gaji digital.",
+    color: "text-pink-600",
+    bg: "bg-pink-50",
+    minMonths: 12,
+    badge: "Business",
   },
 ];
+
+/** Fitur dasar yang terlihat di modal konfirmasi semua paket */
+const FEATURES = PLAN_FEATURES.filter(f => f.minMonths === 1);
 
 type BuyStep = "idle" | "confirm" | "paying" | "success" | "error";
 
 export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPageProps) {
+  const [showTax, setShowTax] = useStateLazy(false);
+  const [showTeam, setShowTeam] = useStateLazy(false);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [status, setStatus] = useState<BisnisStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -244,38 +334,74 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
             </div>
           </div>
 
-          {/* ── Features ── */}
+          {/* ── Features per tier ── */}
           <div className="px-4 pt-4 pb-8">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Fitur Premium</p>
-            <div className="space-y-3">
-              {FEATURES.map((f, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-xl ${f.bg} ${f.color} flex items-center justify-center shrink-0`}>
-                    {f.icon}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-gray-900">{f.title}</p>
-                      {isPremium && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{f.desc}</p>
-                  </div>
-                  {!isPremium && (
-                    <div className="shrink-0 mt-0.5">
-                      <Crown className="w-4 h-4 text-amber-400" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Fitur per Paket</p>
 
-            {/* Free tier note */}
-            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 flex items-start gap-2.5">
+            {/* Tier groups */}
+            {[
+              { label: "Semua Paket", minMonths: 1, color: "text-emerald-700", border: "border-emerald-200", bg: "bg-emerald-50" },
+              { label: "Growth ke atas (3 bln+)", minMonths: 3, color: "text-orange-700", border: "border-orange-200", bg: "bg-orange-50" },
+              { label: "Pro ke atas (6 bln+)", minMonths: 6, color: "text-indigo-700", border: "border-indigo-200", bg: "bg-indigo-50" },
+              { label: "Business (12 bln)", minMonths: 12, color: "text-rose-700", border: "border-rose-200", bg: "bg-rose-50" },
+            ].map((tier) => {
+              const tierFeatures = PLAN_FEATURES.filter(f => f.minMonths === tier.minMonths);
+              return (
+                <div key={tier.minMonths} className="mb-4">
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold mb-2 border ${tier.border} ${tier.bg} ${tier.color}`}>
+                    {tier.minMonths === 1 ? "✦" : tier.minMonths === 12 ? "👑" : "+"} {tier.label}
+                  </div>
+                  <div className="space-y-2">
+                    {tierFeatures.map((f, i) => (
+                      <div key={i} className="bg-white rounded-xl border border-gray-100 p-3.5 flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-xl ${f.bg} ${f.color} flex items-center justify-center shrink-0`}>
+                          {f.icon}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-gray-900">{f.title}</p>
+                            {isPremium && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{f.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Quick actions untuk subscriber */}
+            {isPremium && (
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <button onClick={() => setShowTax(true)}
+                  className="bg-white border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-2.5 hover:bg-emerald-50 transition-colors text-left">
+                  <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                    <Calculator className="w-4 h-4 text-emerald-700" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-gray-900">Hitung Pajak</p>
+                    <p className="text-[10px] text-gray-500">PPh 21 + BPJS</p>
+                  </div>
+                </button>
+                <button onClick={() => setShowTeam(true)}
+                  className="bg-white border border-violet-200 rounded-2xl p-3.5 flex items-center gap-2.5 hover:bg-violet-50 transition-colors text-left">
+                  <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
+                    <Users className="w-4 h-4 text-violet-700" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-gray-900">Kelola Tim</p>
+                    <p className="text-[10px] text-gray-500">Undang anggota</p>
+                  </div>
+                </button>
+              </div>
+            )}
+
+          {/* Free tier note */}
+            <div className="mt-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 flex items-start gap-2.5">
               <Zap className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <p className="text-xs text-emerald-700 leading-relaxed">
-                <span className="font-bold">Posting lowongan selalu gratis</span> — Rekhastha Bisnis hanya membuka alat manajemen karyawan di atas.
+                <span className="font-bold">Posting lowongan selalu gratis</span> — Rekhastha Bisnis membuka fitur manajemen karyawan dan tim di atas.
               </p>
             </div>
           </div>
@@ -393,5 +519,17 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
         </div>
       )}
     </div>
+
+  {/* Modals */}
+  {showTax && (
+    <Suspense fallback={null}>
+      <TaxCalculator onClose={() => setShowTax(false)} />
+    </Suspense>
+  )}
+  {showTeam && (
+    <Suspense fallback={null}>
+      <TeamManager onClose={() => setShowTeam(false)} />
+    </Suspense>
+  )}
   );
 }

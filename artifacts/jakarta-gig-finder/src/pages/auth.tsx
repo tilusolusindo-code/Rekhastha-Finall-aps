@@ -1,5 +1,5 @@
 import "./auth.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, ShieldCheck, Building2, Home, Landmark, MapPin, IdCard, FileText, KeyRound, CheckCircle2, Sparkles } from "lucide-react";
 import { AuthUser, UserRole, EmployerCategory } from "@/types/auth";
 import RoleSelectModal from "@/components/role-select-modal";
@@ -32,7 +32,7 @@ async function submitPasswordReset(token: string, newPassword: string): Promise<
   return res.json();
 }
 
-export default function AuthPage({ onComplete, onBack, initialTab }: AuthPageProps) {
+function AuthPageInner({ onComplete, onBack, initialTab }: AuthPageProps) {
   const [tab, setTab] = useState<AuthTab>(initialTab);
   const [mode, setMode] = useState<AuthMode>("main");
   const [email, setEmail] = useState("");
@@ -355,58 +355,38 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
 
 // ── Sub-components ─────────────────────────────────────────────────
 
-function Field({ icon, type, placeholder, value, onChange, autoComplete }: {
+// Field dibungkus memo agar tidak re-render saat parent
+// (AuthPage) re-render karena state perubahan di tempat lain
+const Field = memo(function Field({ icon, type, placeholder, value, onChange, autoComplete }: {
   icon: React.ReactNode; type: string; placeholder: string; value: string;
   onChange: (v: string) => void; autoComplete?: string;
 }) {
-  // Gunakan uncontrolled + sync pattern:
-  // defaultValue + ref untuk mencegah input kehilangan fokus
-  // saat parent re-render (masalah umum di SPA besar)
-  const ref = useRef<HTMLInputElement>(null);
-
-  // Sync value dari luar hanya jika berbeda (misalnya saat reset form)
-  useEffect(() => {
-    if (ref.current && ref.current.value !== value) {
-      ref.current.value = value;
-    }
-  }, [value]);
-
   return (
     <div className="rk-field">
       <span className="rk-field-icon" aria-hidden="true">{icon}</span>
       <input
-        ref={ref}
         type={type}
-        defaultValue={value}
-        onInput={e => onChange((e.target as HTMLInputElement).value)}
+        value={value}
+        onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
         className="rk-field-input"
       />
     </div>
   );
-}
+});
 
-function PasswordField({ placeholder, value, onChange, show, toggle, autoComplete }: {
+const PasswordField = memo(function PasswordField({ placeholder, value, onChange, show, toggle, autoComplete }: {
   placeholder: string; value: string; onChange: (v: string) => void;
   show: boolean; toggle: () => void; autoComplete?: string;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (ref.current && ref.current.value !== value) {
-      ref.current.value = value;
-    }
-  }, [value]);
-
   return (
     <div className="rk-field">
       <span className="rk-field-icon" aria-hidden="true"><Lock /></span>
       <input
-        ref={ref}
         type={show ? "text" : "password"}
-        defaultValue={value}
-        onInput={e => onChange((e.target as HTMLInputElement).value)}
+        value={value}
+        onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
         className="rk-field-input rk-field-input--pw"
@@ -417,7 +397,7 @@ function PasswordField({ placeholder, value, onChange, show, toggle, autoComplet
       </button>
     </div>
   );
-}
+});
 
 function SubmitBtn({ loading, icon, children, onClick }: {
   loading: boolean; icon: React.ReactNode; children: React.ReactNode; onClick?: () => void;
@@ -456,3 +436,6 @@ function GoogleIcon() {
     </svg>
   );
 }
+
+const AuthPage = memo(AuthPageInner);
+export default AuthPage;

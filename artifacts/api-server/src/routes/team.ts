@@ -74,7 +74,7 @@ router.post("/team/invite", async (req, res): Promise<void> => {
   await db.execute(
     `INSERT INTO team_invitations (company_id, email, role, token, expires_at)
      VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (company_id) DO NOTHING`,
+     ON CONFLICT (token) DO NOTHING`,
     [user.id, email.toLowerCase(), role, token, expiresAt.toISOString()]
   );
 

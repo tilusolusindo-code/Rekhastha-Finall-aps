@@ -19,7 +19,6 @@ import subscriptionRouter from "./subscription";
 import manualFinanceRouter from "./manual-finance";
 import midtransRouter from "./midtrans";
 import companyBranchesRouter from "./company-branches";
-import teamRouter from "./team";
 import realtimeRouter from "./realtime";
 import passwordResetRouter from "./password-reset";
 
@@ -45,7 +44,6 @@ router.use(subscriptionRouter);
 router.use(manualFinanceRouter);
 router.use(midtransRouter);
 router.use(companyBranchesRouter);
-router.use(teamRouter);
 router.use(realtimeRouter);
 router.use(passwordResetRouter);
 

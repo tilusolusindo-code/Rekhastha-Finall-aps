@@ -75,3 +75,40 @@ APP_BASE_URL=https://rekhastha-finall-aps.vercel.app
 # (Opsional, pakai Resend sebagai fallback)
 # RESEND_API_KEY=re_xxx
 # MAIL_FROM=Rekhastha <no-reply@rekhastha.id>
+
+---
+
+## DOKU Payment Gateway
+
+### 1. Daftar & Dapatkan Credentials
+1. Buka https://dashboard.doku.com → daftar akun merchant
+2. Masuk ke **Settings → API Keys**
+3. Copy **Client ID** dan **Secret Key** (gunakan Sandbox dulu untuk testing)
+
+### 2. Set Environment Variables di Vercel
+Buka Vercel Dashboard → Project Rekhastha → **Settings → Environment Variables**, tambahkan:
+
+| Variable            | Nilai                        |
+|---------------------|------------------------------|
+| `DOKU_CLIENT_ID`    | Client ID dari dashboard DOKU |
+| `DOKU_SECRET_KEY`   | Secret Key dari dashboard DOKU |
+| `DOKU_IS_PRODUCTION`| `false` (sandbox) / `true` (live) |
+| `APP_BASE_URL`      | `https://rekhastha.my.id`    |
+
+### 3. Jalankan Migration Supabase
+Jalankan file `supabase/migrations/0006_doku_payments.sql` di Supabase SQL Editor.
+
+### 4. Set Webhook URL di DOKU Dashboard
+Di dashboard DOKU → **Settings → Notification URL**, isi:
+```
+https://rekhastha.my.id/api/doku/notify
+```
+
+### 5. Test Sandbox
+Gunakan kartu test DOKU:
+- Kartu: `4111111111111111`
+- Expired: bulan/tahun di masa depan
+- CVV: `123`
+
+### 6. Go Live
+Ganti `DOKU_IS_PRODUCTION` menjadi `true` di Vercel, lalu redeploy.

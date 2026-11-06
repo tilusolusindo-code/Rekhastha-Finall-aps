@@ -12,6 +12,8 @@ export interface WorkerProfile {
   namaRekening: string;
   ktpUploaded: boolean;
   selfieUploaded: boolean;
+  /** Status PTKP untuk hitung PPh21 otomatis. Default: TK0 (belum kawin). */
+  statusPtkp?: "TK0" | "K0" | "K1" | "K2" | "K3";
 }
 
 export function isProfileComplete(profile: WorkerProfile | null | undefined): profile is WorkerProfile {

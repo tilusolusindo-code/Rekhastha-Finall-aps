@@ -50,3 +50,12 @@ Thumbs.db
 
 # Uploaded user documents belong in private object storage, not source control.
 artifacts/api-server/uploads/
+
+# Environment variables — JANGAN pernah di-commit ke Git
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+*.env

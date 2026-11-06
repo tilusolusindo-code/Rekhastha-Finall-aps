@@ -1,4 +1,4 @@
-import express, { type ErrorRequestHandler, type Express } from "express";
+import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -8,6 +8,33 @@ import googleAdminRouter from "./routes/google-admin";
 import taxRouter from "./routes/tax";
 import teamRouter from "./routes/team";
 import { originGuard } from "./lib/csrf";
+
+// ── Simple in-memory rate limiter (no extra package) ─────────────────────────
+const rateBuckets = new Map<string, { count: number; reset: number }>();
+function rateLimit(maxPerMin: number): RequestHandler {
+  return (req, res, next) => {
+    const ip = ((req.headers["x-forwarded-for"] as string) || "").split(",")[0]?.trim()
+      || req.socket.remoteAddress || "unknown";
+    const key = `${req.path}:${ip}`;
+    const now = Date.now();
+    const bucket = rateBuckets.get(key);
+    if (!bucket || now > bucket.reset) {
+      rateBuckets.set(key, { count: 1, reset: now + 60_000 });
+      return next();
+    }
+    bucket.count++;
+    if (bucket.count > maxPerMin) {
+      res.status(429).json({ error: "Terlalu banyak permintaan. Coba lagi dalam 1 menit." });
+      return;
+    }
+    next();
+  };
+}
+// Bersihkan bucket lama setiap 5 menit
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of rateBuckets) if (now > v.reset) rateBuckets.delete(k);
+}, 5 * 60_000).unref();
 
 const app: Express = express();
 
@@ -73,6 +100,13 @@ app.use(express.urlencoded({ extended: true, limit: "64kb", parameterLimit: 100 
 
 // Reject cross-site state-changing requests before any route runs.
 app.use("/api", originGuard);
+
+// Rate limiting pada endpoint sensitif
+app.use("/api/auth/login",          rateLimit(10));  // maks 10 login/menit per IP
+app.use("/api/auth/register",       rateLimit(5));   // maks 5 register/menit per IP
+app.use("/api/forgot-password",     rateLimit(5));
+app.use("/api/doku/create",         rateLimit(10));  // maks 10 payment attempt/menit
+app.use("/api/team/invite",         rateLimit(20));
 
 // Uploaded documents must pass per-file ownership/participant checks.
 app.use("/api/uploads", uploadsRouter);

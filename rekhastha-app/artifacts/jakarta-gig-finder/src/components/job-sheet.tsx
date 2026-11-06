@@ -3,6 +3,7 @@ import {
   ApplicationSupportingInfo, CustomJob, calcTotal, paymentLabels,
   durasiKontrakOptions,
 } from "@/types/custom-job";
+import { calculateTax } from "@/lib/tax-calculator";
 import { WorkerProfile, isProfileComplete, isVerified } from "@/types/worker-profile";
 import { AuthUser } from "@/types/auth";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -94,6 +95,16 @@ export default function JobSheet({
   const total = calcTotal(job.nominal, job.pembayaran);
   const adminFeeAmount = job.adminFeeAmount;
   const workerGets = total;
+
+  // Hitung potongan pajak & BPJS otomatis
+  const taxResult = calculateTax({
+    grossMonthly: total,
+    status: (workerProfile as any)?.statusPtkp ?? "TK0",
+    isEmployee: false, // pekerja harian/gig
+    workDaysPerMonth: 22,
+  });
+  const netAfterTax = taxResult.netMonthly;
+  const totalDeduction = taxResult.totalDeductionEmployee;
   const verified = workerProfile ? isVerified(workerProfile) : false;
   const durasiLabel = durasiKontrakOptions.find((o) => o.value === (job.durasiKontrak ?? "harian"))?.label ?? "Harian";
   const isRegular = job.hiringMode !== "cepat";
@@ -302,19 +313,59 @@ export default function JobSheet({
                 </span>
                 <span className="font-medium text-gray-900">{formatRp(total)}</span>
               </div>
+
+              {/* Potongan Pajak & BPJS Otomatis */}
               <div className="border-t border-primary/10 pt-2 space-y-1.5">
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Biaya admin flat (dibayar terpisah saat posting)</span>
-                  <span>{adminFeeAmount == null ? "—" : formatRp(adminFeeAmount)}</span>
-                </div>
+                {adminFeeAmount != null && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Biaya admin flat (dibayar perusahaan)</span>
+                    <span>{formatRp(adminFeeAmount)}</span>
+                  </div>
+                )}
+                {taxResult.bpjsKesehatanEmployee > 0 && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>BPJS Kesehatan (1%)</span>
+                    <span className="text-red-500">-{formatRp(taxResult.bpjsKesehatanEmployee)}</span>
+                  </div>
+                )}
+                {taxResult.bpjsJhtEmployee > 0 && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>BPJS JHT (2%)</span>
+                    <span className="text-red-500">-{formatRp(taxResult.bpjsJhtEmployee)}</span>
+                  </div>
+                )}
+                {taxResult.bpjsJpEmployee > 0 && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>BPJS JP (1%)</span>
+                    <span className="text-red-500">-{formatRp(taxResult.bpjsJpEmployee)}</span>
+                  </div>
+                )}
+                {taxResult.pph21Monthly > 0 && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>PPh 21 (dipotong otomatis)</span>
+                    <span className="text-red-500">-{formatRp(taxResult.pph21Monthly)}</span>
+                  </div>
+                )}
+                {totalDeduction > 0 && (
+                  <div className="flex justify-between text-xs font-semibold text-gray-600 border-t border-primary/10 pt-1.5">
+                    <span>Total potongan</span>
+                    <span className="text-red-500">-{formatRp(totalDeduction)}</span>
+                  </div>
+                )}
               </div>
+
+              {/* Gaji Bersih */}
               <div className="flex justify-between border-t border-primary/10 pt-2.5">
-                <span className="font-bold text-gray-800">Anda terima bersih (100%)</span>
-                <span className="font-bold text-primary text-lg">{formatRp(workerGets)}</span>
+                <span className="font-bold text-gray-800">Gaji bersih (take-home)</span>
+                <span className="font-bold text-primary text-lg">{formatRp(netAfterTax)}</span>
               </div>
-              <p className="text-[10px] text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
-                Segala kewajiban perpajakan menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku.
-              </p>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 space-y-0.5">
+                <p className="text-[10px] text-blue-700 font-semibold">Pajak & BPJS dipotong otomatis</p>
+                <p className="text-[10px] text-blue-600 leading-relaxed">
+                  Potongan dihitung berdasarkan status PTKP {(workerProfile as any)?.statusPtkp ?? "TK/0"} · Estimasi PMK 168/2023
+                </p>
+              </div>
             </div>
           </div>
 

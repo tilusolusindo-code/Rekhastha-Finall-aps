@@ -1,15 +1,15 @@
 import { Router, type IRouter } from "express";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { randomUUID } from "node:crypto";
-import { and, eq, isNull, gt } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { db, usersTable, notificationsTable } from "@workspace/db";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import { sendTeamInvitationEmail } from "../lib/mailer";
 import { keepAlive } from "../lib/vercel-context";
 
 const router: IRouter = Router();
 
-/** Cek apakah user adalah perusahaan dengan paket Business aktif */
+/** Cek apakah user adalah perusahaan dengan paket aktif */
 async function requireBusinessPlan(userId: string): Promise<boolean> {
   const [user] = await db
     .select({ role: usersTable.role, expiredAt: usersTable.expiredAt })
@@ -18,8 +18,6 @@ async function requireBusinessPlan(userId: string): Promise<boolean> {
     .limit(1);
   if (!user || user.role !== "perusahaan") return false;
   if (!user.expiredAt) return false;
-  // Business plan = paket dengan durasi >= 12 bulan, estimasi dari expiredAt
-  // Untuk MVP: semua premium bisa akses, nanti bisa difilter per plan tier
   return new Date(user.expiredAt) > new Date();
 }
 
@@ -30,18 +28,24 @@ router.get("/team", async (req, res): Promise<void> => {
   const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
   if (!user) { res.status(401).json({ error: "Login diperlukan." }); return; }
 
-  // Ambil langsung dari tabel — kita gunakan raw query karena tabel baru
-  const members = await db.execute(
-    `SELECT ctm.id, ctm.role, ctm.invited_at, ctm.accepted_at, ctm.revoked_at,
-            u.name, u.email, u.id as member_id
-     FROM company_team_members ctm
-     JOIN users u ON u.id = ctm.member_id
-     WHERE ctm.company_id = $1 AND ctm.revoked_at IS NULL
-     ORDER BY ctm.invited_at DESC`,
-    [user.id]
-  );
-
-  res.json({ members: members.rows });
+  try {
+    const members = await db.execute(sql`
+      SELECT ctm.id, ctm.role, ctm.invited_at, ctm.accepted_at, ctm.revoked_at,
+             u.name, u.email, u.id as member_id
+      FROM company_team_members ctm
+      JOIN users u ON u.id = ctm.member_id
+      WHERE ctm.company_id = ${user.id} AND ctm.revoked_at IS NULL
+      ORDER BY ctm.invited_at DESC
+    `);
+    res.json({ members: members.rows });
+  } catch (err) {
+    console.error("[team] GET /team error:", err);
+    if ((err as any)?.message?.includes("does not exist")) {
+      res.json({ members: [] });
+    } else {
+      res.status(500).json({ error: "Gagal memuat daftar tim." });
+    }
+  }
 });
 
 /**
@@ -56,46 +60,83 @@ router.post("/team/invite", async (req, res): Promise<void> => {
     return;
   }
 
-  const parsed = z.object({
-    email: z.email(),
+  const InviteSchema = z.object({
+    email: z.string().email("Format email tidak valid."),
     role: z.enum(["hr", "supervisor", "finance"]).default("hr"),
-  }).safeParse(req.body);
+  });
 
+  const parsed = InviteSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Email atau role tidak valid." });
+    const msg = parsed.error.errors[0]?.message ?? "Email atau role tidak valid.";
+    res.status(400).json({ error: msg });
     return;
   }
 
   const { email, role } = parsed.data;
-  const token = randomUUID();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 hari
 
-  // Simpan undangan di ephemeral_kv sebagai JSON
-  await db.execute(
-    `INSERT INTO team_invitations (company_id, email, role, token, expires_at)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (company_id) DO NOTHING`,
-    [user.id, email.toLowerCase(), role, token, expiresAt.toISOString()]
-  );
+  try {
+    // Cek apakah user dengan email ini sudah terdaftar
+    const [targetUser] = await db
+      .select({ id: usersTable.id, name: usersTable.name })
+      .from(usersTable)
+      .where(eq(usersTable.email, email.toLowerCase()))
+      .limit(1);
 
-  // Kirim email undangan
-  const baseUrl = process.env["APP_BASE_URL"] ?? "https://rekhastha.my.id";
-  const link = `${baseUrl}/?join_team=${token}`;
+    // Jika user sudah terdaftar, langsung tambah ke tim
+    if (targetUser) {
+      await db.execute(sql`
+        INSERT INTO company_team_members (company_id, member_id, role, invited_at, accepted_at)
+        VALUES (${user.id}, ${targetUser.id}, ${role}, now(), now())
+        ON CONFLICT (company_id, member_id) DO UPDATE
+          SET role = ${role}, revoked_at = NULL, accepted_at = now()
+      `);
+      // Kirim notifikasi ke akun yang diundang
+      await db.insert(notificationsTable).values({
+        userId: targetUser.id,
+        message: `Anda telah ditambahkan sebagai anggota tim ${user.name} dengan akses ${role.toUpperCase()}.`,
+        type: "team_invite",
+      }).catch(() => { /* notif gagal tidak memblokir */ });
+      res.json({ ok: true, message: `${targetUser.name} (${email}) berhasil ditambahkan ke tim.`, directAdded: true });
+      return;
+    }
 
-  keepAlive(
-    sendTeamInvitationEmail({
-      to: email,
-      companyName: user.name,
-      role,
-      link,
-    }).then(() => undefined)
-  );
+    // User belum terdaftar → kirim undangan via email
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  res.json({ ok: true, message: `Undangan dikirim ke ${email}` });
+    await db.execute(sql`
+      INSERT INTO team_invitations (company_id, email, role, token, expires_at)
+      VALUES (${user.id}, ${email.toLowerCase()}, ${role}, ${token}, ${expiresAt.toISOString()})
+      ON CONFLICT (token) DO NOTHING
+    `);
+
+    const baseUrl = process.env["APP_BASE_URL"] ?? "https://rekhastha.my.id";
+    const link = `${baseUrl}/?join_team=${token}`;
+
+    keepAlive(
+      sendTeamInvitationEmail({
+        to: email,
+        companyName: user.name,
+        role,
+        link,
+      }).then(() => undefined)
+    );
+
+    res.json({ ok: true, message: `Undangan dikirim ke ${email}. Link berlaku 7 hari.` });
+  } catch (err) {
+    console.error("[team] /team/invite error:", err);
+    if ((err as any)?.message?.includes("does not exist")) {
+      res.status(503).json({
+        error: "Tabel tim belum siap. Jalankan migration 0005_fix_team_tax.sql di Supabase.",
+      });
+    } else {
+      res.status(500).json({ error: "Gagal mengirim undangan. Coba lagi." });
+    }
+  }
 });
 
 /**
- * POST /api/team/join — terima undangan tim
+ * POST /api/team/join — terima undangan tim via link
  * Body: { token }
  */
 router.post("/team/join", async (req, res): Promise<void> => {
@@ -105,37 +146,70 @@ router.post("/team/join", async (req, res): Promise<void> => {
   const parsed = z.object({ token: z.string().min(10) }).safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Token tidak valid." }); return; }
 
-  const [inv] = (await db.execute(
-    `SELECT * FROM team_invitations
-     WHERE token = $1 AND accepted_at IS NULL AND expires_at > now() LIMIT 1`,
-    [parsed.data.token]
-  )).rows;
+  try {
+    const result = await db.execute(sql`
+      SELECT * FROM team_invitations
+      WHERE token = ${parsed.data.token}
+        AND accepted_at IS NULL
+        AND expires_at > now()
+      LIMIT 1
+    `);
+    const inv = result.rows[0];
 
-  if (!inv) {
-    res.status(404).json({ error: "Undangan tidak ditemukan atau sudah kedaluwarsa." });
-    return;
+    if (!inv) {
+      res.status(404).json({ error: "Undangan tidak ditemukan atau sudah kedaluwarsa." });
+      return;
+    }
+
+    if ((inv.email as string).toLowerCase() !== user.email.toLowerCase()) {
+      res.status(403).json({ error: "Undangan ini ditujukan untuk email yang berbeda." });
+      return;
+    }
+
+    await db.execute(sql`
+      INSERT INTO company_team_members (company_id, member_id, role, accepted_at)
+      VALUES (${inv.company_id}, ${user.id}, ${inv.role}, now())
+      ON CONFLICT (company_id, member_id) DO UPDATE
+        SET role = ${inv.role}, revoked_at = NULL, accepted_at = now()
+    `);
+
+    await db.execute(sql`
+      UPDATE team_invitations SET accepted_at = now()
+      WHERE token = ${parsed.data.token}
+    `);
+
+    res.json({ ok: true, companyId: inv.company_id, role: inv.role });
+  } catch (err) {
+    console.error("[team] /team/join error:", err);
+    res.status(500).json({ error: "Gagal bergabung ke tim." });
   }
+});
 
-  if ((inv.email as string).toLowerCase() !== user.email.toLowerCase()) {
-    res.status(403).json({ error: "Undangan ini ditujukan untuk email yang berbeda." });
-    return;
+/**
+ * GET /api/team/my-membership — info tim tempat user ini bergabung (dari sisi anggota)
+ */
+router.get("/team/my-membership", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) { res.status(401).json({ error: "Login diperlukan." }); return; }
+
+  try {
+    const result = await db.execute(sql`
+      SELECT ctm.role, ctm.accepted_at, ctm.invited_at,
+             u.id as company_id, u.name as company_name, u.email as company_email,
+             u."namaPerusahaan" as nama_perusahaan
+      FROM company_team_members ctm
+      JOIN users u ON u.id = ctm.company_id
+      WHERE ctm.member_id = ${user.id}
+        AND ctm.revoked_at IS NULL
+      ORDER BY ctm.accepted_at DESC
+      LIMIT 1
+    `);
+    const membership = result.rows[0] ?? null;
+    res.json({ membership });
+  } catch (err) {
+    console.error("[team] /team/my-membership error:", err);
+    res.json({ membership: null });
   }
-
-  // Tambahkan ke tim
-  await db.execute(
-    `INSERT INTO company_team_members (company_id, member_id, role, accepted_at)
-     VALUES ($1, $2, $3, now())
-     ON CONFLICT (company_id, member_id) DO UPDATE SET role = $3, revoked_at = NULL, accepted_at = now()`,
-    [inv.company_id, user.id, inv.role]
-  );
-
-  // Tandai undangan sebagai diterima
-  await db.execute(
-    `UPDATE team_invitations SET accepted_at = now() WHERE token = $1`,
-    [parsed.data.token]
-  );
-
-  res.json({ ok: true, companyId: inv.company_id, role: inv.role });
 });
 
 /**
@@ -148,13 +222,16 @@ router.delete("/team/:memberId", async (req, res): Promise<void> => {
     return;
   }
 
-  await db.execute(
-    `UPDATE company_team_members SET revoked_at = now()
-     WHERE company_id = $1 AND member_id = $2`,
-    [user.id, req.params.memberId]
-  );
-
-  res.json({ ok: true });
+  try {
+    await db.execute(sql`
+      UPDATE company_team_members SET revoked_at = now()
+      WHERE company_id = ${user.id} AND member_id = ${req.params.memberId}
+    `);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[team] DELETE error:", err);
+    res.status(500).json({ error: "Gagal menghapus anggota." });
+  }
 });
 
 export default router;

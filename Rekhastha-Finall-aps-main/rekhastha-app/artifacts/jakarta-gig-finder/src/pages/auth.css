@@ -1,0 +1,456 @@
+/* ═══════════════════════════════════════════════════════
+   Rekhastha Auth — styles
+   Semua class dimulai rk-auth- / rk-field- / rk-submit- / rk-google-
+   ═══════════════════════════════════════════════════════ */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+/* Shell */
+.rk-auth-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: #f4f6f4;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.rk-auth-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(155deg, #064e3b 0%, #065f46 45%, #059669 100%);
+  padding: 52px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.rk-auth-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.12) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+/* Diagonal accent stripe */
+.rk-auth-header::after {
+  content: "";
+  position: absolute;
+  bottom: -30px;
+  left: -5%;
+  width: 110%;
+  height: 60px;
+  background: #f4f6f4;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+
+.rk-auth-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.rk-auth-subtitle {
+  color: rgba(255,255,255,0.75);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+}
+
+/* ── Body / Card ─────────────────────────────────────── */
+.rk-auth-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 32px;
+  margin-top: -6px;
+  position: relative;
+  z-index: 1;
+}
+
+.rk-auth-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px 20px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* ── Back button ─────────────────────────────────────── */
+.rk-auth-back {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #059669;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+  letter-spacing: 0.01em;
+}
+.rk-auth-back:hover { text-decoration: underline; }
+
+/* ── Icon wrap ───────────────────────────────────────── */
+.rk-auth-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: #ecfdf5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.rk-auth-icon-wrap--green { background: #059669; }
+.rk-auth-icon-wrap--green .rk-auth-icon { color: #fff; }
+.rk-auth-icon { width: 24px; height: 24px; color: #059669; }
+
+/* ── Titles ──────────────────────────────────────────── */
+.rk-auth-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  text-align: center;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+.rk-auth-desc {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+/* ── Tabs ────────────────────────────────────────────── */
+.rk-auth-tabs {
+  position: relative;
+  display: flex;
+  background: #f3f4f6;
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.rk-auth-tab-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: calc(50% - 4px);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+  pointer-events: none;
+}
+.rk-auth-tab {
+  flex: 1;
+  position: relative;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: color 0.2s;
+  font-family: inherit;
+}
+.rk-auth-tab--active { color: #059669; }
+
+/* ── Google button ───────────────────────────────────── */
+.rk-google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 13px 20px;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+.rk-google-btn:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+.rk-google-btn:active { transform: scale(0.99); }
+
+/* ── Divider ─────────────────────────────────────────── */
+.rk-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.rk-divider span { flex: 1; height: 1px; background: #e5e7eb; }
+.rk-divider small { font-size: 11px; color: #9ca3af; font-weight: 600; }
+
+/* ── Form ────────────────────────────────────────────── */
+.rk-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Field ───────────────────────────────────────────── */
+.rk-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.rk-field-icon {
+  position: absolute;
+  left: 14px;
+  color: #9ca3af;
+  display: flex;
+  pointer-events: none;
+}
+.rk-field-icon svg { width: 16px; height: 16px; }
+.rk-field-input {
+  width: 100%;
+  padding: 13px 14px 13px 42px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #111827;
+  background: #fafafa;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  line-height: 1.4;
+}
+.rk-field-input::placeholder { color: #9ca3af; }
+.rk-field-input:focus {
+  outline: none;
+  border-color: #059669;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
+}
+.rk-field-input--pw { padding-right: 44px; }
+.rk-field-eye {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  display: flex;
+  padding: 4px;
+  border-radius: 6px;
+}
+.rk-field-eye svg { width: 16px; height: 16px; }
+.rk-field-eye:hover { color: #6b7280; }
+
+/* ── Forgot row ──────────────────────────────────────── */
+.rk-auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+}
+
+/* ── Link button ─────────────────────────────────────── */
+.rk-auth-link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #059669;
+  padding: 0;
+  font-family: inherit;
+}
+.rk-auth-link-btn:hover { text-decoration: underline; }
+
+/* ── Error ───────────────────────────────────────────── */
+.rk-error {
+  font-size: 12px;
+  font-weight: 500;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Submit button ───────────────────────────────────── */
+.rk-submit-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #059669;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 4px 12px rgba(5,150,105,0.3);
+  margin-top: 4px;
+}
+.rk-submit-btn:hover:not(:disabled) {
+  background: #047857;
+  box-shadow: 0 6px 16px rgba(5,150,105,0.35);
+  transform: translateY(-1px);
+}
+.rk-submit-btn:active:not(:disabled) { transform: scale(0.99); }
+.rk-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.rk-submit-icon { display: flex; }
+.rk-submit-icon svg { width: 16px; height: 16px; }
+
+/* ── Spinner ─────────────────────────────────────────── */
+.rk-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: rk-spin 0.7s linear infinite;
+}
+@keyframes rk-spin { to { transform: rotate(360deg); } }
+
+/* ── Success block ───────────────────────────────────── */
+.rk-auth-success {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+.rk-auth-success--centered {
+  align-items: center;
+  text-align: center;
+}
+.rk-auth-success p {
+  font-size: 13.5px;
+  color: #374151;
+  line-height: 1.65;
+  margin: 0;
+}
+.rk-success-icon {
+  width: 36px;
+  height: 36px;
+  color: #059669;
+}
+
+/* ── Employer box ────────────────────────────────────── */
+.rk-employer-box {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.rk-employer-box:focus-within { border-color: #a7f3d0; }
+
+.rk-employer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+.rk-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #059669;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.rk-employer-spark {
+  width: 15px;
+  height: 15px;
+  color: #059669;
+  flex-shrink: 0;
+}
+.rk-employer-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+.rk-employer-sub {
+  font-size: 11px;
+  color: #9ca3af;
+  width: 100%;
+  padding-left: 42px;
+  margin-top: -6px;
+}
+
+.rk-employer-fields {
+  border-top: 1px solid #f3f4f6;
+  padding: 14px 16px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Category grid */
+.rk-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.rk-category-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  font-family: inherit;
+  transition: all 0.15s;
+  line-height: 1.2;
+  text-align: center;
+}
+.rk-category-btn:hover { border-color: #a7f3d0; color: #059669; }
+.rk-category-btn--active {
+  border-color: #059669;
+  background: #059669;
+  color: #fff;
+}
+.rk-category-icon { display: flex; }
+.rk-category-icon svg { width: 15px; height: 15px; }
+
+/* ── Legal note ──────────────────────────────────────── */
+.rk-auth-legal {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (min-width: 520px) {
+  .rk-auth-header { padding: 64px 32px 72px; }
+  .rk-auth-card { padding: 32px 28px; }
+  .rk-auth-body { padding: 0 24px 40px; }
+}

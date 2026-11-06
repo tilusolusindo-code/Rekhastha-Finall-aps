@@ -7,7 +7,7 @@ import {
   XCircle, Award, RotateCcw, Trophy,
   Plus, Pencil, Trash2, Save, Settings2, Briefcase, FileText, X,
   ShieldCheck, IdCard, LayoutDashboard, TrendingUp, UserCheck, Banknote,
-  LineChart as LineChartIcon, CreditCard, Crown, Download,
+  LineChart as LineChartIcon, CreditCard, Crown, Download, Search,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
 import {

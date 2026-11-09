@@ -1,199 +1,352 @@
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, CalendarClock, Clock3, MapPin, Search, Store, UserRoundSearch } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, Check, ChevronDown, Menu, X } from "lucide-react";
 import { RekhasthaCrest } from "../components/rekhastha-logo";
 import heroImage from "./rekhastha-marketplace-hero.jpg";
 import "./marketing-landing.css";
 
+const NAV_LINKS = [
+  { href: "#untuk-siapa", label: "Untuk siapa", testId: "link-untuk-siapa" },
+  { href: "#cara-kerja", label: "Cara kerja", testId: "link-cara-kerja" },
+  { href: "#transparansi", label: "Aturan main", testId: "link-transparansi" },
+  { href: "#pertanyaan", label: "Pertanyaan", testId: "link-pertanyaan" },
+];
+
+const WORKER_POINTS = [
+  "Peta radar menampilkan gig terdekat, dan notifikasi berbunyi saat ada gig baru di sekitar Anda.",
+  "Peran, upah, waktu, dan lokasi terlihat jelas sebelum Anda memutuskan melamar.",
+  "Berkomunikasi dengan pemberi kerja lewat chat di dalam aplikasi.",
+  "Catat kehadiran dengan QR dan pantau penghasilan Anda di satu tempat.",
+];
+
+const EMPLOYER_POINTS = [
+  "Pasang gig instan untuk kebutuhan hari ini, atau posting reguler untuk jadwal yang sudah pasti.",
+  "Rincian biaya ditampilkan saat lowongan dibuat, sebelum Anda melakukan pembayaran.",
+  "Tinjau pelamar, lalu beri penilaian setelah pekerjaan selesai.",
+  "Rekhastha Bisnis menambahkan QR presensi berbasis lokasi dan kalkulator upah harian untuk tim Anda.",
+];
+
+const STEPS = [
+  {
+    title: "Daftar dan pilih peran",
+    body: "Tentukan apakah Anda mencari pekerjaan atau memasang lowongan. Jika diminta verifikasi, pemeriksaan identitas dilakukan oleh tim Rekhastha.",
+  },
+  {
+    title: "Pasang atau temukan gig",
+    body: "Pemberi kerja mengisi peran, waktu, lokasi, dan upah. Pencari kerja menelusuri gig di sekitarnya lalu melamar.",
+  },
+  {
+    title: "Bekerja dan selesaikan",
+    body: "Catat kehadiran lewat aplikasi, kerjakan gig sesuai kesepakatan, lalu saling memberi penilaian.",
+  },
+];
+
+const RULES = [
+  {
+    title: "Biaya dan pembayaran",
+    body: "Rincian biaya tampil saat lowongan dibuat. Pembayaran lewat transfer dikonfirmasi secara manual, dan lowongan aktif setelah status pembayarannya dikonfirmasi di aplikasi.",
+  },
+  {
+    title: "Verifikasi identitas",
+    body: "Pemeriksaan identitas dilakukan oleh tim Rekhastha. Aplikasi tidak melakukan pencocokan biometrik otomatis.",
+  },
+  {
+    title: "Jaminan sosial",
+    body: "Presensi di Rekhastha tidak dengan sendirinya memberikan BPJS Ketenagakerjaan, asuransi, atau jaminan sosial lain.",
+  },
+];
+
+const FAQ = [
+  {
+    q: "Siapa yang bisa memakai Rekhastha?",
+    a: "Pencari kerja yang ingin mengambil pekerjaan harian, serta pemberi kerja, baik usaha maupun perorangan, yang membutuhkan tenaga tambahan. Peran dipilih saat mendaftar.",
+  },
+  {
+    q: "Apa bedanya gig instan dan pekerjaan terjadwal?",
+    a: "Gig instan untuk kebutuhan yang harus terisi segera dan disiarkan ke pekerja di sekitar lokasi. Pekerjaan terjadwal untuk kebutuhan yang tanggal dan jamnya sudah ditentukan lebih dulu.",
+  },
+  {
+    q: "Apakah gig tersedia di kota saya?",
+    a: "Anda dapat memilih provinsi dan kota saat mencari atau memasang gig. Ketersediaan pekerjaan bergantung pada pemberi kerja yang memasang gig di wilayah Anda.",
+  },
+  {
+    q: "Bagaimana jika ada masalah dengan suatu pekerjaan?",
+    a: "Gunakan fitur keluhan atau sengketa di aplikasi. Pengajuan Anda ditinjau oleh tim Rekhastha.",
+  },
+];
+
+function SampleDevice() {
+  return (
+    <figure className="rl-device-wrap">
+      <div className="rl-device" aria-hidden="true">
+        <div className="rl-device-bar">
+          <span className="rl-device-title">Gig di sekitar Anda</span>
+          <span className="rl-device-live"><i />Radar aktif</span>
+        </div>
+        <ul className="rl-device-list">
+          <li className="is-new">
+            <div>
+              <span className="rl-device-badge">Baru</span>
+              <strong>Barista</strong>
+              <small>Kafe lokal · 1,2 km</small>
+              <small>Hari ini, 14.00 – 22.00</small>
+            </div>
+            <b>Rp 280.000<small>per shift</small></b>
+          </li>
+          <li>
+            <div>
+              <strong>Kru acara</strong>
+              <small>Gedung pertemuan · 3,8 km</small>
+              <small>Besok, 08.00 – 18.00</small>
+            </div>
+            <b>Rp 200.000<small>per hari</small></b>
+          </li>
+          <li>
+            <div>
+              <strong>Pelayan restoran</strong>
+              <small>Rumah makan · 4,5 km</small>
+              <small>Sabtu, 10.00 – 18.00</small>
+            </div>
+            <b>Rp 200.000<small>per shift</small></b>
+          </li>
+        </ul>
+      </div>
+      <figcaption>Contoh tampilan. Nama, jarak, dan upah hanya ilustrasi.</figcaption>
+    </figure>
+  );
+}
+
 export default function MarketingLanding(props: { onLogin: () => void; onRegister: () => void }) {
   const { onLogin, onRegister } = props;
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
-    <main className="rekha-landing">
-      <header className="rk-header">
-        <div className="rk-container rk-header-inner">
-          <div className="rk-brand" data-testid="brand-rekhastha">
-            <RekhasthaCrest size={43} />
-            <div className="rk-brand-copy">
-              <span className="rk-brand-name">Rekhastha</span>
-              <span className="rk-brand-by">by Tilu Saudara Solusindo</span>
-            </div>
-          </div>
-          <nav className="rk-nav" aria-label="Navigasi utama">
-            <a href="#cara-kerja" data-testid="link-cara-kerja">Cara kerja</a>
-            <a href="#jenis-pekerjaan" data-testid="link-jenis-pekerjaan">Jenis pekerjaan</a>
-            <a href="#untuk-siapa" data-testid="link-untuk-siapa">Untuk siapa</a>
+    <div className="rekha-landing">
+      <header className={`rl-header${scrolled || menuOpen ? " is-scrolled" : ""}`}>
+        <div className="rl-container rl-header-inner">
+          <a className="rl-brand" href="#top" onClick={closeMenu} data-testid="brand-rekhastha" aria-label="Rekhastha, beranda">
+            <RekhasthaCrest size={38} />
+            <span className="rl-brand-copy">
+              <span className="rl-brand-name">Rekhastha</span>
+              <span className="rl-brand-by">by Tilu Saudara Solusindo</span>
+            </span>
+          </a>
+
+          <nav className="rl-nav" aria-label="Navigasi utama">
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href} data-testid={link.testId}>{link.label}</a>
+            ))}
           </nav>
-          <div className="rk-header-actions">
-            <button type="button" className="rk-button rk-button-quiet" onClick={onLogin} data-testid="button-login-header">Masuk</button>
-            <button type="button" className="rk-button rk-button-primary" onClick={onRegister} data-testid="button-register-header">Daftar</button>
+
+          <div className="rl-header-actions">
+            <button type="button" className="rl-btn rl-btn-text" onClick={onLogin} data-testid="button-login-header">Masuk</button>
+            <button type="button" className="rl-btn rl-btn-primary" onClick={onRegister} data-testid="button-register-header">Daftar</button>
+            <button
+              type="button"
+              className="rl-menu-toggle"
+              aria-expanded={menuOpen}
+              aria-controls="rl-mobile-menu"
+              aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+            </button>
           </div>
         </div>
+
+        {menuOpen && (
+          <nav className="rl-mobile-menu" id="rl-mobile-menu" aria-label="Menu seluler">
+            <div className="rl-container">
+              {NAV_LINKS.map((link) => (
+                <a key={link.href} href={link.href} onClick={closeMenu}>{link.label}</a>
+              ))}
+              <button type="button" className="rl-btn rl-btn-outline" onClick={() => { closeMenu(); onLogin(); }}>Masuk ke akun</button>
+            </div>
+          </nav>
+        )}
       </header>
 
-      <section className="rk-hero" aria-labelledby="rk-hero-title">
-        <div className="rk-container rk-hero-grid">
-          <div className="rk-hero-copy">
-            <div className="rk-eyebrow"><span className="rk-eyebrow-mark" />Peluang kerja harian di seluruh Indonesia</div>
-            <h1 className="rk-display" id="rk-hero-title" data-testid="text-hero-title">Kerja yang pas,<br />di <em>waktu</em> yang tepat.</h1>
-            <p className="rk-hero-lede" data-testid="text-hero-description">
-              Rekhastha mempertemukan pemberi kerja yang butuh bantuan dengan orang yang siap bekerja. Cari gig harian, atau temukan tenaga untuk kebutuhan usaha Anda.
+      <main id="top">
+        <section className="rl-hero" aria-labelledby="rl-hero-title">
+          <div className="rl-container rl-hero-grid">
+            <div className="rl-hero-copy">
+              <h1 id="rl-hero-title" data-testid="text-hero-title">
+                Pekerjaan harian yang lebih mudah dicari, lebih mudah diisi.
+              </h1>
+              <p className="rl-lede" data-testid="text-hero-description">
+                Rekhastha adalah marketplace gig harian di Indonesia. Pemberi kerja memasang kebutuhannya, pencari kerja melihat peluang di sekitarnya, lalu keduanya terhubung lewat aplikasi.
+              </p>
+              <div className="rl-hero-actions">
+                <button type="button" className="rl-btn rl-btn-primary rl-btn-lg" onClick={onRegister} data-testid="button-register-worker">
+                  Saya cari pekerjaan <ArrowRight size={17} aria-hidden="true" />
+                </button>
+                <button type="button" className="rl-btn rl-btn-outline rl-btn-lg" onClick={onRegister} data-testid="button-register-employer">
+                  Saya mau pasang gig
+                </button>
+              </div>
+              <p className="rl-hero-login">
+                Sudah punya akun?{" "}
+                <button type="button" onClick={onLogin} data-testid="button-login-hero">Masuk</button>
+              </p>
+            </div>
+
+            <div className="rl-hero-media" data-testid="img-hero-worker-frame">
+              <img
+                src={heroImage}
+                alt="Pekerja menyiapkan pesanan di sebuah kafe lingkungan di Indonesia"
+                width={1024}
+                height={1024}
+                data-testid="img-hero-worker"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="rl-facts" aria-label="Ringkasan layanan">
+          <div className="rl-container rl-facts-grid">
+            <div>
+              <h2>Gig instan</h2>
+              <p>Disiarkan ke pekerja di sekitar lokasi, lengkap dengan notifikasi.</p>
+            </div>
+            <div>
+              <h2>Pekerjaan terjadwal</h2>
+              <p>Tetapkan tanggal dan jam untuk pekerjaan yang bisa direncanakan.</p>
+            </div>
+            <div>
+              <h2>Seluruh Indonesia</h2>
+              <p>Pilih provinsi dan kota saat mencari atau memasang gig.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rl-section" id="untuk-siapa" aria-labelledby="rl-who-title">
+          <div className="rl-container">
+            <h2 className="rl-h2" id="rl-who-title">Dua kebutuhan, satu aplikasi</h2>
+            <div className="rl-split">
+              <article className="rl-split-col" data-testid="card-worker">
+                <p className="rl-split-label">Pencari kerja</p>
+                <h3>Temukan gig yang cocok dengan waktu Anda</h3>
+                <ul className="rl-checks">
+                  {WORKER_POINTS.map((point) => (
+                    <li key={point}><Check size={18} aria-hidden="true" /><span>{point}</span></li>
+                  ))}
+                </ul>
+                <button type="button" className="rl-btn rl-btn-primary" onClick={onRegister} data-testid="button-register-worker-card">
+                  Daftar sebagai pencari kerja
+                </button>
+              </article>
+              <article className="rl-split-col" data-testid="card-employer">
+                <p className="rl-split-label">Pemberi kerja</p>
+                <h3>Isi kebutuhan tenaga tanpa proses yang berbelit</h3>
+                <ul className="rl-checks">
+                  {EMPLOYER_POINTS.map((point) => (
+                    <li key={point}><Check size={18} aria-hidden="true" /><span>{point}</span></li>
+                  ))}
+                </ul>
+                <button type="button" className="rl-btn rl-btn-outline" onClick={onRegister} data-testid="button-register-employer-card">
+                  Daftar sebagai pemberi kerja
+                </button>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="rl-section rl-section-tint" id="cara-kerja" aria-labelledby="rl-how-title">
+          <div className="rl-container rl-how-grid">
+            <div>
+              <h2 className="rl-h2" id="rl-how-title">Cara kerjanya</h2>
+              <ol className="rl-steps">
+                {STEPS.map((step, index) => (
+                  <li key={step.title} data-testid={`step-${index + 1}`}>
+                    <span className="rl-step-no">{String(index + 1).padStart(2, "0")}</span>
+                    <div>
+                      <h3>{step.title}</h3>
+                      <p>{step.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <SampleDevice />
+          </div>
+        </section>
+
+        <section className="rl-section" id="transparansi" aria-labelledby="rl-rules-title">
+          <div className="rl-container">
+            <h2 className="rl-h2" id="rl-rules-title">Aturan main yang perlu Anda ketahui sejak awal</h2>
+            <p className="rl-section-intro">
+              Beberapa hal sering disalahpahami di platform kerja harian. Berikut penjelasan singkatnya.
             </p>
-            <div className="rk-hero-ctas">
-              <button type="button" className="rk-button rk-button-primary" onClick={onRegister} data-testid="button-register-worker">
-                Cari pekerjaan <ArrowRight size={16} aria-hidden="true" />
-              </button>
-              <button type="button" className="rk-button rk-button-gold" onClick={onRegister} data-testid="button-register-employer">
-                Pasang gig <ArrowUpRight size={15} aria-hidden="true" />
-              </button>
-            </div>
-            <p className="rk-hero-note"><strong>Satu tempat untuk dua kebutuhan.</strong> Pilih peran saat mendaftar.</p>
-          </div>
-
-          <div className="rk-visual" aria-label="Suasana kerja di usaha lokal Indonesia">
-            <div className="rk-photo-frame">
-              <img src={heroImage} alt="Pekerja menyiapkan pesanan di sebuah kafe lingkungan Indonesia" data-testid="img-hero-worker" />
-              <span className="rk-photo-label">Kesempatan tumbuh, dekat dari rumah</span>
-            </div>
-            <svg className="rk-sunburst" viewBox="0 0 80 80" fill="none" aria-hidden="true">
-              <circle cx="40" cy="40" r="13" stroke="currentColor" strokeWidth="1.5" />
-              <circle cx="40" cy="40" r="4" fill="currentColor" />
-              {Array.from({ length: 12 }, (_, index) => (
-                <line key={index} x1="40" y1="7" x2="40" y2="17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" transform={`rotate(${index * 30} 40 40)`} />
+            <div className="rl-rules">
+              {RULES.map((rule) => (
+                <div key={rule.title} className="rl-rule">
+                  <h3>{rule.title}</h3>
+                  <p>{rule.body}</p>
+                </div>
               ))}
-            </svg>
-            <div className="rk-float-card rk-gig-card" aria-label="Contoh gig mendesak">
-              <small><span className="rk-gig-dot" />Gig mendesak</small>
-              <strong>Bantuan kru acara</strong>
-              <span><MapPin size={12} aria-hidden="true" /> Lokasi pilihan</span>
-            </div>
-            <div className="rk-float-card rk-time-card">
-              <div className="rk-time-icon"><Clock3 size={19} aria-hidden="true" /></div>
-              <div><strong>Atur waktumu</strong><small>Gig cepat atau terjadwal</small></div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <div className="rk-ribbon" aria-label="Fitur utama Rekhastha">
-        <div className="rk-container rk-ribbon-inner">
-          <div className="rk-ribbon-item"><span className="rk-ribbon-icon"><Clock3 size={17} /></span>Gig instan saat dibutuhkan</div>
-          <div className="rk-ribbon-item"><span className="rk-ribbon-icon"><CalendarClock size={17} /></span>Pekerjaan terjadwal</div>
-          <div className="rk-ribbon-item"><span className="rk-ribbon-icon"><MapPin size={17} /></span>Peluang di seluruh Indonesia</div>
-        </div>
-      </div>
-
-      <section className="rk-section" id="untuk-siapa" aria-labelledby="rk-pathways-title">
-        <div className="rk-container">
-          <div className="rk-section-heading">
-            <span className="rk-section-kicker">Dua sisi, satu tujuan</span>
-            <h2 id="rk-pathways-title" className="rk-display">Temukan yang Anda cari.</h2>
-            <p>Butuh bantuan untuk hari ini, atau mencari tambahan penghasilan? Mulai dari kebutuhan Anda.</p>
-          </div>
-          <div className="rk-pathways">
-            <article className="rk-path-card employer" data-testid="card-employer">
-              <div className="rk-path-top">
-                <span className="rk-path-icon"><Store size={22} aria-hidden="true" /></span>
-                <span className="rk-path-number">UNTUK PEMBERI KERJA</span>
-              </div>
-              <h3>Butuh tenaga untuk usaha?</h3>
-              <p>Pasang gig untuk kebutuhan mendesak atau rencanakan pekerjaan di tanggal yang Anda tentukan. Jelaskan peran, waktu, dan lokasi.</p>
-              <button type="button" className="rk-button rk-button-primary" onClick={onRegister} data-testid="button-register-employer-card">Mulai pasang gig <ArrowRight size={15} /></button>
-            </article>
-            <article className="rk-path-card worker" data-testid="card-worker">
-              <div className="rk-path-top">
-                <span className="rk-path-icon"><UserRoundSearch size={22} aria-hidden="true" /></span>
-                <span className="rk-path-number">UNTUK PENCARI KERJA</span>
-              </div>
-              <h3>Cari gig yang cocok.</h3>
-              <p>Jelajahi peluang kerja harian, lihat detail gig, lalu ajukan diri untuk pekerjaan yang sesuai dengan waktu dan minat Anda.</p>
-              <button type="button" className="rk-button rk-button-gold" onClick={onRegister} data-testid="button-register-worker-card">Jelajahi pekerjaan <Search size={15} /></button>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="rk-gig-section" id="jenis-pekerjaan" aria-labelledby="rk-gig-title">
-        <div className="rk-container rk-gig-layout">
-          <div className="rk-gig-copy">
-            <span className="rk-section-kicker">Fleksibel sesuai kebutuhan</span>
-            <h2 id="rk-gig-title" className="rk-display">Hari ini atau nanti. Anda yang tentukan.</h2>
-            <p>Setiap kebutuhan punya waktunya sendiri. Rekhastha menyediakan dua cara untuk menemukan atau mengisi pekerjaan harian.</p>
-          </div>
-          <div className="rk-gig-list">
-            <article className="rk-gig-row" data-testid="card-gig-instan">
-              <span className="rk-gig-symbol"><Clock3 size={20} aria-hidden="true" /></span>
-              <div className="rk-gig-row-copy"><strong>Gig instan</strong><span>Untuk kebutuhan mendesak yang perlu ditangani segera.</span></div>
-              <span className="rk-gig-tag">Butuh cepat</span>
-            </article>
-            <article className="rk-gig-row" data-testid="card-gig-terjadwal">
-              <span className="rk-gig-symbol"><CalendarClock size={20} aria-hidden="true" /></span>
-              <div className="rk-gig-row-copy"><strong>Pekerjaan terjadwal</strong><span>Rencanakan pekerjaan pada tanggal dan waktu tertentu.</span></div>
-              <span className="rk-gig-tag">Atur jadwal</span>
-            </article>
-            <article className="rk-gig-row" data-testid="card-gig-lokasi">
-              <span className="rk-gig-symbol"><MapPin size={20} aria-hidden="true" /></span>
-              <div className="rk-gig-row-copy"><strong>Detail yang jelas</strong><span>Periksa informasi peran, waktu, dan lokasi sebelum melamar.</span></div>
-              <span className="rk-gig-tag">Pilih sesuai</span>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="rk-how" id="cara-kerja" aria-labelledby="rk-how-title">
-        <div className="rk-container">
-          <div className="rk-section-heading">
-            <span className="rk-section-kicker">Mulai dengan mudah</span>
-            <h2 id="rk-how-title" className="rk-display">Dari kebutuhan jadi kesempatan.</h2>
-            <p>Langkah yang jelas, baik Anda ingin mengisi gig maupun mengajukan diri.</p>
-          </div>
-          <div className="rk-steps">
-            <article className="rk-step" data-testid="step-one">
-              <span className="rk-step-no">01</span>
-              <h3>Buat akun</h3>
-              <p>Daftar dan tentukan apakah Anda ingin mencari pekerjaan atau merekrut tenaga.</p>
-            </article>
-            <article className="rk-step" data-testid="step-two">
-              <span className="rk-step-no">02</span>
-              <h3>Temukan kecocokan</h3>
-              <p>Pemberi kerja pasang gig; pencari kerja menelusuri detail dan peluang yang tersedia.</p>
-            </article>
-            <article className="rk-step" data-testid="step-three">
-              <span className="rk-step-no">03</span>
-              <h3>Ambil langkah berikutnya</h3>
-              <p>Ajukan diri ke gig yang sesuai, atau tinjau pelamar untuk kebutuhan usaha Anda.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="rk-closing" aria-labelledby="rk-closing-title">
-        <div className="rk-container">
-          <div className="rk-closing-panel">
-            <div className="rk-closing-content">
-              <span className="rk-section-kicker" style={{ color: "#e7c46d" }}>Langkah pertama dimulai di sini</span>
-              <h2 id="rk-closing-title" className="rk-display">Ada gig untuk dicari. Ada bantuan untuk ditemukan.</h2>
-              <p>Gabung Rekhastha untuk menjelajahi pekerjaan harian atau menemukan orang yang tepat untuk kebutuhan usaha Anda.</p>
-              <div className="rk-closing-actions">
-                <button type="button" className="rk-button rk-button-gold" onClick={onRegister} data-testid="button-register-footer">Daftar sekarang <ArrowRight size={15} /></button>
-                <button type="button" className="rk-button rk-button-quiet" onClick={onLogin} data-testid="button-login-footer">Sudah punya akun? Masuk</button>
-              </div>
+        <section className="rl-section rl-section-tint" id="pertanyaan" aria-labelledby="rl-faq-title">
+          <div className="rl-container rl-faq-grid">
+            <h2 className="rl-h2" id="rl-faq-title">Pertanyaan yang sering diajukan</h2>
+            <div className="rl-faq">
+              {FAQ.map((item) => (
+                <details key={item.q}>
+                  <summary>
+                    <span>{item.q}</span>
+                    <ChevronDown size={20} aria-hidden="true" />
+                  </summary>
+                  <p>{item.a}</p>
+                </details>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <footer className="rk-footer">
-        <div className="rk-container rk-footer-inner">
-          <div className="rk-brand">
-            <RekhasthaCrest size={33} />
-            <div className="rk-brand-copy">
-              <span className="rk-brand-name" style={{ fontSize: 16 }}>Rekhastha</span>
-              <span className="rk-brand-by">by Tilu Saudara Solusindo</span>
+        <section className="rl-closing" aria-labelledby="rl-closing-title">
+          <div className="rl-container rl-closing-inner">
+            <div>
+              <h2 id="rl-closing-title">Lihat apa yang tersedia di sekitar Anda</h2>
+              <p>Buat akun, pilih peran, dan mulai dari pekerjaan atau kebutuhan tenaga pertama Anda.</p>
+            </div>
+            <div className="rl-closing-actions">
+              <button type="button" className="rl-btn rl-btn-light rl-btn-lg" onClick={onRegister} data-testid="button-register-footer">
+                Daftar sekarang <ArrowRight size={17} aria-hidden="true" />
+              </button>
+              <button type="button" className="rl-btn rl-btn-ghost-light rl-btn-lg" onClick={onLogin} data-testid="button-login-footer">
+                Masuk
+              </button>
             </div>
           </div>
-          <p className="rk-footer-copy" data-testid="text-footer-description">Marketplace gig harian untuk pemberi kerja dan pencari kerja di seluruh Indonesia.</p>
-          <span className="rk-footer-meta">© {new Date().getFullYear()} <strong>Tilu Saudara Solusindo</strong></span>
+        </section>
+      </main>
+
+      <footer className="rl-footer">
+        <div className="rl-container rl-footer-inner">
+          <div className="rl-brand">
+            <RekhasthaCrest size={32} />
+            <span className="rl-brand-copy">
+              <span className="rl-brand-name">Rekhastha</span>
+              <span className="rl-brand-by">by Tilu Saudara Solusindo</span>
+            </span>
+          </div>
+          <p className="rl-footer-copy" data-testid="text-footer-description">
+            Marketplace gig harian untuk pemberi kerja dan pencari kerja di seluruh Indonesia.
+          </p>
+          <span className="rl-footer-meta">© {new Date().getFullYear()} Tilu Saudara Solusindo</span>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }

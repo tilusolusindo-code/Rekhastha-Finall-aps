@@ -234,7 +234,7 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
 
       {/* Tab switcher */}
       <div className="rk-auth-tabs" role="tablist">
-        <div className="rk-auth-tab-indicator" style={{ transform: tab === "masuk" ? "translateX(2px)" : "translateX(calc(100% + 2px))" }} />
+        <div className="rk-auth-tab-indicator" style={{ transform: tab === "masuk" ? "translateX(0)" : "translateX(100%)" }} />
         <button role="tab" aria-selected={tab === "masuk"} onClick={() => { setTab("masuk"); setError(null); }}
           className={`rk-auth-tab ${tab === "masuk" ? "rk-auth-tab--active" : ""}`}>Masuk</button>
         <button role="tab" aria-selected={tab === "daftar"} onClick={() => { setTab("daftar"); setError(null); }}
@@ -337,17 +337,17 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
   );
 }
 
-// ── Shell: green header + white card ──────────────────────────────
+// ── Shell: panel merek + formulir ──────────────────────────────
 // PENTING: harus di luar AuthPage agar tidak di-recreate setiap render
-function Shell({ subtitle, children }: { subtitle?: string; children: React.ReactNode }) {
+function Shell({ children }: { subtitle?: string; children: React.ReactNode }) {
   return (
     <div className="rk-auth-shell">
       <div className="rk-auth-header">
-        <div className="rk-auth-dots" aria-hidden="true" />
         <div className="rk-auth-brand">
-          <RekhasthaLogo size={44} variant="light" showSubtitle wordmarkClassName="text-[28px] font-display" />
-          {subtitle && <p className="rk-auth-subtitle">{subtitle}</p>}
+          <RekhasthaLogo size={38} variant="light" showSubtitle wordmarkClassName="text-[21px] font-display" />
+          <p className="rk-auth-subtitle">Pekerjaan harian yang lebih mudah dicari, lebih mudah diisi.</p>
         </div>
+        <p className="rk-auth-aside-foot">© {new Date().getFullYear()} Tilu Saudara Solusindo</p>
       </div>
       <div className="rk-auth-body">
         <div className="rk-auth-card">{children}</div>

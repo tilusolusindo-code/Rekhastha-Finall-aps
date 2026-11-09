@@ -1,5 +1,5 @@
 import "./auth.css";
-import { memo, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, ShieldCheck, Building2, Home, Landmark, MapPin, IdCard, FileText, KeyRound, CheckCircle2, Sparkles } from "lucide-react";
 import { AuthUser, UserRole, EmployerCategory } from "@/types/auth";
 import RoleSelectModal from "@/components/role-select-modal";
@@ -32,7 +32,7 @@ async function submitPasswordReset(token: string, newPassword: string): Promise<
   return res.json();
 }
 
-function AuthPageInner({ onComplete, onBack, initialTab }: AuthPageProps) {
+export default function AuthPage({ onComplete, onBack, initialTab }: AuthPageProps) {
   const [tab, setTab] = useState<AuthTab>(initialTab);
   const [mode, setMode] = useState<AuthMode>("main");
   const [email, setEmail] = useState("");
@@ -163,22 +163,6 @@ function AuthPageInner({ onComplete, onBack, initialTab }: AuthPageProps) {
     } catch { setError("Gagal mereset kata sandi. Coba lagi."); }
     finally { setLoading(false); }
   };
-
-  // ── Shell: green header + white card ──────────────────
-  const Shell = ({ subtitle, children }: { subtitle?: string; children: React.ReactNode }) => (
-    <div className="rk-auth-shell">
-      <div className="rk-auth-header">
-        <div className="rk-auth-dots" aria-hidden="true" />
-        <div className="rk-auth-brand">
-          <RekhasthaLogo size={44} variant="light" showSubtitle wordmarkClassName="text-[28px] font-display" />
-          {subtitle && <p className="rk-auth-subtitle">{subtitle}</p>}
-        </div>
-      </div>
-      <div className="rk-auth-body">
-        <div className="rk-auth-card">{children}</div>
-      </div>
-    </div>
-  );
 
   // ── Forgot ─────────────────────────────────────────────
   if (mode === "forgot") return (
@@ -353,51 +337,57 @@ function AuthPageInner({ onComplete, onBack, initialTab }: AuthPageProps) {
   );
 }
 
+// ── Shell: green header + white card ──────────────────────────────
+// PENTING: harus di luar AuthPage agar tidak di-recreate setiap render
+function Shell({ subtitle, children }: { subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="rk-auth-shell">
+      <div className="rk-auth-header">
+        <div className="rk-auth-dots" aria-hidden="true" />
+        <div className="rk-auth-brand">
+          <RekhasthaLogo size={44} variant="light" showSubtitle wordmarkClassName="text-[28px] font-display" />
+          {subtitle && <p className="rk-auth-subtitle">{subtitle}</p>}
+        </div>
+      </div>
+      <div className="rk-auth-body">
+        <div className="rk-auth-card">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Sub-components ─────────────────────────────────────────────────
 
-// Field dibungkus memo agar tidak re-render saat parent
-// (AuthPage) re-render karena state perubahan di tempat lain
-const Field = memo(function Field({ icon, type, placeholder, value, onChange, autoComplete }: {
+function Field({ icon, type, placeholder, value, onChange, autoComplete }: {
   icon: React.ReactNode; type: string; placeholder: string; value: string;
   onChange: (v: string) => void; autoComplete?: string;
 }) {
   return (
     <div className="rk-field">
       <span className="rk-field-icon" aria-hidden="true">{icon}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="rk-field-input"
-      />
+      <input type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} autoComplete={autoComplete}
+        className="rk-field-input" />
     </div>
   );
-});
+}
 
-const PasswordField = memo(function PasswordField({ placeholder, value, onChange, show, toggle, autoComplete }: {
+function PasswordField({ placeholder, value, onChange, show, toggle, autoComplete }: {
   placeholder: string; value: string; onChange: (v: string) => void;
   show: boolean; toggle: () => void; autoComplete?: string;
 }) {
   return (
     <div className="rk-field">
       <span className="rk-field-icon" aria-hidden="true"><Lock /></span>
-      <input
-        type={show ? "text" : "password"}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="rk-field-input rk-field-input--pw"
-      />
+      <input type={show ? "text" : "password"} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} autoComplete={autoComplete} className="rk-field-input rk-field-input--pw" />
       <button type="button" onClick={toggle} aria-label={show ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
         className="rk-field-eye">
         {show ? <EyeOff /> : <Eye />}
       </button>
     </div>
   );
-});
+}
 
 function SubmitBtn({ loading, icon, children, onClick }: {
   loading: boolean; icon: React.ReactNode; children: React.ReactNode; onClick?: () => void;
@@ -436,6 +426,3 @@ function GoogleIcon() {
     </svg>
   );
 }
-
-const AuthPage = memo(AuthPageInner);
-export default AuthPage;

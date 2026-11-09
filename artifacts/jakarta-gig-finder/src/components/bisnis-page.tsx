@@ -6,10 +6,10 @@ import {
   TrendingUp, FileText, Building2, ArrowRight, Lock,
 } from "lucide-react";
 import { AuthUser } from "@/types/auth";
+import MidtransSnapModal from "./midtrans-snap-modal";
 import {
   fetchSubscriptionPlans,
   fetchBisnisStatus,
-  createSubscriptionOrder,
   type SubscriptionPlan,
   type BisnisStatus,
 } from "@/lib/monetization-client";
@@ -81,6 +81,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [buyStep, setBuyStep]   = useState<BuyStep>("idle");
   const [buyError, setBuyError] = useState("");
+  const [showSnap, setShowSnap] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setLoadError("");
@@ -96,17 +97,11 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
 
   useEffect(() => { load(); }, [load]);
 
-  async function handleBuy() {
+  // Buka modal Midtrans Snap untuk membayar paket langganan.
+  function handleBuy() {
     if (!selectedPlan) return;
-    setBuyStep("paying"); setBuyError("");
-    try {
-      await createSubscriptionOrder(selectedPlan.id);
-      setBuyStep("success");
-      onOpenPayments();
-    } catch (e) {
-      setBuyError((e as Error).message ?? "Pembayaran gagal.");
-      setBuyStep("error");
-    }
+    setBuyError("");
+    setShowSnap(true);
   }
 
   function handleSelectPlan(plan: SubscriptionPlan) {
@@ -114,7 +109,13 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
   }
 
   function closeModal() {
-    setSelectedPlan(null); setBuyStep("idle"); setBuyError("");
+    setSelectedPlan(null); setBuyStep("idle"); setBuyError(""); setShowSnap(false);
+  }
+
+  function handleSnapSuccess() {
+    setShowSnap(false);
+    setBuyStep("success");
+    void load(); // muat ulang status langganan setelah bayar
   }
 
   const expiredAt    = status?.expiredAt ? new Date(status.expiredAt) : null;
@@ -339,7 +340,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
       )}
 
       {/* ── CONFIRM / PAY MODAL ── */}
-      {(buyStep === "confirm" || buyStep === "paying" || buyStep === "success" || buyStep === "error") && selectedPlan && (
+      {!showSnap && (buyStep === "confirm" || buyStep === "paying" || buyStep === "success" || buyStep === "error") && selectedPlan && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={buyStep === "paying" ? undefined : closeModal} />
           <div className="relative z-10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm mx-0 sm:mx-4 p-6 shadow-2xl"
@@ -352,9 +353,9 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                   <CheckCircle2 className="w-9 h-9 text-emerald-400" />
                 </div>
                 <div className="text-center">
-                  <p className="font-black text-white text-xl">Tagihan dibuat</p>
+                  <p className="font-black text-white text-xl">Pembayaran diterima</p>
                   <p className="text-sm mt-1.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
-                    Transfer untuk paket <span className="font-semibold text-white">{selectedPlan.label}</span> melalui Pembayaran Manual. Aktif setelah admin konfirmasi.
+                    Paket <span className="font-semibold text-white">{selectedPlan.label}</span> dibayar lewat Midtrans. Status Rekhastha Bisnis Anda diperbarui otomatis setelah pembayaran terkonfirmasi.
                   </p>
                 </div>
                 <button onClick={closeModal}
@@ -439,6 +440,18 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
         </div>
       )}
     </div>
+
+    {/* ── Midtrans Snap (langganan) ── */}
+    {showSnap && selectedPlan && (
+      <MidtransSnapModal
+        type="subscription"
+        planId={selectedPlan.id}
+        planLabel={selectedPlan.label}
+        amount={selectedPlan.promoPrice}
+        onSuccess={handleSnapSuccess}
+        onClose={() => { setShowSnap(false); setBuyStep("confirm"); }}
+      />
+    )}
 
     {/* ── MODALS (lazy) ── */}
     {showTax && (

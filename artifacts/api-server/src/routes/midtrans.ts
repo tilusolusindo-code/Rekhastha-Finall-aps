@@ -21,6 +21,7 @@ import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
   createSnapTransaction,
   verifyMidtransSignature,
+  getMidtransTransactionStatus,
   isMidtransProduction,
   logMidtransMode,
 } from "../lib/midtrans";
@@ -233,111 +234,169 @@ router.post("/payments/midtrans/snap/posting", async (req, res): Promise<void> =
  * Webhook dari Midtrans — tidak perlu session, diverifikasi signature.
  * Midtrans docs: https://docs.midtrans.com/reference/handling-notifications
  */
+// Format order dari rute ini: RKS-SUB-<id order langganan>-<ts> / RKS-POST-<id lowongan>-<ts>
+const ORDER_ID_RE = /^RKS-(SUB|POST)-(.+)-(\d{10,})$/;
+
 router.post("/payments/midtrans/notification", async (req, res): Promise<void> => {
-  const body = req.body as {
-    order_id: string;
-    status_code: string;
-    gross_amount: string;
-    signature_key: string;
-    transaction_status: string;
+  const body = (req.body ?? {}) as {
+    order_id?: string;
+    status_code?: string;
+    gross_amount?: string;
+    signature_key?: string;
+    transaction_status?: string;
     fraud_status?: string;
-    custom_field1?: string;
-    custom_field2?: string;
-    custom_field3?: string;
-    payment_type?: string;
   };
 
-  // Verifikasi signature
-  const valid = verifyMidtransSignature({
-    orderId:       body.order_id,
-    statusCode:    body.status_code,
-    grossAmount:   body.gross_amount,
-    signatureKey:  body.signature_key,
-  });
-
-  if (!valid) {
-    logger.warn({ orderId: body.order_id }, "[midtrans] Signature tidak valid");
-    res.status(401).json({ error: "Signature tidak valid." });
+  const orderId = typeof body.order_id === "string" ? body.order_id : "";
+  const match = ORDER_ID_RE.exec(orderId);
+  if (!match) {
+    // Bukan order buatan rute ini (mis. transaksi format lama). Tidak ada yang diproses;
+    // balas 200 agar Midtrans tidak mengulang kiriman.
+    logger.info({ orderId }, "[midtrans] Notifikasi untuk order di luar rute ini, diabaikan");
+    res.json({ ok: true, ignored: true });
     return;
   }
+  const kind = match[1] as "SUB" | "POST";
+  const targetId = match[2] as string;
 
-  const { transaction_status, fraud_status, order_id } = body;
+  // 1) Tentukan status transaksi yang bisa dipercaya.
+  let transactionStatus = String(body.transaction_status ?? "");
+  let fraudStatus = body.fraud_status;
+  let paidAmount = String(body.gross_amount ?? "");
+
+  const signatureOk =
+    typeof body.signature_key === "string" &&
+    verifyMidtransSignature({
+      orderId,
+      statusCode: String(body.status_code ?? ""),
+      grossAmount: paidAmount,
+      signatureKey: body.signature_key,
+    });
+
+  if (!signatureOk) {
+    // Signature tidak cocok: jangan percaya isi notifikasi, tanya Midtrans langsung.
+    const lookup = await getMidtransTransactionStatus(orderId);
+    if (!lookup.ok) {
+      if (lookup.reason === "unreachable") {
+        logger.error({ orderId }, "[midtrans] Tidak bisa memverifikasi ke Midtrans, minta kirim ulang");
+        res.status(503).json({ error: "Verifikasi sementara tidak tersedia." });
+        return;
+      }
+      logger.warn({ orderId, reason: lookup.reason }, "[midtrans] Notifikasi ditolak: tidak terverifikasi");
+      res.status(401).json({ error: "Notifikasi tidak terverifikasi." });
+      return;
+    }
+    logger.warn({ orderId }, "[midtrans] Signature tidak cocok; status diverifikasi langsung ke Midtrans");
+    transactionStatus = lookup.data.transaction_status;
+    fraudStatus = lookup.data.fraud_status;
+    paidAmount = lookup.data.gross_amount;
+  }
+
   const isSuccess =
-    (transaction_status === "capture" && fraud_status === "accept") ||
-    transaction_status === "settlement";
-  const isFailed = ["deny", "cancel", "expire", "failure"].includes(transaction_status);
+    (transactionStatus === "capture" && fraudStatus === "accept") ||
+    transactionStatus === "settlement";
 
-  logger.info({ order_id, transaction_status, fraud_status, isSuccess }, "[midtrans] Webhook diterima");
+  logger.info({ orderId, transactionStatus, fraudStatus, isSuccess, viaSignature: signatureOk }, "[midtrans] Notifikasi diterima");
 
   if (!isSuccess) {
-    // Catat tapi tidak lakukan apa-apa untuk pending/failed
-    res.json({ ok: true, status: transaction_status });
+    // pending / expire / cancel: cukup dicatat.
+    res.json({ ok: true, status: transactionStatus });
     return;
   }
 
-  const type      = body.custom_field1;  // "subscription" | "posting"
-  const targetId  = body.custom_field2;  // order.id | jobId
-  const companyId = body.custom_field3;  // user.id
-
+  // 2) Aktivasi. Semua data diambil dari database kita berdasarkan order_id yang
+  //    sudah terverifikasi, bukan dari custom_field di isi notifikasi.
   try {
-    if (type === "subscription" && targetId && companyId) {
-      // Aktifkan langganan
+    if (kind === "SUB") {
       const orderResult = await db.execute(sql`
-        SELECT so.id, sp.duration_days
+        SELECT so.id, so.company_id, so.amount, sp.duration_days
         FROM subscription_orders so
         JOIN subscription_plans sp ON sp.id = so.plan_id
         WHERE so.id = ${Number(targetId)} LIMIT 1
       `);
       const row = orderResult.rows[0];
+      if (!row) {
+        logger.error({ orderId }, "[midtrans] Order langganan tidak ditemukan di database");
+        res.json({ ok: false, error: "order_not_found" });
+        return;
+      }
+      if (Number(paidAmount) !== Number(row.amount)) {
+        logger.error({ orderId, paidAmount, expected: row.amount }, "[midtrans] Nominal tidak sesuai, langganan tidak diaktifkan");
+        res.json({ ok: false, error: "amount_mismatch" });
+        return;
+      }
 
-      if (row) {
-        const expiredAt = new Date();
-        expiredAt.setDate(expiredAt.getDate() + Number(row.duration_days));
+      const companyId = String(row.company_id);
+      const expiredAt = new Date();
+      expiredAt.setDate(expiredAt.getDate() + Number(row.duration_days));
 
-        await db.execute(sql`
+      // Atomik & idempoten: hanya satu notifikasi yang boleh "mengklaim" order ini.
+      const activated = await db.transaction(async (tx) => {
+        const claimed = await tx.execute(sql`
+          UPDATE subscription_orders
+          SET status = 'paid', paid_at = now()
+          WHERE id = ${Number(targetId)} AND status IS DISTINCT FROM 'paid'
+          RETURNING id
+        `);
+        if (!claimed.rows[0]) return false;
+        await tx.execute(sql`
           UPDATE users
           SET expired_at = ${expiredAt.toISOString()}, is_premium = true
           WHERE id = ${companyId}
         `);
-        await db.execute(sql`
-          UPDATE subscription_orders
-          SET status = 'paid', paid_at = now()
-          WHERE id = ${Number(targetId)}
-        `);
+        return true;
+      });
 
-        // Notifikasi
+      if (activated) {
         await db.insert(notificationsTable).values({
           userId: companyId,
           message: `Pembayaran Rekhastha Bisnis berhasil! Langganan aktif hingga ${expiredAt.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}.`,
           type: "subscription_paid",
         }).catch(() => {});
-
         logger.info({ companyId, expiredAt }, "[midtrans] Langganan diaktifkan");
+      } else {
+        logger.info({ orderId }, "[midtrans] Order langganan sudah diproses sebelumnya");
       }
 
-    } else if (type === "posting" && targetId && companyId) {
-      // Aktifkan lowongan
-      await db.execute(sql`
+    } else {
+      const jobResult = await db.execute(sql`
+        SELECT id, posisi, kategori, employer_id, payment_status, admin_fee_amount
+        FROM gigs WHERE id = ${targetId} LIMIT 1
+      `);
+      const job = jobResult.rows[0];
+      if (!job) {
+        logger.error({ orderId }, "[midtrans] Lowongan tidak ditemukan di database");
+        res.json({ ok: false, error: "job_not_found" });
+        return;
+      }
+      const feeAmount = Number(job.admin_fee_amount) || getAdminFeeAmount(job.kategori as string);
+      if (Number(paidAmount) !== feeAmount) {
+        logger.error({ orderId, paidAmount, expected: feeAmount }, "[midtrans] Nominal tidak sesuai, lowongan tidak diaktifkan");
+        res.json({ ok: false, error: "amount_mismatch" });
+        return;
+      }
+
+      const claimed = await db.execute(sql`
         UPDATE gigs
         SET payment_status = 'confirmed', is_active = true
-        WHERE id = ${targetId} AND employer_id = ${companyId}
+        WHERE id = ${targetId} AND payment_status IS DISTINCT FROM 'confirmed'
+        RETURNING id
       `);
-
-      // Notifikasi
-      const jobResult = await db.execute(sql`SELECT posisi FROM gigs WHERE id = ${targetId} LIMIT 1`);
-      const jobName = (jobResult.rows[0]?.posisi as string) ?? "lowongan";
-      await db.insert(notificationsTable).values({
-        userId: companyId,
-        message: `Pembayaran posting "${jobName}" berhasil! Lowongan Anda sudah tayang.`,
-        type: "posting_paid",
-      }).catch(() => {});
-
-      logger.info({ jobId: targetId, companyId }, "[midtrans] Lowongan diaktifkan");
+      if (claimed.rows[0]) {
+        await db.insert(notificationsTable).values({
+          userId: String(job.employer_id),
+          message: `Pembayaran posting "${String(job.posisi ?? "lowongan")}" berhasil! Lowongan Anda sudah tayang.`,
+          type: "posting_paid",
+        }).catch(() => {});
+        logger.info({ jobId: targetId }, "[midtrans] Lowongan diaktifkan");
+      } else {
+        logger.info({ orderId }, "[midtrans] Lowongan sudah diproses sebelumnya");
+      }
     }
 
     res.json({ ok: true });
   } catch (err) {
-    logger.error({ err, order_id }, "[midtrans] Gagal proses notifikasi");
+    logger.error({ err, orderId }, "[midtrans] Gagal proses notifikasi");
     res.status(500).json({ error: "Internal error." });
   }
 });

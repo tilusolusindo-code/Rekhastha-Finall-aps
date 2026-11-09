@@ -8,6 +8,7 @@ import { WalletTransaction, EscrowEvent } from "@/types/escrow";
 import EscrowWalletPanel from "@/components/escrow-wallet-panel";
 import EscrowTimeline from "@/components/escrow-timeline";
 import { submitDocuments, submitKyc } from "@/lib/auth-client";
+import { TeamMembershipBanner } from "@/components/team-membership-banner";
 
 interface WorkerProfilePageProps {
   currentUser: AuthUser;
@@ -104,6 +105,8 @@ export default function WorkerProfilePage({
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50">
+      {/* ── Banner anggota tim (muncul kalau user adalah anggota tim) ── */}
+      <TeamMembershipBanner />
       {/* ── Profile header ──────────────────────────────── */}
       <div
         className="px-5 pt-6 pb-5 flex flex-col items-center gap-3"

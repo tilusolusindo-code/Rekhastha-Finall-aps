@@ -1,12 +1,40 @@
-import express, { type ErrorRequestHandler, type Express } from "express";
+import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import uploadsRouter from "./routes/uploads";
 import { logger } from "./lib/logger";
 import googleAdminRouter from "./routes/google-admin";
+import taxRouter from "./routes/tax";
+import teamRouter from "./routes/team";
 import { originGuard } from "./lib/csrf";
-import { globalRateLimit } from "./lib/global-rate-limit";
+
+// ── Simple in-memory rate limiter (no extra package) ─────────────────────────
+const rateBuckets = new Map<string, { count: number; reset: number }>();
+function rateLimit(maxPerMin: number): RequestHandler {
+  return (req, res, next) => {
+    const ip = ((req.headers["x-forwarded-for"] as string) || "").split(",")[0]?.trim()
+      || req.socket.remoteAddress || "unknown";
+    const key = `${req.path}:${ip}`;
+    const now = Date.now();
+    const bucket = rateBuckets.get(key);
+    if (!bucket || now > bucket.reset) {
+      rateBuckets.set(key, { count: 1, reset: now + 60_000 });
+      return next();
+    }
+    bucket.count++;
+    if (bucket.count > maxPerMin) {
+      res.status(429).json({ error: "Terlalu banyak permintaan. Coba lagi dalam 1 menit." });
+      return;
+    }
+    next();
+  };
+}
+// Bersihkan bucket lama setiap 5 menit
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of rateBuckets) if (now > v.reset) rateBuckets.delete(k);
+}, 5 * 60_000).unref();
 
 const app: Express = express();
 
@@ -15,30 +43,35 @@ const app: Express = express();
 app.disable("x-powered-by");
 // Behind Vercel's edge proxy: trust one hop so req.ip / req.protocol are real.
 app.set("trust proxy", 1);
+/**
+ * Security headers applied to every API response.
+ *
+ * CSP is strict for API responses (no script/style needed here).
+ * The frontend (Vite SPA) has its own CSP via Vercel headers config
+ * (see vercel.json), so the API CSP only needs to cover /api/*.
+ */
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  if (process.env["NODE_ENV"] === "production") {
-    res.setHeader("Strict-Transport-Security", "max-age=15552000");
-  }
-  // Content-Security-Policy: batasi sumber script/style/koneksi yang boleh dimuat browser.
+
+  // Content-Security-Policy for API responses:
+  // No scripts, no frames, no media — API returns JSON only.
   res.setHeader(
     "Content-Security-Policy",
     [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.midtrans.com https://app.midtrans.com https://api.resend.com",
+      "default-src 'none'",
       "frame-ancestors 'none'",
-      "object-src 'none'",
-      "base-uri 'self'",
+      "base-uri 'none'",
+      "form-action 'none'",
     ].join("; "),
   );
+
+  if (process.env["NODE_ENV"] === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  }
   next();
 });
 
@@ -65,11 +98,15 @@ app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "64kb", parameterLimit: 100 }));
 
-// Global rate limit: 60 req/menit per IP untuk semua endpoint umum.
-app.use(globalRateLimit);
-
 // Reject cross-site state-changing requests before any route runs.
 app.use("/api", originGuard);
+
+// Rate limiting pada endpoint sensitif
+app.use("/api/auth/login",          rateLimit(10));  // maks 10 login/menit per IP
+app.use("/api/auth/register",       rateLimit(5));   // maks 5 register/menit per IP
+app.use("/api/forgot-password",     rateLimit(5));
+app.use("/api/doku/create",         rateLimit(10));  // maks 10 payment attempt/menit
+app.use("/api/team/invite",         rateLimit(20));
 
 // Uploaded documents must pass per-file ownership/participant checks.
 app.use("/api/uploads", uploadsRouter);

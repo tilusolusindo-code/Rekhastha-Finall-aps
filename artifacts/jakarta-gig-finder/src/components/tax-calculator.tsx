@@ -14,11 +14,11 @@ const STATUS_OPTS: { value: TaxInput["status"]; label: string }[] = [
 ];
 
 export default function TaxCalculator({ onClose }: { onClose: () => void }) {
-  const [gross, setGross]         = useState("3000000");
-  const [status, setStatus]       = useState<TaxInput["status"]>("TK0");
-  const [isEmployee, setIsEmployee] = useState(false);
-  const [days, setDays]           = useState("22");
-  const [result, setResult]       = useState<TaxResult | null>(null);
+  const [gross, setGross]     = useState("3000000");
+  const [status, setStatus]   = useState<TaxInput["status"]>("TK0");
+  const [mode, setMode]       = useState<"harian" | "kontrak">("harian");
+  const [days, setDays]       = useState("22");
+  const [result, setResult]   = useState<TaxResult | null>(null);
   const [showDetail, setShowDetail] = useState(false);
 
   const calc = () => {
@@ -27,7 +27,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
     setResult(calculateTax({
       grossMonthly: g,
       status,
-      isEmployee,
+      mode,
       workDaysPerMonth: Number(days) || 22,
     }));
   };
@@ -49,8 +49,8 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
               <Calculator className="w-4 h-4 text-emerald-700" />
             </div>
             <div>
-              <h2 className="text-base font-black text-gray-900">Kalkulator Pajak & BPJS</h2>
-              <p className="text-[11px] text-gray-400">PPh 21 + BPJS TK + BPJS Kesehatan</p>
+              <h2 className="text-base font-black text-gray-900">Kalkulator Pajak</h2>
+              <p className="text-[11px] text-gray-400">PPh 21 · BPJS hanya untuk kontrak</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">✕</button>
@@ -82,19 +82,24 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs font-bold text-gray-700 block mb-1">Jenis Pekerja</label>
+              <label className="text-xs font-bold text-gray-700 block mb-1">Jenis Pekerjaan</label>
               <div className="flex rounded-xl border border-gray-200 overflow-hidden">
-                <button onClick={() => setIsEmployee(false)}
-                  className={`flex-1 py-2.5 text-xs font-bold transition-colors ${!isEmployee ? "bg-emerald-700 text-white" : "bg-white text-gray-500"}`}>
-                  Harian/Lepas
+                <button onClick={() => setMode("harian")}
+                  className={`flex-1 py-2.5 text-xs font-bold transition-colors ${mode === "harian" ? "bg-emerald-700 text-white" : "bg-white text-gray-500"}`}>
+                  Harian / Shift
                 </button>
-                <button onClick={() => setIsEmployee(true)}
-                  className={`flex-1 py-2.5 text-xs font-bold transition-colors ${isEmployee ? "bg-emerald-700 text-white" : "bg-white text-gray-500"}`}>
-                  Karyawan Tetap
+                <button onClick={() => setMode("kontrak")}
+                  className={`flex-1 py-2.5 text-xs font-bold transition-colors ${mode === "kontrak" ? "bg-emerald-700 text-white" : "bg-white text-gray-500"}`}>
+                  Kontrak Bulanan
                 </button>
               </div>
+              <p className="text-[10px] text-gray-400 mt-1">
+                {mode === "harian"
+                  ? "PPh 21 saja · tidak ada BPJS untuk pekerja harian"
+                  : "PPh 21 + BPJS Kesehatan + BPJS Ketenagakerjaan"}
+              </p>
             </div>
-            {!isEmployee && (
+            {mode === "harian" && (
               <div className="w-24">
                 <label className="text-xs font-bold text-gray-700 block mb-1">Hari Kerja</label>
                 <input type="number" min="1" max="31" value={days}
@@ -120,27 +125,44 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
               </div>
 
               {/* Quick summary */}
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: "PPh 21", value: result.pph21Monthly, color: "text-orange-600", bg: "bg-orange-50" },
-                  { label: "BPJS Kes.", value: result.bpjsKesehatanEmployee, color: "text-blue-600", bg: "bg-blue-50" },
-                  { label: "BPJS TK", value: result.bpjsJhtEmployee + result.bpjsJpEmployee, color: "text-purple-600", bg: "bg-purple-50" },
-                ].map(item => (
-                  <div key={item.label} className={`${item.bg} rounded-xl p-3 text-center`}>
-                    <p className={`text-[10px] font-bold ${item.color}`}>{item.label}</p>
-                    <p className={`text-sm font-black ${item.color}`}>{IDR(item.value)}</p>
-                  </div>
-                ))}
+              <div className={`grid gap-2 ${mode === "kontrak" ? "grid-cols-3" : "grid-cols-1"}`}>
+                <div className="bg-orange-50 rounded-xl p-3 text-center">
+                  <p className="text-[10px] font-bold text-orange-600">PPh 21</p>
+                  <p className="text-sm font-black text-orange-600">{IDR(result.pph21Monthly)}</p>
+                </div>
+                {mode === "kontrak" && (
+                  <>
+                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+                      <p className="text-[10px] font-bold text-blue-600">BPJS Kesehatan</p>
+                      <p className="text-sm font-black text-blue-600">{IDR(result.bpjsKesehatanEmployee)}</p>
+                    </div>
+                    <div className="bg-purple-50 rounded-xl p-3 text-center">
+                      <p className="text-[10px] font-bold text-purple-600">BPJS TK</p>
+                      <p className="text-sm font-black text-purple-600">{IDR(result.bpjsJhtEmployee + result.bpjsJpEmployee)}</p>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Employer cost */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-amber-800">Total Beban Perusahaan</p>
-                  <p className="text-[11px] text-amber-600">Gaji + semua iuran BPJS yang ditanggung perusahaan</p>
+              {/* Employer cost — hanya untuk kontrak */}
+              {mode === "kontrak" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-amber-800">Total Beban Perusahaan</p>
+                    <p className="text-[11px] text-amber-600">Gaji + iuran BPJS yang ditanggung perusahaan</p>
+                  </div>
+                  <p className="text-base font-black text-amber-800 ml-3 shrink-0">{IDR(result.totalEmployerCost)}</p>
                 </div>
-                <p className="text-base font-black text-amber-800 ml-3 shrink-0">{IDR(result.totalEmployerCost)}</p>
-              </div>
+              )}
+
+              {/* Info harian */}
+              {mode === "harian" && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    Pekerja harian tidak wajib didaftarkan BPJS. PPh 21 hanya dikenakan jika upah harian melebihi Rp 450.000.
+                  </p>
+                </div>
+              )}
 
               {/* Detail toggle */}
               <button onClick={() => setShowDetail(v => !v)}

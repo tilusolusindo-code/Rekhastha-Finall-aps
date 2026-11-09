@@ -1,3 +1,7 @@
+/**
+ * @deprecated — TIDAK DIGUNAKAN. Gateway pembayaran diganti ke DOKU.
+ * File ini aman dihapus setelah konfirmasi tidak ada referensi.
+ */
 import { logger } from "./logger";
 
 /**

@@ -39,3 +39,4 @@ export * from "./ephemeral";
 export * from "./password-reset-tokens";
 
 export * from "./company-team";
+export * from "./doku-payments";

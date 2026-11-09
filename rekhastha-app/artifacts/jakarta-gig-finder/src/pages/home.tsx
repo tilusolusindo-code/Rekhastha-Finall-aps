@@ -695,6 +695,23 @@ export default function Home() {
     };
   }, [currentUser, workerProfile]);
 
+  // ── DOKU payment result (redirect balik dari checkout) ───────────
+  const [paymentResult, setPaymentResult] = useState<"success" | "failed" | null>(() => {
+    const p = new URLSearchParams(window.location.search).get("payment");
+    return p === "success" ? "success" : p === "failed" ? "failed" : null;
+  });
+  useEffect(() => {
+    if (!paymentResult) return;
+    // Bersihkan URL param supaya tidak muncul lagi saat refresh
+    const url = new URL(window.location.href);
+    url.searchParams.delete("payment");
+    url.searchParams.delete("order");
+    window.history.replaceState({}, "", url.toString());
+    // Auto-dismiss setelah 5 detik
+    const t = setTimeout(() => setPaymentResult(null), 5000);
+    return () => clearTimeout(t);
+  }, [paymentResult]);
+
   // App init: request OS notification permission, and unlock the shared audio
   // context on the first user gesture so later chimes (incl. the role-switch
   // replay) are never blocked by the browser's autoplay policy.
@@ -778,6 +795,7 @@ export default function Home() {
   }, [mode]);
 
   // ── Auth complete ───────────────────────────────────────────────
+  const handleAuthBack = useCallback(() => setAuthScreen("landing"), []);
   const handleAuthComplete = useCallback((user: AuthUser) => {
     setAuthRestoreError(null);
     setCurrentUser(user);
@@ -1481,11 +1499,15 @@ export default function Home() {
   }, [disputeJob, customJobs, workerProfile]);
 
   // ── Countdown ticker (drives both engines) ──────────────────────
+  // Ticker dimatikan saat AuthPage tampil agar input tidak kehilangan focus
   useEffect(() => {
+    // Jangan jalankan ticker saat AuthPage tampil — mencegah re-render yang
+    // menyebabkan input login/register kehilangan focus setiap 1 detik
+    if (!currentUser && authScreen) return;
     if (graceDeadline == null && disputeDeadline == null) return;
     const t = setInterval(() => setNowTick(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [graceDeadline, disputeDeadline]);
+  }, [graceDeadline, disputeDeadline, currentUser, authScreen]);
 
   // ── Grace-timer expiry ──────────────────────────────────────────
   // No wallet, reputation, or escrow deduction is applied locally. Any future
@@ -1622,13 +1644,19 @@ export default function Home() {
         />
       );
     }
+    // AuthPage dirender di fixed overlay terpisah agar:
+    // 1. Tidak terkurung di overflow:hidden shell Home
+    // 2. Tidak ter-trigger re-render oleh nowTick timer Home
+    // onBack & onComplete stabil karena AuthPage di-memo
     return (
-      <AuthPage
-        key={authScreen}
-        initialTab={authScreen}
-        onBack={() => setAuthScreen("landing")}
-        onComplete={handleAuthComplete}
-      />
+      <div style={{ position: "fixed", inset: 0, zIndex: 100, overflowY: "auto", WebkitOverflowScrolling: "touch", background: "#f4f6f4" }}>
+        <AuthPage
+          key={authScreen}
+          initialTab={authScreen}
+          onBack={handleAuthBack}
+          onComplete={handleAuthComplete}
+        />
+      </div>
     );
   }
 
@@ -1650,6 +1678,24 @@ export default function Home() {
           onDecline={() => handleStatusChange(applicantToast.id, "ditolak")}
           onDismiss={() => setApplicantToast(null)}
         />
+      )}
+
+      {/* ── DOKU Payment result toast ─────────────────────── */}
+      {paymentResult && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl text-white text-sm font-bold max-w-xs w-[90vw] ${
+          paymentResult === "success" ? "bg-emerald-600" : "bg-red-500"
+        }`}>
+          <span className="text-lg">{paymentResult === "success" ? "✅" : "❌"}</span>
+          <div>
+            <p className="font-black">{paymentResult === "success" ? "Pembayaran Berhasil!" : "Pembayaran Gagal"}</p>
+            <p className="text-xs font-normal opacity-80 mt-0.5">
+              {paymentResult === "success"
+                ? "Langganan Rekhastha Bisnis Anda akan aktif setelah dikonfirmasi."
+                : "Coba lagi atau hubungi kami jika ada kendala."}
+            </p>
+          </div>
+          <button onClick={() => setPaymentResult(null)} className="ml-auto opacity-70 hover:opacity-100 shrink-0">✕</button>
+        </div>
       )}
 
       {/* ── INSTANT-GIG PERSISTENT ALARM (radar ON only) ─ */}

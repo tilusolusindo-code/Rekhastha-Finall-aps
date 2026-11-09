@@ -23,6 +23,7 @@ const emptyProfile: WorkerProfile = {
   whatsapp: "",
   npwp: "",
   belumPunyaNpwp: false,
+  statusPtkp: "TK0" as const,
   namaBank: "",
   nomorRekening: "",
   namaRekening: "",
@@ -298,9 +299,23 @@ export default function WorkerOnboarding({
               <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 flex gap-3 items-start">
                 <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-700 leading-relaxed">
-                  NPWP dikumpulkan sebagai data verifikasi. Segala kewajiban perpajakan menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku.
+                  Data pajak digunakan untuk menghitung potongan PPh 21 & BPJS secara otomatis saat Anda melamar pekerjaan.
                 </p>
               </div>
+
+              <Field label="Status PTKP (Pajak)" hint="Digunakan untuk hitung potongan PPh 21 otomatis" required>
+                <select
+                  className={`${inputClass} bg-white`}
+                  value={profile.statusPtkp ?? "TK0"}
+                  onChange={(e) => set("statusPtkp", e.target.value as any)}
+                >
+                  <option value="TK0">TK/0 — Belum kawin, tanpa tanggungan</option>
+                  <option value="K0">K/0 — Kawin, tanpa tanggungan</option>
+                  <option value="K1">K/1 — Kawin, 1 tanggungan</option>
+                  <option value="K2">K/2 — Kawin, 2 tanggungan</option>
+                  <option value="K3">K/3 — Kawin, 3 tanggungan</option>
+                </select>
+              </Field>
 
               <Field label="NPWP (Nomor Pokok Wajib Pajak)" hint="15 atau 16 digit — tertera di kartu NPWP Anda">
                 <input

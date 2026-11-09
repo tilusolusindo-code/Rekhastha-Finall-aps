@@ -64,9 +64,19 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
     if (!inviteEmail.includes("@")) return;
     setInviting(true); setInviteMsg(null);
     try {
-      await inviteMember(inviteEmail, inviteRole);
-      setInviteMsg({ ok: true, text: `Undangan dikirim ke ${inviteEmail}` });
+      const res = await fetch("/api/team/invite", {
+        method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Gagal mengirim undangan");
+      const msg = data.directAdded
+        ? `${inviteEmail} langsung ditambahkan ke tim`
+        : `Undangan dikirim ke ${inviteEmail}`;
+      setInviteMsg({ ok: true, text: msg });
       setInviteEmail("");
+      void load(); // refresh daftar anggota
     } catch (err) {
       setInviteMsg({ ok: false, text: (err as Error).message });
     } finally { setInviting(false); }

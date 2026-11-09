@@ -15,6 +15,13 @@ const basePath = process.env.BASE_PATH ?? "/";
 
 export default defineConfig({
   base: basePath,
+  define: {
+    // Expose Midtrans client key ke frontend (aman — ini public key)
+    "import.meta.env.VITE_MIDTRANS_CLIENT_KEY":
+      JSON.stringify(process.env.VITE_MIDTRANS_CLIENT_KEY ?? process.env.MIDTRANS_CLIENT_KEY ?? ""),
+    "import.meta.env.VITE_MIDTRANS_IS_PRODUCTION":
+      JSON.stringify(process.env.MIDTRANS_IS_PRODUCTION ?? "false"),
+  },
   plugins: [
     react(),
     tailwindcss(),

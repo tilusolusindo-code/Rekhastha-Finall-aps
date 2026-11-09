@@ -7,7 +7,8 @@ import {
   QrCode, XCircle, Sparkles, CreditCard,
   Plus, Trash2,
 } from "lucide-react";
-import { CustomJob, PaymentType, HiringMode, JobApplicationQuestion, RequestedApplicationDocument, paymentLabels, paymentInputLabels, paymentUnits } from "@/types/custom-job";
+import { CustomJob, PaymentType, HiringMode, JobApplicationQuestion, RequestedApplicationDocument, DurasiKontrak, paymentLabels, paymentInputLabels, paymentUnits, durasiKontrakOptions } from "@/types/custom-job";
+import MidtransSnapModal from "@/components/midtrans-snap-modal";
 import { ApplicationNotification, ApplicationStatus, maskName } from "@/types/notification";
 import { JobCategory, CANCELLATION_FEE_1HR } from "@/types/escrow";
 import { INSTANT_PRICE_BY_CATEGORY, ORIGINAL_PRICE_BY_CATEGORY, SUBSCRIPTION_PRICE_MONTHLY, FREE_APPLICANT_LIMIT, getInstantPrice } from "@/types/monetization";
@@ -125,6 +126,7 @@ export default function HiringModePanel({
   const todayStr = new Date().toISOString().split("T")[0];
   const [tanggalMulai, setTanggalMulai] = useState("");
   const [jamKerja, setJamKerja] = useState("");
+  const [durasiKontrak, setDurasiKontrak] = useState<DurasiKontrak>("harian");
   const [pickerAddress, setPickerAddress] = useState("");
   const [pickerLat, setPickerLat] = useState<number | null>(null);
   const [pickerLng, setPickerLng] = useState<number | null>(null);
@@ -156,6 +158,7 @@ export default function HiringModePanel({
   const [payingInstant, setPayingInstant] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [adminFeeQuote, setAdminFeeQuote] = useState<number | null>(null);
+  const [snapJob, setSnapJob] = useState<{ id: string; title: string; amount: number } | null>(null);
   const [adminFeeListPriceQuote, setAdminFeeListPriceQuote] = useState<number | null>(null);
 
   useEffect(() => {
@@ -262,7 +265,7 @@ export default function HiringModePanel({
         broadcastActive: true,
         escrowStatus: "locked",
         escrowAmount: totalEscrow,
-        durasiKontrak: "harian",
+        durasiKontrak,
         jobDate: new Date(), // AUTOMATED DATE — always today for instant broadcasts
         alamat: pickerAddress.trim(),
         lat: pickerLat!,
@@ -272,11 +275,17 @@ export default function HiringModePanel({
         requestedApplicationDocuments,
         feeRate: 0,
       });
-      await createInstantOrder(created.id, jobCategory);
+      // Buka Snap modal untuk bayar biaya posting
+      const feeAmount = instantListingPrice;
+      if (feeAmount > 0) {
+        setSnapJob({ id: created.id, title: posisi.trim(), amount: feeAmount });
+      } else {
+        // Subscriber — langsung aktif tanpa bayar
+        await createInstantOrder(created.id, jobCategory);
+      }
       resetForm();
       setBroadcastState("idle");
       setFormOpen(false);
-      onOpenPayments?.();
     } catch (error) {
       setBroadcastState("idle");
       setPostingError(error instanceof Error ? error.message : "Tagihan Instan Kilat gagal dibuat.");
@@ -302,7 +311,7 @@ export default function HiringModePanel({
         hiringMode: "lama",
         broadcastActive: false,
         escrowStatus: "pending",
-        durasiKontrak: "harian",
+        durasiKontrak,
         jobDate: tanggalMulai ? new Date(tanggalMulai) : undefined,
         jamKerja: jamKerja.trim(),
         alamat: pickerAddress.trim(),
@@ -715,6 +724,47 @@ export default function HiringModePanel({
                             className={inputCls} />
                         </div>
                       </div>
+
+                      {/* Durasi / Tipe Kontrak */}
+                      <div>
+                        <label className={labelCls}>Durasi / Tipe Kontrak *</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {durasiKontrakOptions.map(opt => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => {
+                                setDurasiKontrak(opt.value as DurasiKontrak);
+                                // Kalau kontrak bulanan, set pembayaran ke per_bulan otomatis
+                                if (opt.value !== "harian") setPembayaran("per_bulan");
+                                else setPembayaran("per_shift");
+                              }}
+                              className={`px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-all ${
+                                durasiKontrak === opt.value
+                                  ? "border-primary bg-primary/5 text-primary"
+                                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                              }`}
+                            >
+                              <div className="font-bold">{opt.label}</div>
+                              {opt.value === "harian" && (
+                                <div className="text-[10px] text-gray-400 mt-0.5">Bayar per shift · PPh 21 saja</div>
+                              )}
+                              {opt.value !== "harian" && (
+                                <div className="text-[10px] text-gray-400 mt-0.5">Bayar per bulan · PPh 21</div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        {durasiKontrak !== "harian" && (
+                          <div className="mt-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                            <p className="text-[11px] text-blue-700 font-semibold">Kontrak Bulanan</p>
+                            <p className="text-[10px] text-blue-600 mt-0.5 leading-relaxed">
+                              Nominal diisi sebagai gaji per bulan. PPh 21 dihitung berdasarkan status PTKP pekerja.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                       <div>
                         <label className={labelCls}>Deskripsi Pekerjaan &amp; Kualifikasi Lengkap *</label>
                         <textarea value={deskripsi} onChange={e => setDeskripsi(e.target.value)}
@@ -1249,6 +1299,21 @@ export default function HiringModePanel({
         )}
       </div>
     </div>
+
+    {/* ── Midtrans Snap Modal untuk biaya posting ── */}
+    {snapJob && (
+      <MidtransSnapModal
+        type="posting"
+        jobId={snapJob.id}
+        jobTitle={snapJob.title}
+        amount={snapJob.amount}
+        onSuccess={() => {
+          setSnapJob(null);
+          onOpenPayments?.();
+        }}
+        onClose={() => setSnapJob(null)}
+      />
+    )}
     </>
   );
 }

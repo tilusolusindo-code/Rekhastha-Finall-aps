@@ -18,6 +18,11 @@ export function isMidtransProduction(): boolean {
   return process.env["MIDTRANS_IS_PRODUCTION"] === "true";
 }
 
+/** True bila Server Key terisi, sehingga pembayaran Midtrans bisa dipakai. */
+export function isMidtransConfigured(): boolean {
+  return Boolean(process.env["MIDTRANS_SERVER_KEY"]?.trim().replace(/^["']|["']$/g, ""));
+}
+
 function getConfig() {
   // Bersihkan spasi/baris baru dan tanda kutip yang sering ikut tersalin ke env.
   const serverKey = process.env["MIDTRANS_SERVER_KEY"]?.trim().replace(/^["']|["']$/g, "");

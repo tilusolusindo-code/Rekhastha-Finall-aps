@@ -1,3 +1,4 @@
+import { isMidtransConfigured } from "../lib/midtrans";
 import { Router, type IRouter } from "express";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -147,7 +148,7 @@ router.post("/instant-orders", async (req, res): Promise<void> => {
     .from(manualPaymentSettingsTable)
     .where(eq(manualPaymentSettingsTable.id, 1))
     .limit(1);
-  if (!settings?.accountNumber) {
+  if (!settings?.accountNumber && !isMidtransConfigured()) {
     res.status(409).json({ error: "Instruksi transfer belum diatur oleh admin." });
     return;
   }

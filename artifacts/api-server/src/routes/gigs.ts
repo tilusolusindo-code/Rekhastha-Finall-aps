@@ -11,6 +11,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { broadcastGig } from "../lib/realtime";
+import { isMidtransConfigured } from "../lib/midtrans";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
   calculateTotalWorkerPayout,
@@ -171,7 +172,7 @@ router.post("/gigs", async (req, res): Promise<void> => {
     .from(manualPaymentSettingsTable)
     .where(eq(manualPaymentSettingsTable.id, 1))
     .limit(1);
-  if (!settings?.accountNumber) {
+  if (!settings?.accountNumber && !isMidtransConfigured()) {
     res.status(409).json({ error: "Instruksi transfer belum diatur oleh admin. Lowongan belum dibuat." });
     return;
   }

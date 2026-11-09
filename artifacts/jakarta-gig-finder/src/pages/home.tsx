@@ -1285,10 +1285,25 @@ export default function Home() {
       actor: "system",
       amount: persisted.escrowAmount,
       timestamp: now,
-      note: "Tagihan dibuat. Lowongan baru aktif setelah admin mengonfirmasi transfer.",
+      note: "Tagihan dibuat. Lowongan baru aktif setelah pembayaran terkonfirmasi.",
     }, ...previous]);
     return persisted;
   }, [currentUser]);
+
+  // Setelah pembayaran Midtrans berhasil: webhook yang mengaktifkan lowongan di server;
+  // di sini hanya menyelaraskan tampilan lokal (WebSocket akan menimpa dengan data server).
+  const handleJobPaid = useCallback((jobId: number) => {
+    setCustomJobs((previous) => previous.map((job) =>
+      job.id === jobId
+        ? {
+            ...job,
+            paymentStatus: "confirmed",
+            escrowStatus: "locked",
+            broadcastActive: job.hiringMode === "cepat",
+          }
+        : job,
+    ));
+  }, []);
 
   // ── Apply ───────────────────────────────────────────────────────
   const handleApply = useCallback(async (job: CustomJob, profile: WorkerProfile, application?: {
@@ -2228,6 +2243,7 @@ export default function Home() {
                   customJobs={customJobs}
                   notifications={notifications}
                   onJobPosted={handleJobPosted}
+                  onJobPaid={handleJobPaid}
                   onLockEscrow={handleLockEscrow}
                   onOpenAttendanceQr={setAttendanceQrJob}
                   onOpenBisnis={() => setActiveTab("bisnis")}

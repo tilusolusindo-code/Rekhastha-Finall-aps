@@ -9,9 +9,12 @@
 
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import {
   db,
+  gigsTable,
+  instantOrdersTable,
+  manualPaymentsTable,
   usersTable,
   subscriptionOrdersTable,
   subscriptionPlansTable,
@@ -25,13 +28,21 @@ import {
   isMidtransProduction,
   logMidtransMode,
 } from "../lib/midtrans";
-import { getAdminFeeAmount, hasAdminFeeWaiverAt } from "../lib/pricing";
+import { broadcastGig, broadcastInstantActivated } from "../lib/realtime";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 logMidtransMode();
 
-const APP_BASE = process.env["APP_BASE_URL"] ?? "https://rekhastha.my.id";
+/** Basis URL untuk redirect Snap: APP_BASE_URL bila diisi, jika tidak diturunkan dari request. */
+function appBase(req: { protocol?: string; get?: (h: string) => string | undefined }): string {
+  const fromEnv = process.env["APP_BASE_URL"]?.trim().replace(/\/+$/, "");
+  if (fromEnv) return fromEnv;
+  const host = req.get?.("x-forwarded-host") ?? req.get?.("host");
+  if (!host) throw new Error("APP_BASE_URL belum diisi dan host request tidak tersedia.");
+  const proto = (req.get?.("x-forwarded-proto") ?? req.protocol ?? "https").split(",")[0]!.trim();
+  return `${proto}://${host}`;
+}
 
 // ── Helper: buat order ID unik ────────────────────────────────────────────────
 function makeOrderId(prefix: string, id: number | string): string {
@@ -77,6 +88,7 @@ router.post("/payments/midtrans/snap/subscription", async (req, res): Promise<vo
     if (!order) throw new Error("Gagal membuat order.");
 
     const orderId = makeOrderId("SUB", order.id);
+    const APP_BASE = appBase(req);
 
     // Buat Snap transaction
     const snapResponse = await createSnapTransaction({
@@ -129,9 +141,11 @@ router.post("/payments/midtrans/snap/subscription", async (req, res): Promise<vo
 
 // ── POST /api/payments/midtrans/snap/posting ──────────────────────────────────
 /**
- * Employer minta Snap token untuk biaya posting lowongan (Rp 75.000).
- * Body: { jobId: string }
- * Returns: { snapToken, orderId, redirectUrl }
+ * Employer membayar lowongan via Midtrans Snap.
+ * Nominal = persis tagihan manual "gig_escrow" (upah pekerja + biaya posting),
+ * sehingga hasilnya sama dengan konfirmasi admin atas transfer manual.
+ * Body: { jobId: number | string }
+ * Returns: { snapToken, orderId, redirectUrl, amount, wage, fee }
  */
 router.post("/payments/midtrans/snap/posting", async (req, res): Promise<void> => {
   const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
@@ -140,88 +154,82 @@ router.post("/payments/midtrans/snap/posting", async (req, res): Promise<void> =
     return;
   }
 
-  const parsed = z.object({ jobId: z.string().min(1) }).safeParse(req.body);
+  // Frontend mengirim id lowongan sebagai angka; terima angka maupun string.
+  const parsed = z.object({ jobId: z.coerce.number().int().positive() }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "jobId tidak valid." });
     return;
   }
+  const gigId = parsed.data.jobId;
 
   try {
-    // Ambil data job
-    const jobResult = await db.execute(sql`
-      SELECT id, posisi, kategori, employer_id, payment_status, admin_fee_amount
-      FROM gigs WHERE id = ${parsed.data.jobId} LIMIT 1
-    `);
-    const job = jobResult.rows[0];
-
-    if (!job) {
+    const [gig] = await db.select().from(gigsTable).where(eq(gigsTable.id, gigId)).limit(1);
+    if (!gig) {
       res.status(404).json({ error: "Lowongan tidak ditemukan." });
       return;
     }
-    if (job.employer_id !== user.id) {
+    if (gig.employerId !== user.id) {
       res.status(403).json({ error: "Bukan lowongan Anda." });
       return;
     }
-    if (job.payment_status === "confirmed") {
+    if (gig.paymentStatus === "confirmed") {
       res.status(409).json({ error: "Lowongan sudah dibayar." });
       return;
     }
 
-    // Cek apakah subscriber (waive fee)
-    const [employer] = await db.select().from(usersTable).where(eq(usersTable.id, user.id)).limit(1);
-    const waived = hasAdminFeeWaiverAt(new Date(), {
-      createdAt: employer?.createdAt ?? new Date(),
-      isPremium: employer?.isPremium ?? false,
-      expiredAt: employer?.expiredAt ?? null,
-      freeTrialStartedAt: employer?.freeTrialStartedAt ?? null,
-      freeTrialExpiresAt: employer?.freeTrialExpiresAt ?? null,
-    });
-
-    if (waived) {
-      // Subscriber — langsung aktifkan tanpa bayar
-      await db.execute(sql`
-        UPDATE gigs SET payment_status = 'confirmed', is_active = true
-        WHERE id = ${parsed.data.jobId}
-      `);
-      res.json({ waived: true, message: "Lowongan langsung aktif (subscriber)." });
+    const wage = gig.escrowAmount ?? 0;
+    const fee = gig.adminFeeAmount ?? 0;
+    const amount = wage + fee;
+    if (!Number.isSafeInteger(amount) || wage <= 0 || fee < 0) {
+      res.status(409).json({ error: "Nominal lowongan belum valid. Hubungi admin." });
       return;
     }
 
-    const feeAmount = Number(job.admin_fee_amount) || getAdminFeeAmount(job.kategori as string);
-    const orderId = makeOrderId("POST", parsed.data.jobId);
+    // Tagihan manual adalah catatan resmi nominalnya; harus konsisten dengan lowongan.
+    const [invoice] = await db
+      .select()
+      .from(manualPaymentsTable)
+      .where(and(eq(manualPaymentsTable.targetType, "gig_escrow"), eq(manualPaymentsTable.targetId, String(gigId))))
+      .limit(1);
+    if (!invoice || invoice.payerId !== user.id || invoice.amount !== amount) {
+      logger.error({ gigId, amount, invoice: invoice?.amount }, "[midtrans] Tagihan lowongan tidak konsisten");
+      res.status(409).json({ error: "Tagihan lowongan tidak konsisten. Hubungi admin." });
+      return;
+    }
+    if (invoice.status === "confirmed") {
+      res.status(409).json({ error: "Lowongan sudah dibayar." });
+      return;
+    }
+
+    const orderId = makeOrderId("POST", gigId);
+    const APP_BASE = appBase(req);
+    const items = [
+      { id: `wage-${gigId}`, price: wage, quantity: 1, name: "Upah pekerja (dana escrow)" },
+      ...(fee > 0 ? [{ id: `fee-${gigId}`, price: fee, quantity: 1, name: "Biaya layanan posting" }] : []),
+    ];
 
     const snapResponse = await createSnapTransaction({
-      transaction_details: {
-        order_id: orderId,
-        gross_amount: feeAmount,
-      },
-      item_details: [{
-        id: `posting-${parsed.data.jobId}`,
-        price: feeAmount,
-        quantity: 1,
-        name: `Biaya Posting Lowongan: ${job.posisi}`,
-      }],
-      customer_details: {
-        first_name: user.name,
-        email: user.email,
-      },
+      transaction_details: { order_id: orderId, gross_amount: amount },
+      item_details: items,
+      customer_details: { first_name: user.name, email: user.email },
       callbacks: {
         finish: `${APP_BASE}/?payment=success&order=${orderId}&type=posting`,
         error: `${APP_BASE}/?payment=failed&order=${orderId}`,
         pending: `${APP_BASE}/?payment=pending&order=${orderId}`,
       },
+      // Hanya informasi; aktivasi memakai order_id + database, bukan field ini.
       custom_field1: "posting",
-      custom_field2: parsed.data.jobId,
-      custom_field3: user.id,
+      custom_field2: String(gigId),
     });
 
-    logger.info({ orderId, jobId: parsed.data.jobId, feeAmount }, "[midtrans] Snap posting created");
-
+    logger.info({ orderId, gigId, amount }, "[midtrans] Snap posting created");
     res.json({
       snapToken: snapResponse.token,
       redirectUrl: snapResponse.redirect_url,
       orderId,
-      amount: feeAmount,
+      amount,
+      wage,
+      fee,
     });
   } catch (err) {
     logger.error({ err }, "[midtrans] snap/posting error");
@@ -359,38 +367,82 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
       }
 
     } else {
-      const jobResult = await db.execute(sql`
-        SELECT id, posisi, kategori, employer_id, payment_status, admin_fee_amount
-        FROM gigs WHERE id = ${targetId} LIMIT 1
-      `);
-      const job = jobResult.rows[0];
-      if (!job) {
+      // Lowongan: efek yang sama dengan konfirmasi admin atas tagihan "gig_escrow".
+      const gigId = Number(targetId);
+      const outcome = await db.transaction(async (tx) => {
+        const [gig] = await tx
+          .select()
+          .from(gigsTable)
+          .where(eq(gigsTable.id, gigId))
+          .for("update")
+          .limit(1);
+        if (!gig) return { kind: "not_found" as const };
+
+        const expected = (gig.escrowAmount ?? 0) + (gig.adminFeeAmount ?? 0);
+        if (Math.round(Number(paidAmount)) !== expected) {
+          return { kind: "amount_mismatch" as const, expected };
+        }
+        // Sudah dikonfirmasi (oleh notifikasi sebelumnya atau oleh admin).
+        if (gig.paymentStatus === "confirmed") return { kind: "duplicate" as const };
+
+        const instant = gig.hiringMode === "cepat";
+        const [funded] = await tx
+          .update(gigsTable)
+          .set({ paymentStatus: "confirmed", escrowStatus: "locked", broadcastActive: instant })
+          .where(eq(gigsTable.id, gigId))
+          .returning();
+
+        if (instant) {
+          await tx
+            .update(instantOrdersTable)
+            .set({ status: "active" })
+            .where(and(eq(instantOrdersTable.jobId, gigId), eq(instantOrdersTable.status, "pending")));
+        }
+
+        // Tutup tagihan manual agar tidak bisa dikonfirmasi admin untuk kedua kalinya.
+        await tx
+          .update(manualPaymentsTable)
+          .set({
+            status: "confirmed",
+            transferReference: orderId,
+            proofNote: "Dibayar via Midtrans Snap",
+            adminNote: "Dikonfirmasi otomatis oleh Midtrans.",
+            reviewedBy: "midtrans",
+            reviewedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(manualPaymentsTable.targetType, "gig_escrow"),
+              eq(manualPaymentsTable.targetId, String(gigId)),
+            ),
+          );
+
+        return { kind: "activated" as const, gig: funded!, instant };
+      });
+
+      if (outcome.kind === "not_found") {
         logger.error({ orderId }, "[midtrans] Lowongan tidak ditemukan di database");
         res.json({ ok: false, error: "job_not_found" });
         return;
       }
-      const feeAmount = Number(job.admin_fee_amount) || getAdminFeeAmount(job.kategori as string);
-      if (Number(paidAmount) !== feeAmount) {
-        logger.error({ orderId, paidAmount, expected: feeAmount }, "[midtrans] Nominal tidak sesuai, lowongan tidak diaktifkan");
+      if (outcome.kind === "amount_mismatch") {
+        logger.error({ orderId, paidAmount, expected: outcome.expected }, "[midtrans] Nominal tidak sesuai, lowongan tidak diaktifkan");
         res.json({ ok: false, error: "amount_mismatch" });
         return;
       }
-
-      const claimed = await db.execute(sql`
-        UPDATE gigs
-        SET payment_status = 'confirmed', is_active = true
-        WHERE id = ${targetId} AND payment_status IS DISTINCT FROM 'confirmed'
-        RETURNING id
-      `);
-      if (claimed.rows[0]) {
+      if (outcome.kind === "duplicate") {
+        // Bisa notifikasi ulang (normal) atau lowongan sudah dikonfirmasi admin sebelum
+        // pembayaran Midtrans masuk (perlu rekonsiliasi/refund manual).
+        logger.warn({ orderId, gigId }, "[midtrans] Lowongan sudah berstatus confirmed; periksa kemungkinan pembayaran ganda");
+      } else {
+        if (outcome.instant) broadcastInstantActivated(outcome.gig);
+        else broadcastGig(outcome.gig);
         await db.insert(notificationsTable).values({
-          userId: String(job.employer_id),
-          message: `Pembayaran posting "${String(job.posisi ?? "lowongan")}" berhasil! Lowongan Anda sudah tayang.`,
+          userId: String(outcome.gig.employerId),
+          message: `Pembayaran lowongan "${outcome.gig.posisi}" berhasil! Lowongan Anda sudah tayang.`,
           type: "posting_paid",
         }).catch(() => {});
-        logger.info({ jobId: targetId }, "[midtrans] Lowongan diaktifkan");
-      } else {
-        logger.info({ orderId }, "[midtrans] Lowongan sudah diproses sebelumnya");
+        logger.info({ gigId, orderId }, "[midtrans] Lowongan diaktifkan");
       }
     }
 
@@ -421,6 +473,20 @@ router.get("/payments/midtrans/status/:orderId", async (req, res): Promise<void>
   if (subResult.rows[0]) {
     res.json({ type: "subscription", order: subResult.rows[0] });
     return;
+  }
+
+  // Order posting lowongan: RKS-POST-<id lowongan>-<ts>
+  const post = ORDER_ID_RE.exec(orderId ?? "");
+  if (post && post[1] === "POST") {
+    const [gig] = await db
+      .select({ paymentStatus: gigsTable.paymentStatus, employerId: gigsTable.employerId, posisi: gigsTable.posisi })
+      .from(gigsTable)
+      .where(eq(gigsTable.id, Number(post[2])))
+      .limit(1);
+    if (gig && gig.employerId === user.id) {
+      res.json({ type: "posting", order: { status: gig.paymentStatus === "confirmed" ? "paid" : "pending", label: gig.posisi } });
+      return;
+    }
   }
 
   res.status(404).json({ error: "Order tidak ditemukan." });

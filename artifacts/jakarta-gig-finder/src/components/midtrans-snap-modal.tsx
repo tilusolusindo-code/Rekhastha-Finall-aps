@@ -7,7 +7,7 @@
  *
  * Midtrans Snap JS di-load sekali saat komponen mount.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, CreditCard, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 
 declare global {
@@ -27,9 +27,13 @@ interface Props {
   type: "subscription" | "posting";
   planId?: number;
   planLabel?: string;
-  jobId?: string;
+  jobId?: string | number;
   jobTitle?: string;
   amount: number;
+  /** Rincian untuk posting lowongan: upah (escrow) + biaya layanan. */
+  breakdown?: { wage: number; fee: number };
+  /** Bila diisi, tampil tautan untuk beralih ke transfer bank manual. */
+  onUseManual?: () => void;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -38,40 +42,72 @@ type Step = "idle" | "loading" | "snap" | "success" | "error" | "pending";
 
 const fmt = (n: number) => "Rp " + Math.round(n).toLocaleString("id-ID");
 
+const SNAP_SCRIPT_ID = "midtrans-snap";
+let snapLoading: Promise<void> | null = null;
+
+/**
+ * Muat snap.js sekali saja dan tunggu sampai `window.snap` benar-benar ada.
+ * (Versi lama langsung resolve jika <script> sudah ada di DOM walau belum
+ * selesai dimuat -> window.snap masih undefined -> popup tidak muncul.)
+ */
 function loadSnapScript(isProduction: boolean): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.snap) { resolve(); return; }
-    const existing = document.getElementById("midtrans-snap");
-    if (existing) { resolve(); return; }
+  if (typeof window === "undefined") return Promise.reject(new Error("Snap hanya bisa dimuat di browser."));
+  if (window.snap) return Promise.resolve();
+  if (snapLoading) return snapLoading;
+
+  const clientKey = (import.meta.env.VITE_MIDTRANS_CLIENT_KEY ?? "").trim();
+  if (!clientKey) {
+    return Promise.reject(
+      new Error("VITE_MIDTRANS_CLIENT_KEY belum di-set. Isi Client Key Midtrans di environment build lalu deploy ulang."),
+    );
+  }
+
+  snapLoading = new Promise<void>((resolve, reject) => {
+    // Buang tag lama yang gagal/setengah jalan agar bisa dicoba ulang.
+    document.getElementById(SNAP_SCRIPT_ID)?.remove();
+
     const script = document.createElement("script");
-    script.id = "midtrans-snap";
+    script.id = SNAP_SCRIPT_ID;
     script.src = isProduction
       ? "https://app.midtrans.com/snap/snap.js"
       : "https://app.sandbox.midtrans.com/snap/snap.js";
-    script.setAttribute("data-client-key", import.meta.env.VITE_MIDTRANS_CLIENT_KEY ?? "");
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Gagal memuat Midtrans Snap."));
+    script.async = true;
+    script.setAttribute("data-client-key", clientKey);
+    script.onload = () => {
+      if (window.snap) resolve();
+      else reject(new Error("snap.js termuat tetapi objek Snap tidak tersedia. Periksa Client Key & mode sandbox/production."));
+    };
+    script.onerror = () => reject(new Error("Gagal memuat Midtrans Snap (diblokir jaringan/CSP). Muat ulang halaman."));
     document.head.appendChild(script);
+  }).catch((e) => {
+    snapLoading = null; // izinkan retry
+    document.getElementById(SNAP_SCRIPT_ID)?.remove();
+    throw e;
   });
+
+  return snapLoading;
 }
 
 export default function MidtransSnapModal({
-  type, planId, planLabel, jobId, jobTitle, amount, onSuccess, onClose,
+  type, planId, planLabel, jobId, jobTitle, amount, breakdown, onUseManual, onSuccess, onClose,
 }: Props) {
   const [step, setStep] = useState<Step>("idle");
   const [errMsg, setErrMsg] = useState("");
+  // Ref agar callback Snap (onClose) tidak membaca nilai `step` yang basi.
+  const stepRef = useRef<Step>("idle");
+  const updateStep = (s: Step) => { stepRef.current = s; setStep(s); };
   const isProduction = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === "true";
 
   // Load script saat mount
   useEffect(() => {
     loadSnapScript(isProduction).catch(e => {
       setErrMsg(e.message);
-      setStep("error");
+      updateStep("error");
     });
   }, [isProduction]);
 
   async function handlePay() {
-    setStep("loading");
+    updateStep("loading");
     setErrMsg("");
 
     try {
@@ -96,7 +132,7 @@ export default function MidtransSnapModal({
 
       // Subscriber — langsung aktif tanpa Snap
       if (data.waived) {
-        setStep("success");
+        updateStep("success");
         setTimeout(onSuccess, 1500);
         return;
       }
@@ -105,29 +141,29 @@ export default function MidtransSnapModal({
       await loadSnapScript(isProduction);
       if (!window.snap) throw new Error("Midtrans Snap belum siap. Muat ulang halaman.");
 
-      setStep("snap");
+      updateStep("snap");
 
       // 3. Buka popup Snap
       window.snap.pay(data.snapToken, {
         onSuccess: () => {
-          setStep("success");
+          updateStep("success");
           setTimeout(onSuccess, 1500);
         },
         onPending: () => {
-          setStep("pending");
+          updateStep("pending");
         },
         onError: () => {
           setErrMsg("Pembayaran gagal. Coba metode lain.");
-          setStep("error");
+          updateStep("error");
         },
         onClose: () => {
           // User tutup popup tanpa bayar
-          if (step === "snap") setStep("idle");
+          if (stepRef.current === "snap") updateStep("idle");
         },
       });
     } catch (err) {
       setErrMsg((err as Error).message);
-      setStep("error");
+      updateStep("error");
     }
   }
 
@@ -158,6 +194,15 @@ export default function MidtransSnapModal({
             <span className="text-sm text-blue-700 font-semibold">Total</span>
             <span className="text-xl font-black text-blue-700">{fmt(amount)}</span>
           </div>
+          {breakdown && (
+            <div className="mt-2 space-y-0.5 text-[11px] text-blue-600">
+              <div className="flex justify-between"><span>Upah pekerja (escrow)</span><span>{fmt(breakdown.wage)}</span></div>
+              <div className="flex justify-between">
+                <span>Biaya layanan posting</span>
+                <span>{breakdown.fee > 0 ? fmt(breakdown.fee) : "Gratis"}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Body */}
@@ -170,7 +215,7 @@ export default function MidtransSnapModal({
               <p className="text-xs text-gray-400 text-center">
                 {type === "subscription"
                   ? "Rekhastha Bisnis Anda sudah aktif."
-                  : "Lowongan Anda sudah tayang."}
+                  : "Lowongan Anda sudah tayang dan dana upah terkunci di escrow."}
               </p>
             </div>
           )}
@@ -245,6 +290,15 @@ export default function MidtransSnapModal({
                   <><CreditCard className="w-4 h-4" /> Bayar {fmt(amount)}</>
                 )}
               </button>
+              {onUseManual && step === "idle" && (
+                <button
+                  type="button"
+                  onClick={onUseManual}
+                  className="w-full text-center text-xs font-semibold text-gray-500 underline underline-offset-2"
+                >
+                  Lebih suka transfer bank manual
+                </button>
+              )}
             </>
           )}
         </div>

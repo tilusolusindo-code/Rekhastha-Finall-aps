@@ -27,7 +27,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
     setResult(calculateTax({
       grossMonthly: g,
       status,
-      mode,
+      isEmployee: mode === "kontrak",
       workDaysPerMonth: Number(days) || 22,
     }));
   };

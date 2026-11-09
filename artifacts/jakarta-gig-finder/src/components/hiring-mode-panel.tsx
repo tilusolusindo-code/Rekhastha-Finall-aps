@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import LocationPickerSection from "@/components/location-picker-section";
+import MidtransSnapModal from "@/components/midtrans-snap-modal";
 import {
   Zap, CalendarDays, Lock, LockOpen, Radio, Users, Banknote,
   CheckCircle2, AlertTriangle, ChevronDown, ChevronUp,
@@ -25,6 +26,8 @@ interface HiringModePanelProps {
   notifications: ApplicationNotification[];
   onJobPosted: (data: Omit<CustomJob, "id" | "type" | "lat" | "lng" | "postedAt"> & { lat?: number; lng?: number }) => Promise<CustomJob>;
   onOpenPayments?: () => void;
+  /** Dipanggil setelah pembayaran Midtrans berhasil agar status lowongan di layar ikut diperbarui. */
+  onJobPaid?: (jobId: number) => void;
   onOpenBisnis: () => void;
   onOpenAttendanceQr: (job: CustomJob) => void;
   onLockEscrow: (jobId: number, escrowAmount: number) => void;
@@ -98,8 +101,23 @@ function getDemoKm(name: string): number {
 
 export default function HiringModePanel({
   currentUser, customJobs, notifications,
-  onJobPosted, onOpenPayments, onOpenBisnis, onOpenAttendanceQr, onLockEscrow, onDispute, onStatusChange, onCancelJob,
+  onJobPosted, onOpenPayments, onJobPaid, onOpenBisnis, onOpenAttendanceQr, onLockEscrow, onDispute, onStatusChange, onCancelJob,
 }: HiringModePanelProps) {
+
+  // Tagihan lowongan yang sedang dibayar lewat Midtrans Snap (null = modal tertutup).
+  const [snapJob, setSnapJob] = useState<{
+    id: number; title: string; amount: number; wage: number; fee: number;
+  } | null>(null);
+  const unpaidJobs = useMemo(
+    () => customJobs.filter((j) => j.employerId === currentUser.id && j.paymentStatus === "awaiting_payment"),
+    [customJobs, currentUser.id],
+  );
+  const startMidtransPayment = (created: CustomJob) => {
+    const wage = created.escrowAmount ?? 0;
+    const fee = created.adminFeeAmount ?? 0;
+    if (wage <= 0) { onOpenPayments?.(); return; } // data tidak lengkap: pakai panel manual
+    setSnapJob({ id: created.id, title: created.posisi, amount: wage + fee, wage, fee });
+  };
 
   // ── Mode toggle ────────────────────────────────────────────────
   const [hiringMode, setHiringMode] = useState<HiringMode>("cepat");
@@ -277,7 +295,7 @@ export default function HiringModePanel({
       resetForm();
       setBroadcastState("idle");
       setFormOpen(false);
-      onOpenPayments?.();
+      startMidtransPayment(created);
     } catch (error) {
       setBroadcastState("idle");
       setPostingError(error instanceof Error ? error.message : "Tagihan Instan Kilat gagal dibuat.");
@@ -292,7 +310,7 @@ export default function HiringModePanel({
     setPosting(true);
     setPostingError("");
     try {
-      await onJobPosted({
+      const created = await onJobPosted({
         posisi: posisi.trim(),
         deskripsi: deskripsi.trim() || `Lowongan ${posisi} untuk kontrak terjadwal.`,
         pembayaran,
@@ -315,7 +333,7 @@ export default function HiringModePanel({
       });
       resetForm();
       setFormOpen(false);
-      onOpenPayments?.();
+      startMidtransPayment(created);
     } catch (error) {
       setPostingError(error instanceof Error ? error.message : "Lowongan gagal dibuat.");
     } finally {
@@ -439,6 +457,30 @@ export default function HiringModePanel({
 
     <div className="flex-1 overflow-y-auto bg-gray-50">
 
+      {/* ── Lowongan menunggu pembayaran (bayar lewat Midtrans) ───── */}
+      {unpaidJobs.length > 0 && (
+        <div className="mx-4 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 space-y-2" data-testid="unpaid-jobs">
+          <p className="text-xs font-black text-amber-800">
+            ⏳ {unpaidJobs.length} lowongan menunggu pembayaran
+          </p>
+          {unpaidJobs.map((job) => (
+            <div key={job.id} className="flex items-center justify-between gap-2 rounded-xl bg-white border border-amber-100 px-3 py-2">
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-gray-800">{job.posisi}</p>
+                <p className="text-[11px] text-gray-500">{formatRp((job.escrowAmount ?? 0) + (job.adminFeeAmount ?? 0))}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => startMidtransPayment(job)}
+                className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white active:scale-95"
+              >
+                Bayar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Stats row ─────────────────────────────────────────── */}
       <div className="p-4 grid grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
@@ -488,8 +530,8 @@ export default function HiringModePanel({
             : "bg-emerald-50/60 text-emerald-800 border-emerald-200"
         }`}>
           {hiringMode === "cepat"
-            ? `🚨 Untuk kebutuhan mendesak. Sistem broadcast ke pekerja aktif dalam radius 5km setelah admin mengonfirmasi transfer. Biaya admin flat ${instantListingPrice === 0 ? "diwaive" : formatRp(instantListingPrice)} — bukan potongan dari upah.`
-            : `📅 Untuk kontrak terencana & terjadwal. Biaya admin flat ${instantListingPrice === 0 ? "diwaive" : formatRp(instantListingPrice)}. Lowongan aktif setelah transfer upah dan biaya admin dikonfirmasi.`}
+            ? `🚨 Untuk kebutuhan mendesak. Sistem broadcast ke pekerja aktif dalam radius 5km setelah pembayaran terkonfirmasi. Biaya admin flat ${instantListingPrice === 0 ? "diwaive" : formatRp(instantListingPrice)} — bukan potongan dari upah.`
+            : `📅 Untuk kontrak terencana & terjadwal. Biaya admin flat ${instantListingPrice === 0 ? "diwaive" : formatRp(instantListingPrice)}. Lowongan aktif otomatis setelah upah dan biaya admin dibayar.`}
         </div>
       </div>
 
@@ -647,7 +689,7 @@ export default function HiringModePanel({
                     </div>
 
                     <p className="text-[10px] text-gray-400 mt-1">
-                      {hiringMode === "cepat" ? "Biaya admin flat + upah ditransfer perusahaan · pekerja terima 100% upah" : "Upah + biaya admin flat ditransfer perusahaan · pekerja terima 100% upah"}
+                      {hiringMode === "cepat" ? "Biaya admin flat + upah dibayar perusahaan · pekerja terima 100% upah" : "Upah + biaya admin flat dibayar perusahaan · pekerja terima 100% upah"}
                     </p>
                   </div>
 
@@ -910,7 +952,7 @@ export default function HiringModePanel({
                     <span className={`text-[10px] font-bold ${
                       hiringMode === "cepat" ? "text-orange-800" : "text-blue-800"
                     }`}>
-                      Status: ⏳ Menunggu Pembayaran &amp; Konfirmasi Admin
+                      Status: ⏳ Menunggu Pembayaran
                     </span>
                   </div>
                   {/* Tax footnote */}
@@ -932,7 +974,7 @@ export default function HiringModePanel({
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}>
                     <CreditCard className="w-4 h-4" />
-                    {payingInstant ? "Membuat tagihan…" : formValid ? "Buat Lowongan & Lanjut ke Transfer Manual" : "Isi Posisi & Upah untuk Lanjut"}
+                    {payingInstant ? "Membuat tagihan…" : formValid ? "Buat Lowongan & Bayar" : "Isi Posisi & Upah untuk Lanjut"}
                   </button>
                 ) : (
                   <button
@@ -944,7 +986,7 @@ export default function HiringModePanel({
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}>
                     <Briefcase className="w-4 h-4" />
-                    {posting ? "Membuat tagihan…" : formValid ? "Buat Lowongan & Lanjut ke Transfer Manual" : "Isi Posisi & Upah untuk Lanjut"}
+                    {posting ? "Membuat tagihan…" : formValid ? "Buat Lowongan & Bayar" : "Isi Posisi & Upah untuk Lanjut"}
                   </button>
                 )
               )}
@@ -1291,6 +1333,18 @@ export default function HiringModePanel({
         )}
       </div>
     </div>
+    {snapJob && (
+      <MidtransSnapModal
+        type="posting"
+        jobId={snapJob.id}
+        jobTitle={snapJob.title}
+        amount={snapJob.amount}
+        breakdown={{ wage: snapJob.wage, fee: snapJob.fee }}
+        onUseManual={onOpenPayments ? () => { setSnapJob(null); onOpenPayments(); } : undefined}
+        onSuccess={() => { const id = snapJob.id; setSnapJob(null); onJobPaid?.(id); }}
+        onClose={() => setSnapJob(null)}
+      />
+    )}
     </>
   );
 }

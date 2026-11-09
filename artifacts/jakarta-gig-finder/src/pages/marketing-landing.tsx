@@ -7,36 +7,36 @@ import "./marketing-landing.css";
 const NAV_LINKS = [
   { href: "#untuk-siapa", label: "Untuk siapa", testId: "link-untuk-siapa" },
   { href: "#cara-kerja", label: "Cara kerja", testId: "link-cara-kerja" },
-  { href: "#transparansi", label: "Aturan main", testId: "link-transparansi" },
+  { href: "#transparansi", label: "Sebelum mulai", testId: "link-transparansi" },
   { href: "#pertanyaan", label: "Pertanyaan", testId: "link-pertanyaan" },
 ];
 
 const WORKER_POINTS = [
-  "Peta radar menampilkan gig terdekat, dan notifikasi berbunyi saat ada gig baru di sekitar Anda.",
-  "Peran, upah, waktu, dan lokasi terlihat jelas sebelum Anda memutuskan melamar.",
-  "Berkomunikasi dengan pemberi kerja lewat chat di dalam aplikasi.",
+  "Lihat lowongan terdekat di peta, dan dapat notifikasi saat ada lowongan baru di sekitar Anda.",
+  "Upah, jam kerja, dan lokasi terlihat jelas sebelum Anda melamar.",
+  "Chat langsung dengan pemberi kerja di dalam aplikasi.",
   "Catat kehadiran dengan QR dan pantau penghasilan Anda di satu tempat.",
 ];
 
 const EMPLOYER_POINTS = [
-  "Pasang gig instan untuk kebutuhan hari ini, atau posting reguler untuk jadwal yang sudah pasti.",
-  "Rincian biaya ditampilkan saat lowongan dibuat, sebelum Anda melakukan pembayaran.",
-  "Tinjau pelamar, lalu beri penilaian setelah pekerjaan selesai.",
-  "Rekhastha Bisnis menambahkan QR presensi berbasis lokasi dan kalkulator upah harian untuk tim Anda.",
+  "Pasang lowongan instan untuk kebutuhan mendadak, atau lowongan terjadwal untuk tanggal yang sudah pasti.",
+  "Rincian biaya tampil saat membuat lowongan, sebelum Anda membayar.",
+  "Lihat para pelamar, lalu beri penilaian setelah pekerjaan selesai.",
+  "Rekhastha Bisnis: QR presensi berbasis lokasi dan kalkulator upah harian untuk tim Anda.",
 ];
 
 const STEPS = [
   {
     title: "Daftar dan pilih peran",
-    body: "Tentukan apakah Anda mencari pekerjaan atau memasang lowongan. Jika diminta verifikasi, pemeriksaan identitas dilakukan oleh tim Rekhastha.",
+    body: "Pilih apakah Anda ingin mencari kerja atau mencari tenaga kerja. Jika diminta verifikasi, pemeriksaan identitas dilakukan oleh tim Rekhastha.",
   },
   {
-    title: "Pasang atau temukan gig",
-    body: "Pemberi kerja mengisi peran, waktu, lokasi, dan upah. Pencari kerja menelusuri gig di sekitarnya lalu melamar.",
+    title: "Pasang atau temukan lowongan",
+    body: "Pemberi kerja mengisi jenis pekerjaan, waktu, lokasi, dan upah. Pencari kerja melihat lowongan di sekitarnya, lalu melamar.",
   },
   {
     title: "Bekerja dan selesaikan",
-    body: "Catat kehadiran lewat aplikasi, kerjakan gig sesuai kesepakatan, lalu saling memberi penilaian.",
+    body: "Catat kehadiran lewat aplikasi, kerjakan sesuai kesepakatan, lalu saling memberi penilaian.",
   },
 ];
 
@@ -47,7 +47,7 @@ const RULES = [
   },
   {
     title: "Verifikasi identitas",
-    body: "Pemeriksaan identitas dilakukan oleh tim Rekhastha. Aplikasi tidak melakukan pencocokan biometrik otomatis.",
+    body: "Pemeriksaan identitas dilakukan oleh tim Rekhastha. Aplikasi tidak melakukan pencocokan wajah atau sidik jari otomatis.",
   },
   {
     title: "Jaminan sosial",
@@ -58,19 +58,19 @@ const RULES = [
 const FAQ = [
   {
     q: "Siapa yang bisa memakai Rekhastha?",
-    a: "Pencari kerja yang ingin mengambil pekerjaan harian, serta pemberi kerja, baik usaha maupun perorangan, yang membutuhkan tenaga tambahan. Peran dipilih saat mendaftar.",
+    a: "Siapa pun yang ingin mengambil pekerjaan harian, dan siapa pun, baik usaha maupun perorangan, yang butuh tenaga tambahan. Anda memilih peran saat mendaftar.",
   },
   {
-    q: "Apa bedanya gig instan dan pekerjaan terjadwal?",
-    a: "Gig instan untuk kebutuhan yang harus terisi segera dan disiarkan ke pekerja di sekitar lokasi. Pekerjaan terjadwal untuk kebutuhan yang tanggal dan jamnya sudah ditentukan lebih dulu.",
+    q: "Apa bedanya lowongan instan dan lowongan terjadwal?",
+    a: "Lowongan instan untuk kebutuhan yang harus terisi segera, dan langsung diberitahukan ke pekerja di sekitar lokasi. Lowongan terjadwal untuk pekerjaan yang tanggal dan jamnya sudah ditentukan lebih dulu.",
   },
   {
-    q: "Apakah gig tersedia di kota saya?",
-    a: "Anda dapat memilih provinsi dan kota saat mencari atau memasang gig. Ketersediaan pekerjaan bergantung pada pemberi kerja yang memasang gig di wilayah Anda.",
+    q: "Apakah ada lowongan di kota saya?",
+    a: "Anda bisa memilih provinsi dan kota saat mencari atau memasang lowongan. Ada tidaknya lowongan tergantung pemberi kerja di wilayah Anda.",
   },
   {
     q: "Bagaimana jika ada masalah dengan suatu pekerjaan?",
-    a: "Gunakan fitur keluhan atau sengketa di aplikasi. Pengajuan Anda ditinjau oleh tim Rekhastha.",
+    a: "Gunakan fitur keluhan atau sengketa di aplikasi. Pengajuan Anda akan ditinjau oleh tim Rekhastha.",
   },
 ];
 
@@ -79,8 +79,8 @@ function SampleDevice() {
     <figure className="rl-device-wrap">
       <div className="rl-device" aria-hidden="true">
         <div className="rl-device-bar">
-          <span className="rl-device-title">Gig di sekitar Anda</span>
-          <span className="rl-device-live"><i />Radar aktif</span>
+          <span className="rl-device-title">Lowongan di sekitar Anda</span>
+          <span className="rl-device-live"><i />Terbaru</span>
         </div>
         <ul className="rl-device-list">
           <li className="is-new">
@@ -180,17 +180,18 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
           <div className="rl-container rl-hero-grid">
             <div className="rl-hero-copy">
               <h1 id="rl-hero-title" data-testid="text-hero-title">
-                Pekerjaan harian yang lebih mudah dicari, lebih mudah diisi.
+                Kerja harian dekat Anda.
+                <span>Tenaga harian untuk usaha Anda.</span>
               </h1>
               <p className="rl-lede" data-testid="text-hero-description">
-                Rekhastha adalah marketplace gig harian di Indonesia. Pemberi kerja memasang kebutuhannya, pencari kerja melihat peluang di sekitarnya, lalu keduanya terhubung lewat aplikasi.
+                Rekhastha mempertemukan pencari kerja dengan pemilik usaha untuk pekerjaan harian, dari kebutuhan mendadak sampai jadwal yang sudah direncanakan.
               </p>
               <div className="rl-hero-actions">
-                <button type="button" className="rl-btn rl-btn-primary rl-btn-lg" onClick={onRegister} data-testid="button-register-worker">
-                  Saya cari pekerjaan <ArrowRight size={17} aria-hidden="true" />
+                <button type="button" className="rl-btn rl-btn-light rl-btn-lg" onClick={onRegister} data-testid="button-register-worker">
+                  Saya cari kerja <ArrowRight size={17} aria-hidden="true" />
                 </button>
-                <button type="button" className="rl-btn rl-btn-outline rl-btn-lg" onClick={onRegister} data-testid="button-register-employer">
-                  Saya mau pasang gig
+                <button type="button" className="rl-btn rl-btn-ghost-light rl-btn-lg" onClick={onRegister} data-testid="button-register-employer">
+                  Saya cari tenaga kerja
                 </button>
               </div>
               <p className="rl-hero-login">
@@ -214,46 +215,47 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
         <section className="rl-facts" aria-label="Ringkasan layanan">
           <div className="rl-container rl-facts-grid">
             <div>
-              <h2>Gig instan</h2>
-              <p>Disiarkan ke pekerja di sekitar lokasi, lengkap dengan notifikasi.</p>
+              <h2>Lowongan instan</h2>
+              <p>Butuh orang segera? Lowongan langsung diberitahukan ke pekerja di sekitar lokasi.</p>
             </div>
             <div>
-              <h2>Pekerjaan terjadwal</h2>
-              <p>Tetapkan tanggal dan jam untuk pekerjaan yang bisa direncanakan.</p>
+              <h2>Lowongan terjadwal</h2>
+              <p>Sudah tahu tanggal dan jamnya? Atur dari jauh-jauh hari.</p>
             </div>
             <div>
               <h2>Seluruh Indonesia</h2>
-              <p>Pilih provinsi dan kota saat mencari atau memasang gig.</p>
+              <p>Pilih provinsi dan kota Anda, lalu lihat apa yang tersedia.</p>
             </div>
           </div>
         </section>
 
         <section className="rl-section" id="untuk-siapa" aria-labelledby="rl-who-title">
           <div className="rl-container">
-            <h2 className="rl-h2" id="rl-who-title">Dua kebutuhan, satu aplikasi</h2>
+            <h2 className="rl-h2" id="rl-who-title">Apa yang bisa Anda lakukan di Rekhastha</h2>
+            <p className="rl-section-intro">Pilih peran sesuai kebutuhan Anda. Satu aplikasi untuk keduanya.</p>
             <div className="rl-split">
               <article className="rl-split-col" data-testid="card-worker">
                 <p className="rl-split-label">Pencari kerja</p>
-                <h3>Temukan gig yang cocok dengan waktu Anda</h3>
+                <h3>Cari kerja yang cocok dengan jadwal Anda</h3>
                 <ul className="rl-checks">
                   {WORKER_POINTS.map((point) => (
                     <li key={point}><Check size={18} aria-hidden="true" /><span>{point}</span></li>
                   ))}
                 </ul>
                 <button type="button" className="rl-btn rl-btn-primary" onClick={onRegister} data-testid="button-register-worker-card">
-                  Daftar sebagai pencari kerja
+                  Daftar untuk cari kerja
                 </button>
               </article>
-              <article className="rl-split-col" data-testid="card-employer">
+              <article className="rl-split-col rl-split-col-alt" data-testid="card-employer">
                 <p className="rl-split-label">Pemberi kerja</p>
-                <h3>Isi kebutuhan tenaga tanpa proses yang berbelit</h3>
+                <h3>Cari tenaga untuk usaha Anda, tanpa repot</h3>
                 <ul className="rl-checks">
                   {EMPLOYER_POINTS.map((point) => (
                     <li key={point}><Check size={18} aria-hidden="true" /><span>{point}</span></li>
                   ))}
                 </ul>
                 <button type="button" className="rl-btn rl-btn-outline" onClick={onRegister} data-testid="button-register-employer-card">
-                  Daftar sebagai pemberi kerja
+                  Daftar untuk cari tenaga
                 </button>
               </article>
             </div>
@@ -263,11 +265,11 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
         <section className="rl-section rl-section-tint" id="cara-kerja" aria-labelledby="rl-how-title">
           <div className="rl-container rl-how-grid">
             <div>
-              <h2 className="rl-h2" id="rl-how-title">Cara kerjanya</h2>
+              <h2 className="rl-h2" id="rl-how-title">Cara kerjanya, tiga langkah</h2>
               <ol className="rl-steps">
                 {STEPS.map((step, index) => (
                   <li key={step.title} data-testid={`step-${index + 1}`}>
-                    <span className="rl-step-no">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="rl-step-no">{index + 1}</span>
                     <div>
                       <h3>{step.title}</h3>
                       <p>{step.body}</p>
@@ -282,9 +284,9 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
 
         <section className="rl-section" id="transparansi" aria-labelledby="rl-rules-title">
           <div className="rl-container">
-            <h2 className="rl-h2" id="rl-rules-title">Aturan main yang perlu Anda ketahui sejak awal</h2>
+            <h2 className="rl-h2" id="rl-rules-title">Sebelum mulai, ini yang perlu Anda ketahui</h2>
             <p className="rl-section-intro">
-              Beberapa hal sering disalahpahami di platform kerja harian. Berikut penjelasan singkatnya.
+              Kami jelaskan dari awal supaya tidak ada salah paham.
             </p>
             <div className="rl-rules">
               {RULES.map((rule) => (
@@ -317,8 +319,8 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
         <section className="rl-closing" aria-labelledby="rl-closing-title">
           <div className="rl-container rl-closing-inner">
             <div>
-              <h2 id="rl-closing-title">Lihat apa yang tersedia di sekitar Anda</h2>
-              <p>Buat akun, pilih peran, dan mulai dari pekerjaan atau kebutuhan tenaga pertama Anda.</p>
+              <h2 id="rl-closing-title">Siap mulai? Lihat lowongan di sekitar Anda.</h2>
+              <p>Buat akun, pilih peran, lalu mulai dari pekerjaan atau kebutuhan tenaga pertama Anda.</p>
             </div>
             <div className="rl-closing-actions">
               <button type="button" className="rl-btn rl-btn-light rl-btn-lg" onClick={onRegister} data-testid="button-register-footer">
@@ -342,7 +344,7 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
             </span>
           </div>
           <p className="rl-footer-copy" data-testid="text-footer-description">
-            Marketplace gig harian untuk pemberi kerja dan pencari kerja di seluruh Indonesia.
+            Aplikasi pekerjaan harian untuk pencari kerja dan pemberi kerja di seluruh Indonesia.
           </p>
           <span className="rl-footer-meta">© {new Date().getFullYear()} Tilu Saudara Solusindo</span>
         </div>

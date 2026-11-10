@@ -532,7 +532,7 @@ export default function HiringModePanel({
 
       {/* ── Mode toggle ───────────────────────────────────────── */}
       <div className="px-4 mb-3">
-        <div className="flex bg-white border border-gray-200 p-1 rounded-2xl gap-1 shadow-sm">
+        <div data-tour="post-mode" className="flex bg-white border border-gray-200 p-1 rounded-2xl gap-1 shadow-sm">
           <button
             onClick={() => { setHiringMode("cepat"); setBroadcastState("idle"); setFormOpen(true); }}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all ${
@@ -998,6 +998,7 @@ export default function HiringModePanel({
                 hiringMode === "cepat" ? (
                   <button
                     onClick={handleCepatSubmit}
+                    data-tour="post-submit"
                     disabled={!formValid || payingInstant}
                     className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${
                       formValid
@@ -1010,6 +1011,7 @@ export default function HiringModePanel({
                 ) : (
                   <button
                     onClick={handleLamaSubmit}
+                    data-tour="post-submit"
                     disabled={!formValid || posting}
                     className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${
                       formValid

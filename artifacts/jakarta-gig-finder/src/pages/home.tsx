@@ -61,11 +61,13 @@ import {
   maskName, maskNik, maskNpwp, maskRekening,
 } from "@/types/notification";
 import { Button } from "@/components/ui/button";
+import AppGuide, { GuideButton } from "@/components/app-guide";
+import AppTour, { hasSeenTour } from "@/components/app-tour";
 import {
   MapPin, Clock, Banknote, Search, X, ShieldCheck, UserCircle,
   Map as MapIcon, Briefcase, TrendingUp, XCircle, MessageSquare,
   BarChart2, Home as HomeIcon, User, Users, Lock, CheckCircle2, AlertTriangle,
-  CalendarDays, QrCode,
+  CalendarDays, QrCode, CircleHelp,
 } from "lucide-react";
 
 // Device-unique, monotonic id base so gigs posted from two different physical
@@ -140,6 +142,14 @@ export default function Home() {
     return search.has("google_code") || search.has("google_error") ? "masuk" : "landing";
   });
   const [activeTab, setActiveTab] = useState<AppTab>("home");
+  // Panduan tertulis (tombol "Panduan") dan tur interaktif (otomatis sekali per akun).
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  useEffect(() => {
+    if (!currentUser || hasSeenTour(currentUser.id)) return;
+    const t = setTimeout(() => setTourOpen(true), 1200);
+    return () => clearTimeout(t);
+  }, [currentUser?.id]);
   const [mode, setMode] = useState<"perusahaan" | "pekerja">("perusahaan");
   const [companyView, setCompanyView] = useState<CompanyView>("jobs");
   const [workerView, setWorkerView] = useState<"list" | "map" | "scheduled" | "applications">("list");
@@ -1799,6 +1809,25 @@ export default function Home() {
           onClose={() => setChatContext(null)} />
       )}
 
+      <AppGuide
+        open={guideOpen}
+        role={currentUser.role === "perusahaan" ? "perusahaan" : "pekerja"}
+        userId={currentUser.id}
+        onClose={() => setGuideOpen(false)}
+        onStartTour={() => {
+          setGuideOpen(false);
+          setActiveTab("home");
+          setCompanyView("jobs");
+          setTimeout(() => setTourOpen(true), 250);
+        }}
+      />
+      <AppTour
+        open={tourOpen}
+        role={currentUser.role === "perusahaan" ? "perusahaan" : "pekerja"}
+        userId={currentUser.id}
+        onClose={() => setTourOpen(false)}
+      />
+
       {/* ── RESPONSIVE BODY (desktop sidebar + content column) ────── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* ── DESKTOP SIDEBAR (hidden on mobile) ─────────────── */}
@@ -1808,16 +1837,20 @@ export default function Home() {
           </div>
           <nav className="flex-1 flex flex-col gap-1 px-3 pt-4">
             <SidebarBtn icon={<HomeIcon className="w-5 h-5" />} label={mode === "pekerja" ? "Radar" : "Beranda"} active={activeTab === "home"} onClick={() => setActiveTab("home")} />
-            <SidebarBtn icon={<MessageSquare className="w-5 h-5" />} label="Chat" active={activeTab === "chat"} onClick={() => setActiveTab("chat")}
+            <SidebarBtn icon={<MessageSquare className="w-5 h-5" />} label="Chat" tour="nav-chat" active={activeTab === "chat"} onClick={() => setActiveTab("chat")}
               badge={mode === "perusahaan" ? notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length : undefined} />
             <SidebarBtn icon={<Briefcase className="w-5 h-5" />} label="Proyek" active={activeTab === "proyek"} onClick={() => setActiveTab("proyek")} />
             {currentUser.role === "perusahaan" && (
-              <SidebarBtn icon={<Banknote className="w-5 h-5" />} label="Rekhastha Bisnis" active={activeTab === "bisnis"} onClick={() => setActiveTab("bisnis")} />
+              <SidebarBtn icon={<Banknote className="w-5 h-5" />} label="Rekhastha Bisnis" tour="nav-bisnis" active={activeTab === "bisnis"} onClick={() => setActiveTab("bisnis")} />
             )}
           </nav>
+
+          <div className="px-3 pb-2">
+            <SidebarBtn icon={<CircleHelp className="w-5 h-5" />} label="Panduan" active={guideOpen} onClick={() => setGuideOpen(true)} />
+          </div>
           
           <div className="px-4 py-4 border-t border-gray-100">
-            <button onClick={() => setActiveTab("profile")} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left group">
+            <button data-tour="nav-profile" onClick={() => setActiveTab("profile")} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left group">
               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200 group-hover:border-emerald-300 transition-colors">
                 <span className="text-emerald-700 font-black">{currentUser.name.split(" ")[0]?.[0]}</span>
               </div>
@@ -2034,18 +2067,23 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <RekhasthaLogo size={34} showSubtitle wordmarkClassName="text-lg" />
                 {mode === "perusahaan" && (
-                  <NotificationPanel notifications={notifications} onStatusChange={handleStatusChange} onOpenChat={handleOpenChatFromNotif} onMarkComplete={handleSplitPayment} onDispute={handleNotifDispute} />
+                  <span data-tour="bell" className="inline-flex">
+                    <NotificationPanel notifications={notifications} onStatusChange={handleStatusChange} onOpenChat={handleOpenChatFromNotif} onMarkComplete={handleSplitPayment} onDispute={handleNotifDispute} />
+                  </span>
                 )}
               </div>
-              <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${mode === "perusahaan" ? "bg-blue-50 text-blue-700" : "bg-primary/10 text-primary"}`}>
-                {mode === "perusahaan" ? "🏢 Perusahaan" : "👷 Pekerja"}
-              </span>
+              <div className="flex items-center gap-2">
+                <GuideButton onClick={() => setGuideOpen(true)} />
+                <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${mode === "perusahaan" ? "bg-blue-50 text-blue-700" : "bg-primary/10 text-primary"}`}>
+                  {mode === "perusahaan" ? "🏢 Perusahaan" : "👷 Pekerja"}
+                </span>
+              </div>
             </div>
 
             {/* Company sub-tabs */}
             {mode === "perusahaan" && (
               <div className="px-4 pb-3">
-                <div className="flex bg-gray-100/80 p-1 rounded-[14px] gap-1 relative">
+                <div data-tour="company-tabs" className="flex bg-gray-100/80 p-1 rounded-[14px] gap-1 relative">
                   <div className="absolute inset-y-1 left-1 w-[calc(33.33%-4px)] bg-white rounded-[10px] shadow-sm transition-transform duration-300 ease-out"
                        style={{ transform: companyView === "analytics" ? "translateX(100%)" : companyView === "radar" ? "translateX(200%)" : "translateX(0)" }} />
                   <button onClick={() => setCompanyView("jobs")}
@@ -2069,7 +2107,7 @@ export default function Home() {
             {mode === "pekerja" && (
               <div className="px-4 pb-3 space-y-2">
                 {/* ── Status Radar Mencari Kerja (On/Off toggle) ── */}
-                <div className={`flex items-center justify-between rounded-2xl px-3.5 py-2.5 border transition-colors ${radarOn ? "bg-primary/10 border-primary/30" : "bg-gray-100 border-gray-200"}`}>
+                <div data-tour="radar-toggle" className={`flex items-center justify-between rounded-2xl px-3.5 py-2.5 border transition-colors ${radarOn ? "bg-primary/10 border-primary/30" : "bg-gray-100 border-gray-200"}`}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
                       {radarOn && <span className="absolute inline-flex h-full w-full rounded-full bg-primary/50 animate-ping" />}
@@ -2108,7 +2146,7 @@ export default function Home() {
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${isSuspended ? "bg-red-100 text-red-600" : reputationPoints < 80 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
                       {isSuspended ? "Suspended" : `Rep: ${reputationPoints}`}
                     </span>
-                    <div className="flex bg-gray-100/80 p-1 rounded-[14px] relative">
+                    <div data-tour="worker-tabs" className="flex bg-gray-100/80 p-1 rounded-[14px] relative">
                       <div className="absolute inset-y-1 w-[calc(25%-2px)] bg-white rounded-[10px] shadow-sm transition-transform duration-300 ease-out" 
                            style={{ 
                              transform: workerView === "list" ? "translateX(2px)" 
@@ -2470,6 +2508,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setShowManualPayments(true)}
+          data-tour="pay-button"
           className="fixed right-4 bottom-20 lg:bottom-6 z-30 flex items-center gap-2 rounded-full bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-lg hover:bg-emerald-800"
         >
           <Banknote className="w-4 h-4" />
@@ -2501,6 +2540,7 @@ export default function Home() {
             </div>
           }
           label="Chat"
+          tour="nav-chat"
           active={activeTab === "chat"}
           onClick={() => setActiveTab("chat")}
         />
@@ -2514,6 +2554,7 @@ export default function Home() {
           <NavBtn
             icon={<Banknote className="w-5 h-5" />}
             label="Bisnis"
+            tour="nav-bisnis"
             active={activeTab === "bisnis"}
             onClick={() => setActiveTab("bisnis")}
           />
@@ -2528,6 +2569,7 @@ export default function Home() {
             </div>
           }
           label={currentUser.name.split(" ")[0]}
+          tour="nav-profile"
           active={activeTab === "profile"}
           onClick={() => setActiveTab("profile")}
         />
@@ -2548,9 +2590,9 @@ function ChatEmptyState({ label, sub }: { label: string; sub: string }) {
   );
 }
 
-function NavBtn({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
+function NavBtn({ icon, label, active, onClick, tour }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; tour?: string }) {
   return (
-    <button onClick={onClick}
+    <button onClick={onClick} data-tour={tour}
       className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[68px] pb-safe active:scale-95 transition-transform ${active ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}>
       <div className={`flex items-center justify-center p-1.5 rounded-full transition-colors ${active ? "bg-emerald-50 text-primary" : ""}`}>
         {icon}
@@ -2561,9 +2603,9 @@ function NavBtn({ icon, label, active, onClick }: { icon: React.ReactNode; label
   );
 }
 
-function SidebarBtn({ icon, label, active, onClick, badge }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: number }) {
+function SidebarBtn({ icon, label, active, onClick, badge, tour }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: number; tour?: string }) {
   return (
-    <button onClick={onClick}
+    <button onClick={onClick} data-tour={tour}
       className={`flex items-center gap-3 px-4 h-12 rounded-xl text-sm font-semibold active:scale-95 transition-all ${active ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}>
       <span className="relative shrink-0">
         {icon}

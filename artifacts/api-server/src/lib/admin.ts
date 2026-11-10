@@ -226,7 +226,7 @@ export async function lockoutRemaining(ip: string): Promise<number> {
   return remaining > 0 ? remaining : 0;
 }
 
-export async function recordFailedAttempt(ip: string): Promise<void> {
+export async function recordFailedAttempt(ip: string, maxAttempts: number = MAX_ATTEMPTS): Promise<void> {
   const [rec] = await db
     .select()
     .from(adminLoginAttemptsTable)
@@ -236,7 +236,7 @@ export async function recordFailedAttempt(ip: string): Promise<void> {
   const count = (rec?.count ?? 0) + 1;
   const now = new Date();
 
-  if (count >= MAX_ATTEMPTS) {
+  if (count >= maxAttempts) {
     const values = {
       ip,
       count: 0,

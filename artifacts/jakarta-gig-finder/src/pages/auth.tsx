@@ -153,7 +153,7 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null);
-    if (newPassword.length < 8) { setError("Kata sandi minimal 8 karakter."); return; }
+    if (newPassword.length < 12) { setError("Kata sandi minimal 12 karakter."); return; }
     if (newPassword !== newPasswordConfirm) { setError("Konfirmasi kata sandi tidak cocok."); return; }
     setLoading(true);
     try {
@@ -200,7 +200,7 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
       <h2 className="rk-auth-title">Buat kata sandi baru</h2>
       <p className="rk-auth-desc">Gunakan minimal 8 karakter.</p>
       <form onSubmit={handleResetPassword} className="rk-auth-form">
-        <PasswordField placeholder="Kata sandi baru (min. 8 karakter)" value={newPassword}
+        <PasswordField placeholder="Kata sandi baru (min. 12 karakter)" value={newPassword}
           onChange={setNewPassword} show={showNewPass} toggle={() => setShowNewPass(p => !p)} autoComplete="new-password" />
         <Field icon={<Lock />} type="password" placeholder="Konfirmasi kata sandi"
           value={newPasswordConfirm} onChange={setNewPasswordConfirm} autoComplete="new-password" />

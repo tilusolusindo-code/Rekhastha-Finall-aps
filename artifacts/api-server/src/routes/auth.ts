@@ -166,13 +166,17 @@ const googleCompleteBody = z.object({
   role: roleSchema.optional(),
 });
 
+// Pakai req.ip (dinormalisasi "trust proxy"), bukan header X-Forwarded-For mentah
+// yang bisa dipalsukan untuk menghindari pembatasan.
 function userLoginThrottleKey(req: Request): string {
-  const forwardedFor = req.headers["x-forwarded-for"];
-  const ip =
-    typeof forwardedFor === "string" && forwardedFor
-      ? forwardedFor.split(",")[0]?.trim()
-      : req.ip;
-  return `user-auth:${ip || "unknown"}`;
+  return `user-auth:${req.ip || req.socket.remoteAddress || "unknown"}`;
+}
+
+// Batas per akun (lintas IP) agar tebak-sandi terdistribusi tetap tertahan.
+// Ambangnya lebih tinggi dari per-IP supaya orang lain sulit mengunci akun korban.
+const ACCOUNT_MAX_ATTEMPTS = 10;
+function accountLoginThrottleKey(email: string): string {
+  return `user-acct:${email}`;
 }
 
 router.get("/auth/config", (_req, res): void => {
@@ -227,7 +231,18 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 router.post("/auth/login", async (req, res): Promise<void> => {
   const throttleKey = userLoginThrottleKey(req);
   await pruneAdminState();
-  const remaining = await lockoutRemaining(throttleKey);
+  const parsed = loginBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const normalizedEmail = parsed.data.email.trim().toLowerCase();
+  const accountKey = accountLoginThrottleKey(normalizedEmail);
+  const remaining = Math.max(
+    await lockoutRemaining(throttleKey),
+    await lockoutRemaining(accountKey),
+  );
   if (remaining > 0) {
     recordSecurityEvent(req, "login_locked", "warn", "Login diblokir sementara (terlalu banyak percobaan).");
     res.status(429).json({
@@ -236,13 +251,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  const parsed = loginBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const normalizedEmail = parsed.data.email.trim().toLowerCase();
   const [user] = await db
     .select()
     .from(usersTable)
@@ -250,6 +258,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
     await recordFailedAttempt(throttleKey);
+    await recordFailedAttempt(accountKey, ACCOUNT_MAX_ATTEMPTS);
     recordSecurityEvent(req, "login_failed", "info", "Email atau password salah.");
     res.status(401).json({ error: "Email atau password salah." });
     return;
@@ -263,6 +272,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   await resetAttempts(throttleKey);
+  await resetAttempts(accountKey);
   const token = await createSession(user.id, req.cookies?.[SESSION_COOKIE]);
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
   res.json(toAuthUser(user));

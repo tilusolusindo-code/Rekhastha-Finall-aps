@@ -8,6 +8,7 @@ import googleAdminRouter from "./routes/google-admin";
 import taxRouter from "./routes/tax";
 import teamRouter from "./routes/team";
 import { originGuard } from "./lib/csrf";
+import { globalRateLimit } from "./lib/global-rate-limit";
 import { recordSecurityEvent, suspiciousInputWatcher } from "./lib/security-events";
 
 // ── Simple in-memory rate limiter (no extra package) ─────────────────────────
@@ -110,9 +111,13 @@ app.use("/api", originGuard);
 // Rate limiting pada endpoint sensitif
 app.use("/api/auth/login",          rateLimit(10));  // maks 10 login/menit per IP
 app.use("/api/auth/register",       rateLimit(5));   // maks 5 register/menit per IP
-app.use("/api/forgot-password",     rateLimit(5));
+app.use("/api/auth/forgot-password", rateLimit(5));   // path sebenarnya (sebelumnya salah: /api/forgot-password)
+app.use("/api/auth/reset-password",  rateLimit(10));
 app.use("/api/doku/create",         rateLimit(10));  // maks 10 payment attempt/menit
 app.use("/api/team/invite",         rateLimit(20));
+
+// Pembatas global (Postgres, dipakai bersama semua instance serverless).
+app.use("/api", globalRateLimit);
 
 // Uploaded documents must pass per-file ownership/participant checks.
 app.use("/api/uploads", uploadsRouter);

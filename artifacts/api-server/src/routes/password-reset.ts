@@ -93,7 +93,7 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
   const parsed = z
     .object({
       token: z.string().min(1),
-      newPassword: z.string().min(8, "Kata sandi minimal 8 karakter."),
+      newPassword: z.string().min(12, "Kata sandi minimal 12 karakter."),
     })
     .safeParse(req.body);
 

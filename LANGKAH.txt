@@ -1,0 +1,11 @@
+Perbaikan keamanan Rekhastha
+=============================
+1. Salin isi ZIP ini ke root repo (timpa file yang sama).
+2. Hapus folder duplikat dari repo:
+     git rm -r -q Rekhastha-Finall-aps-main rekhastha-app
+3. Commit & push:
+     git add -A
+     git commit -m "Perkuat keamanan: rate limit, kunci login per akun, update dependensi, hapus folder duplikat"
+     git push
+4. Vercel akan build otomatis. Tidak ada env baru yang wajib.
+   Opsional: GLOBAL_RATE_LIMIT_PER_MIN (default 300 permintaan/menit per IP).

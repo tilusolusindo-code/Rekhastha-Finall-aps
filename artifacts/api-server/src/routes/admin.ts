@@ -1,3 +1,4 @@
+import { recordSecurityEvent } from "../lib/security-events";
 import { Router, type IRouter, type Request } from "express";
 import { and, count, desc, eq, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -86,6 +87,7 @@ router.post("/admin/login", async (req, res): Promise<void> => {
   if (!valid) {
     await recordFailedAttempt(ip);
     req.log.warn({ ip }, "Failed admin login attempt");
+    recordSecurityEvent(req, "admin_login_failed", "high", `Percobaan login admin gagal (ID: ${String(parsed.data.adminId).slice(0, 40)})`);
     res.status(401).json({ error: "Identitas Admin atau Kata Sandi salah." });
     return;
   }
@@ -158,6 +160,7 @@ router.post("/admin/reset-password", async (req, res): Promise<void> => {
   if ("error" in result) {
     await recordFailedAttempt(ip);
     req.log.warn({ ip }, "Failed admin credential recovery attempt");
+    recordSecurityEvent(req, "admin_recovery_failed", "high", "Percobaan pemulihan kredensial admin gagal.");
     res.status(400).json(result);
     return;
   }

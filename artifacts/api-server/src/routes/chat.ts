@@ -1,3 +1,4 @@
+import { recordSecurityEvent } from "../lib/security-events";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { eq, asc, and, desc } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -10,6 +11,7 @@ import {
   chatUpload,
   isSafeUploadFilename,
   persistPrivateUpload,
+  UploadRejectedError,
   UPLOAD_ROOT,
 } from "../lib/upload";
 import { verifyPrivateObjectExists } from "../lib/private-application-storage";
@@ -293,7 +295,12 @@ router.post(
         String(jobId),
         workerId,
       ]);
-    } catch {
+    } catch (err) {
+      if (err instanceof UploadRejectedError) {
+        recordSecurityEvent(req, "malware_detected", "high", err.reason);
+        res.status(400).json({ error: "Berkas ditolak karena tidak lolos pemeriksaan keamanan." });
+        return;
+      }
       req.log.error({ jobId, workerId }, "Failed to store chat attachment");
       res.status(503).json({ error: "Penyimpanan lampiran sedang tidak tersedia." });
       return;

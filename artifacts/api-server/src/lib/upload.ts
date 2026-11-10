@@ -4,6 +4,8 @@ import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import { uploadPrivateObject } from "./private-application-storage";
 import type { Request } from "express";
+import { scanUpload } from "./malware-scan";
+import { logger } from "./logger";
 
 /**
  * Resolved root directory for uploaded files.
@@ -130,6 +132,14 @@ function hasValidFileSignature(file: Express.Multer.File): boolean {
   }
 }
 
+/** Dilempar bila pemindai menolak berkas; pesan aman ditampilkan ke pengguna. */
+export class UploadRejectedError extends Error {
+  constructor(public readonly reason: string) {
+    super("Berkas ditolak karena tidak lolos pemeriksaan keamanan.");
+    this.name = "UploadRejectedError";
+  }
+}
+
 /**
  * Persist a validated upload in private object storage in production.
  * Development and tests retain their existing local-file behavior.
@@ -149,6 +159,12 @@ export async function persistPrivateUpload(
     !hasValidFileSignature(file)
   ) {
     throw new Error("Isi berkas tidak valid.");
+  }
+
+  const scan = await scanUpload(file.buffer, file.mimetype);
+  if (!scan.clean) {
+    logger.warn({ reason: scan.reason, mimetype: file.mimetype, size: file.size }, "[upload] berkas ditolak pemindai");
+    throw new UploadRejectedError(scan.reason ?? "Berkas tidak lolos pemindaian keamanan.");
   }
 
   const filename = `${randomBytes(16).toString("hex")}${extensionForMimeType(file.mimetype)}`;

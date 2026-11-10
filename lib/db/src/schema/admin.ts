@@ -85,6 +85,24 @@ export const radarScrapeAlertsTable = pgTable("radar_scrape_alerts", {
     .defaultNow(),
 });
 
+/**
+ * Catatan percobaan serangan / aktivitas mencurigakan (login brute-force,
+ * input injeksi, CSRF, upload berbahaya, webhook palsu). Hanya dibaca admin.
+ */
+export const securityEventsTable = pgTable("security_events", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(),
+  severity: text("severity").notNull().default("warn"), // info | warn | high
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+  method: text("method"),
+  path: text("path"),
+  detail: text("detail"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type SecurityEvent = typeof securityEventsTable.$inferSelect;
+
 export type AdminUser = typeof adminUsersTable.$inferSelect;
 export type AdminSession = typeof adminSessionsTable.$inferSelect;
 export type AdminLoginAttempt = typeof adminLoginAttemptsTable.$inferSelect;

@@ -8,13 +8,15 @@ import googleAdminRouter from "./routes/google-admin";
 import taxRouter from "./routes/tax";
 import teamRouter from "./routes/team";
 import { originGuard } from "./lib/csrf";
+import { recordSecurityEvent, suspiciousInputWatcher } from "./lib/security-events";
 
 // ── Simple in-memory rate limiter (no extra package) ─────────────────────────
 const rateBuckets = new Map<string, { count: number; reset: number }>();
 function rateLimit(maxPerMin: number): RequestHandler {
   return (req, res, next) => {
-    const ip = ((req.headers["x-forwarded-for"] as string) || "").split(",")[0]?.trim()
-      || req.socket.remoteAddress || "unknown";
+    // req.ip dinormalisasi oleh "trust proxy" (1 hop Vercel); header X-Forwarded-For
+    // mentah bisa dipalsukan penyerang untuk menghindari limit.
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
     const key = `${req.path}:${ip}`;
     const now = Date.now();
     const bucket = rateBuckets.get(key);
@@ -24,6 +26,7 @@ function rateLimit(maxPerMin: number): RequestHandler {
     }
     bucket.count++;
     if (bucket.count > maxPerMin) {
+      recordSecurityEvent(req, "rate_limited", "warn", `Melebihi ${maxPerMin}/menit di endpoint sensitif`);
       res.status(429).json({ error: "Terlalu banyak permintaan. Coba lagi dalam 1 menit." });
       return;
     }
@@ -97,6 +100,9 @@ app.use(
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "64kb", parameterLimit: 100 }));
+
+// Catat (tanpa memblokir) input berpola serangan agar terlihat di panel admin.
+app.use("/api", suspiciousInputWatcher);
 
 // Reject cross-site state-changing requests before any route runs.
 app.use("/api", originGuard);

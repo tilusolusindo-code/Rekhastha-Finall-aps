@@ -25,6 +25,7 @@ import {
   deleteAcademyQuestion, updateAcademySettings,
   fetchAdminJobs, deleteAdminJob, refundAdminJob, forcePayoutAdminJob,
   fetchAdminLogs,
+  fetchSecurityEvents, type SecurityEventsData,
   fetchKycQueue, verifyKyc,
   fetchAdminStats,
   fetchRevenueStats,
@@ -50,7 +51,7 @@ function formatRp(v: number): string {
   return "Rp " + Math.round(v).toLocaleString("id-ID");
 }
 
-type Tab = "dashboard" | "revenue" | "escrow" | "manual_finance" | "resolution" | "onsite" | "users" | "kyc" | "academy" | "jobs" | "logs" | "akun";
+type Tab = "dashboard" | "security" | "revenue" | "escrow" | "manual_finance" | "resolution" | "onsite" | "users" | "kyc" | "academy" | "jobs" | "logs" | "akun";
 
 function useAdminRealtimeRefresh(
   load: () => Promise<void>,
@@ -2748,6 +2749,142 @@ function JobsTab() {
 }
 
 // ── Tab: Audit Logs ───────────────────────────────────────────────
+const SECURITY_LABELS: Record<string, string> = {
+  login_failed: "Login pengguna gagal",
+  login_locked: "Login diblokir sementara",
+  admin_login_failed: "Login ADMIN gagal",
+  admin_recovery_failed: "Pemulihan admin gagal",
+  rate_limited: "Terlalu banyak permintaan",
+  csrf_blocked: "Permintaan lintas situs ditolak",
+  suspicious_input: "Input berpola serangan",
+  upload_rejected: "Upload ditolak",
+  malware_detected: "Berkas berbahaya terdeteksi",
+  webhook_bad_signature: "Notifikasi pembayaran palsu",
+};
+
+function SecurityTab() {
+  const [data, setData] = useState<SecurityEventsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [severity, setSeverity] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      setData(await fetchSecurityEvents(severity || undefined));
+      setError("");
+    } catch {
+      setError("Gagal memuat catatan keamanan. Pastikan migrasi 0010_security_events.sql sudah dijalankan.");
+    } finally {
+      setLoading(false);
+    }
+  }, [severity]);
+
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const t = setInterval(() => void load(), 30_000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const sevBadge = (s: string) => {
+    const cls = s === "high" ? "bg-red-100 text-red-700 border-red-200"
+      : s === "warn" ? "bg-amber-100 text-amber-700 border-amber-200"
+      : "bg-gray-100 text-gray-600 border-gray-200";
+    const label = s === "high" ? "Tinggi" : s === "warn" ? "Waspada" : "Info";
+    return <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${cls}`}>{label}</span>;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">Kejadian 24 jam</p>
+          <p className="text-3xl font-black text-gray-900 mt-1">{data?.summary.last24h ?? "–"}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">Tingkat tinggi (24 jam)</p>
+          <p className={`text-3xl font-black mt-1 ${data && data.summary.high24h > 0 ? "text-red-600" : "text-gray-900"}`}>
+            {data?.summary.high24h ?? "–"}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">IP paling aktif (24 jam)</p>
+          <ul className="mt-1 text-sm text-gray-800 space-y-0.5">
+            {data?.summary.topIps.length ? data.summary.topIps.map((r) => (
+              <li key={r.ip ?? "?"} className="flex justify-between gap-2">
+                <span className="font-mono text-xs truncate">{r.ip ?? "tidak diketahui"}</span>
+                <span className="font-bold">{r.count}</span>
+              </li>
+            )) : <li className="text-gray-400 text-xs">Belum ada</li>}
+          </ul>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-gray-100">
+          <h3 className="font-black text-gray-900 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-emerald-700" /> Percobaan Serangan &amp; Aktivitas Mencurigakan
+          </h3>
+          <div className="flex items-center gap-3">
+            <select
+              value={severity}
+              onChange={(e) => { setLoading(true); setSeverity(e.target.value); }}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 font-semibold text-gray-700"
+              aria-label="Filter tingkat"
+            >
+              <option value="">Semua tingkat</option>
+              <option value="high">Tinggi</option>
+              <option value="warn">Waspada</option>
+              <option value="info">Info</option>
+            </select>
+            <button onClick={() => void load()} className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900">
+              <RefreshCw className="w-3.5 h-3.5" /> Segarkan
+            </button>
+          </div>
+        </div>
+
+        {error ? (
+          <div className="py-10 px-5 text-center text-sm text-red-600">{error}</div>
+        ) : loading ? (
+          <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
+        ) : !data || data.events.length === 0 ? (
+          <div className="py-16 text-center text-sm text-gray-400">Belum ada kejadian tercatat. Itu kabar baik.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
+                  <th className="px-4 py-2.5 font-bold">Waktu</th>
+                  <th className="px-4 py-2.5 font-bold">Tingkat</th>
+                  <th className="px-4 py-2.5 font-bold">Jenis</th>
+                  <th className="px-4 py-2.5 font-bold">IP</th>
+                  <th className="px-4 py-2.5 font-bold">Endpoint</th>
+                  <th className="px-4 py-2.5 font-bold">Detail</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {data.events.map((e) => (
+                  <tr key={e.id} className="align-top">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-gray-600">{new Date(e.createdAt).toLocaleString("id-ID")}</td>
+                    <td className="px-4 py-2.5">{sevBadge(e.severity)}</td>
+                    <td className="px-4 py-2.5 font-semibold text-gray-800">{SECURITY_LABELS[e.type] ?? e.type}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-gray-600">{e.ip ?? "-"}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-gray-600">{e.method} {e.path}</td>
+                    <td className="px-4 py-2.5 text-gray-600 max-w-[320px] break-words">{e.detail ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      <p className="text-[11px] text-gray-400 px-1">
+        Data disimpan 90 hari. Input berpola serangan hanya dicatat (tidak diblokir) agar pengguna sah tidak salah ditolak;
+        akses data tetap aman karena semua query memakai parameter.
+      </p>
+    </div>
+  );
+}
+
 function LogsTab() {
   const [logs, setLogs] = useState<AdminLogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2871,6 +3008,7 @@ function CommandCenter({
     { id: "users", label: "Pengguna & Blacklist", icon: <Users className="w-4 h-4" /> },
     { id: "kyc", label: "Verifikasi KYC", icon: <IdCard className="w-4 h-4" /> },
     { id: "academy", label: "Kurasi Akademi", icon: <GraduationCap className="w-4 h-4" /> },
+    { id: "security", label: "Keamanan", icon: <Shield className="w-4 h-4" /> },
     { id: "logs", label: "Log Audit", icon: <FileText className="w-4 h-4" /> },
     { id: "akun", label: "Pengaturan Akun", icon: <Settings2 className="w-4 h-4" /> },
   ];
@@ -2977,6 +3115,7 @@ function CommandCenter({
         {tab === "users" && <UsersTab />}
         {tab === "kyc" && <KycTab />}
         {tab === "academy" && <AcademyTab onTrainingPassed={onTrainingPassed} />}
+        {tab === "security" && <SecurityTab />}
         {tab === "logs" && <LogsTab />}
         {tab === "akun" && <ChangePasswordTab />}
       </main>

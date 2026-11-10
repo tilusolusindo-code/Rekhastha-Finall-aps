@@ -1,3 +1,4 @@
+import { recordSecurityEvent } from "../lib/security-events";
 /**
  * Midtrans Snap Payment Routes
  *
@@ -291,6 +292,7 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
         return;
       }
       logger.warn({ orderId, reason: lookup.reason }, "[midtrans] Notifikasi ditolak: tidak terverifikasi");
+      recordSecurityEvent(req, "webhook_bad_signature", "high", `Notifikasi Midtrans palsu/tak terverifikasi (order ${String(orderId).slice(0, 60)}, ${lookup.reason})`);
       res.status(401).json({ error: "Notifikasi tidak terverifikasi." });
       return;
     }

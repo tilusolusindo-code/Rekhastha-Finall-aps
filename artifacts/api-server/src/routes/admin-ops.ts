@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db, gigsTable, dailyPayoutsTable, adminLogsTable, radarScrapeAlertsTable, applicationsTable } from "@workspace/db";
+import { db, gigsTable, dailyPayoutsTable, adminLogsTable, radarScrapeAlertsTable, securityEventsTable, applicationsTable } from "@workspace/db";
 import { ADMIN_COOKIE, isAdminSession, adminSessionId } from "../lib/admin";
 import { broadcastGig } from "../lib/realtime";
 import { forcePayoutGig } from "../lib/admin-finance";
@@ -310,6 +310,58 @@ router.get("/admin/radar-alerts", async (req, res): Promise<void> => {
     .limit(200);
 
   res.json(alerts);
+});
+
+/**
+ * GET /admin/security-events — catatan percobaan serangan (login brute-force,
+ * input injeksi, CSRF, upload berbahaya, webhook palsu) + ringkasan 24 jam.
+ * Query: ?severity=high|warn|info  &type=<jenis>
+ */
+router.get("/admin/security-events", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req))) {
+    res.status(401).json({ error: "Sesi admin tidak valid." });
+    return;
+  }
+
+  const severity = typeof req.query["severity"] === "string" ? req.query["severity"] : "";
+  const type = typeof req.query["type"] === "string" ? req.query["type"] : "";
+  const filters = [];
+  if (["high", "warn", "info"].includes(severity)) filters.push(eq(securityEventsTable.severity, severity));
+  if (/^[a-z_]{1,40}$/.test(type)) filters.push(eq(securityEventsTable.type, type));
+
+  const since = new Date(Date.now() - 24 * 3600 * 1000);
+
+  const [events, byType, topIps] = await Promise.all([
+    db.select().from(securityEventsTable)
+      .where(filters.length ? and(...filters) : undefined)
+      .orderBy(desc(securityEventsTable.createdAt))
+      .limit(200),
+    db.select({
+      type: securityEventsTable.type,
+      severity: securityEventsTable.severity,
+      count: sql<number>`count(*)::int`,
+    }).from(securityEventsTable)
+      .where(gte(securityEventsTable.createdAt, since))
+      .groupBy(securityEventsTable.type, securityEventsTable.severity),
+    db.select({
+      ip: securityEventsTable.ip,
+      count: sql<number>`count(*)::int`,
+    }).from(securityEventsTable)
+      .where(gte(securityEventsTable.createdAt, since))
+      .groupBy(securityEventsTable.ip)
+      .orderBy(desc(sql`count(*)`))
+      .limit(5),
+  ]);
+
+  res.json({
+    events,
+    summary: {
+      last24h: byType.reduce((n, r) => n + r.count, 0),
+      high24h: byType.filter((r) => r.severity === "high").reduce((n, r) => n + r.count, 0),
+      byType,
+      topIps,
+    },
+  });
 });
 
 export default router;

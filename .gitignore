@@ -59,3 +59,6 @@ artifacts/api-server/uploads/
 .env.production
 .env.staging
 *.env
+
+# arsip kode/backup jangan ikut repo
+*.zip

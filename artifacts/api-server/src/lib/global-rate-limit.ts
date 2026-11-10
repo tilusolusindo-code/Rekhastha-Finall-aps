@@ -1,3 +1,4 @@
+import { recordSecurityEvent } from "./security-events";
 /**
  * Global rate limiter untuk semua endpoint /api/*.
  *
@@ -78,6 +79,7 @@ export async function globalRateLimit(
 
     if (count > MAX_REQUESTS) {
       res.setHeader("Retry-After", "60");
+      recordSecurityEvent(req, "rate_limited", "warn", `>${MAX_REQUESTS} permintaan/menit`);
       res.status(429).json({
         error: "Terlalu banyak permintaan. Coba lagi dalam 1 menit.",
       });

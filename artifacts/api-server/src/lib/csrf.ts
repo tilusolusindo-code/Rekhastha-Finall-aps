@@ -1,3 +1,4 @@
+import { recordSecurityEvent } from "./security-events";
 import type { RequestHandler } from "express";
 
 /**
@@ -56,10 +57,12 @@ export const originGuard: RequestHandler = (req, res, next) => {
         ? req.headers["x-forwarded-host"].split(",")[0]?.trim()
         : undefined) ?? req.headers.host ?? "";
     if (!originHost || (originHost !== requestHost && !allowedHosts().has(originHost))) {
+      recordSecurityEvent(req, "csrf_blocked", "warn", `Origin ditolak: ${String(origin).slice(0, 120)}`);
       res.status(403).json({ error: "Permintaan lintas situs ditolak." });
       return;
     }
   } else if (fetchSite === "cross-site") {
+    recordSecurityEvent(req, "csrf_blocked", "warn", "Sec-Fetch-Site: cross-site tanpa Origin");
     res.status(403).json({ error: "Permintaan lintas situs ditolak." });
     return;
   }

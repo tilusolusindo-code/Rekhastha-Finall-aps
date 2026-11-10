@@ -1,3 +1,4 @@
+import { recordSecurityEvent } from "../lib/security-events";
 import { randomBytes, randomUUID } from "node:crypto";
 import { kvDelete, kvGet, kvPut } from "../lib/ephemeral";
 import {
@@ -29,6 +30,7 @@ import {
   kycUpload,
   documentUpload,
   persistPrivateUpload,
+  UploadRejectedError,
 } from "../lib/upload";
 
 const router: IRouter = Router();
@@ -227,6 +229,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   await pruneAdminState();
   const remaining = await lockoutRemaining(throttleKey);
   if (remaining > 0) {
+    recordSecurityEvent(req, "login_locked", "warn", "Login diblokir sementara (terlalu banyak percobaan).");
     res.status(429).json({
       error: `Terlalu banyak percobaan masuk. Coba lagi dalam ${Math.ceil(remaining / 1000)} detik.`,
     });
@@ -247,6 +250,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
     await recordFailedAttempt(throttleKey);
+    recordSecurityEvent(req, "login_failed", "info", "Email atau password salah.");
     res.status(401).json({ error: "Email atau password salah." });
     return;
   }
@@ -577,7 +581,12 @@ router.post(
         ktpFile ? persistPrivateUpload(ktpFile, ["kyc"]) : undefined,
         selfieFile ? persistPrivateUpload(selfieFile, ["kyc"]) : undefined,
       ]);
-    } catch {
+    } catch (err) {
+      if (err instanceof UploadRejectedError) {
+        recordSecurityEvent(req, "malware_detected", "high", err.reason);
+        res.status(400).json({ error: "Berkas ditolak karena tidak lolos pemeriksaan keamanan." });
+        return;
+      }
       req.log.error({ userId: user.id }, "Failed to store KYC documents");
       res.status(503).json({ error: "Penyimpanan dokumen sedang tidak tersedia." });
       return;
@@ -646,7 +655,12 @@ router.post(
         cvFile ? persistPrivateUpload(cvFile, ["documents"]) : undefined,
         portfolioFile ? persistPrivateUpload(portfolioFile, ["documents"]) : undefined,
       ]);
-    } catch {
+    } catch (err) {
+      if (err instanceof UploadRejectedError) {
+        recordSecurityEvent(req, "malware_detected", "high", err.reason);
+        res.status(400).json({ error: "Berkas ditolak karena tidak lolos pemeriksaan keamanan." });
+        return;
+      }
       req.log.error({ userId: user.id }, "Failed to store profile documents");
       res.status(503).json({ error: "Penyimpanan dokumen sedang tidak tersedia." });
       return;

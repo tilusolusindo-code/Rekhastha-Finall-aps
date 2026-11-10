@@ -373,6 +373,35 @@ export function fetchAdminLogs(): Promise<AdminLogRow[]> {
   return request("/admin/logs", "GET");
 }
 
+// ── Security events ──────────────────────────────────────────────────
+
+export interface SecurityEventRow {
+  id: number;
+  type: string;
+  severity: "info" | "warn" | "high";
+  ip: string | null;
+  userAgent: string | null;
+  method: string | null;
+  path: string | null;
+  detail: string | null;
+  createdAt: string;
+}
+
+export interface SecurityEventsData {
+  events: SecurityEventRow[];
+  summary: {
+    last24h: number;
+    high24h: number;
+    byType: Array<{ type: string; severity: string; count: number }>;
+    topIps: Array<{ ip: string | null; count: number }>;
+  };
+}
+
+export function fetchSecurityEvents(severity?: string): Promise<SecurityEventsData> {
+  const q = severity ? `?severity=${encodeURIComponent(severity)}` : "";
+  return request(`/admin/security-events${q}`, "GET");
+}
+
 // ── KYC verification queue ────────────────────────────────────────
 
 export type KycStatus = "unverified" | "pending" | "verified" | "rejected";

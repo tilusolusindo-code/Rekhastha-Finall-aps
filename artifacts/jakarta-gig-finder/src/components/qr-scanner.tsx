@@ -9,6 +9,49 @@ interface QrScannerProps {
 
 let scannerSeq = 0;
 
+/** Pesan yang jelas untuk tiap penyebab kamera gagal dibuka. */
+function describeCameraError(err: unknown): string {
+  const name = err instanceof DOMException || err instanceof Error ? err.name : "";
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const inAppBrowser = /FBAN|FBAV|Instagram|Line\/|MicroMessenger|TikTok|; wv\)|WhatsApp/i.test(ua);
+  if (typeof window !== "undefined" && !window.isSecureContext) {
+    return "Kamera hanya bisa dipakai lewat alamat https. Buka aplikasi dari alamat resminya.";
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return inAppBrowser
+      ? "Browser di dalam aplikasi (WhatsApp/Instagram/dll.) tidak mendukung kamera. Buka link ini di Chrome atau Safari."
+      : "Browser ini tidak mendukung akses kamera. Gunakan Chrome (Android) atau Safari (iPhone) versi terbaru.";
+  }
+  switch (name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return inAppBrowser
+        ? "Izin kamera ditolak oleh browser di dalam aplikasi. Buka link ini di Chrome atau Safari, lalu izinkan kamera."
+        : "Izin kamera ditolak. Ketuk ikon gembok/pengaturan di kolom alamat, izinkan Kamera untuk situs ini, lalu muat ulang halaman.";
+    case "NotFoundError":
+    case "OverconstrainedError":
+      return "Kamera tidak ditemukan di perangkat ini.";
+    case "NotReadableError":
+    case "AbortError":
+      return "Kamera sedang dipakai aplikasi lain. Tutup aplikasi yang memakai kamera, lalu coba lagi.";
+    default:
+      return "Kamera tidak dapat dibuka. Pastikan izin kamera aktif untuk situs ini, lalu coba lagi.";
+  }
+}
+
+/**
+ * Minta izin kamera secara eksplisit (memunculkan dialog izin di Android/iPhone),
+ * lalu langsung lepaskan stream agar html5-qrcode bisa memakai kameranya.
+ */
+async function requestCameraPermission(facingMode: "environment" | "user"): Promise<void> {
+  if (!navigator.mediaDevices?.getUserMedia) throw new DOMException("no mediaDevices", "NotSupportedError");
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: facingMode } },
+    audio: false,
+  });
+  stream.getTracks().forEach((t) => t.stop());
+}
+
 /**
  * Live-camera QR scanner (html5-qrcode).
  *
@@ -70,16 +113,20 @@ export default function QrScanner({ onScan, onError }: QrScannerProps) {
 
     const startScanner = async () => {
       try {
+        // 1) Izin dulu: ini yang memunculkan dialog "Izinkan kamera?".
+        await requestCameraPermission(facingMode);
+        if (cancelled) return;
+        // 2) Setelah diizinkan, label kamera baru terbaca (penting di iPhone).
         let cameras: Awaited<ReturnType<typeof Html5Qrcode.getCameras>> = [];
         try {
           cameras = await Html5Qrcode.getCameras();
         } catch {
-          // Let start() request camera permission using facingMode as a fallback.
+          // Tetap lanjut memakai facingMode.
         }
         if (cancelled) return;
         const preferredLabel = facingMode === "environment"
-          ? /back|rear|environment|world/i
-          : /front|user|facetime/i;
+          ? /back|rear|environment|world|belakang/i
+          : /front|user|facetime|depan/i;
         const camera = cameras.find((item) => preferredLabel.test(item.label))
           ?? undefined;
         await scanner.start(
@@ -101,10 +148,10 @@ export default function QrScanner({ onScan, onError }: QrScannerProps) {
           },
         );
         if (!cancelled) setToggling(false);
-      } catch {
+      } catch (err) {
         if (cancelled) return;
-        const msg =
-          "Kamera tidak dapat diakses. Pastikan Anda mengizinkan akses kamera di browser, lalu coba lagi.";
+        console.warn("[qr-scanner] kamera gagal dibuka:", err);
+        const msg = describeCameraError(err);
         setCamError(msg);
         setToggling(false);
         onErrorRef.current?.(msg);

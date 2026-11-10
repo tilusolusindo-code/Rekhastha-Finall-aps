@@ -19,7 +19,7 @@ export const UPLOAD_ROOT = path.resolve(
 // Local development only. In production (Vercel) the filesystem is read-only
 // and uploads go straight to Supabase Storage from memory.
 if (process.env["NODE_ENV"] !== "production") {
-  for (const sub of ["chat", "kyc", "documents"]) {
+  for (const sub of ["chat", "kyc", "documents", "avatar"]) {
     try {
       fs.mkdirSync(path.join(UPLOAD_ROOT, sub), { recursive: true });
     } catch {
@@ -235,6 +235,19 @@ export const documentUpload = multer({
       cb(null, true);
     } else {
       cb(new Error("Hanya PDF yang diizinkan untuk CV/Portofolio (maks 2MB per berkas)."));
+    }
+  },
+});
+
+/** Foto profil: JPG/PNG saja, maks 2 MB (batas body Vercel 4,5 MB). */
+export const avatarUpload = multer({
+  storage: makeStorage("avatar"),
+  limits: { fileSize: MAX_PAIR_FILE_SIZE_BYTES, files: 1 },
+  fileFilter(_req, file, cb) {
+    if (ALLOWED_KYC_MIME.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Hanya JPG dan PNG yang diizinkan untuk foto profil."));
     }
   },
 });

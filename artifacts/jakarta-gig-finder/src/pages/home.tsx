@@ -50,6 +50,7 @@ import { postWorkerLocation } from "@/lib/radar-client";
 import { INDONESIA_MAP_CENTER } from "@/lib/indonesia";
 import WorkerProfilePage from "@/components/worker-profile-page";
 import CompanyProfilePage from "@/components/company-profile-page";
+import { AvatarImage } from "@/components/profile-edit";
 import { workers, Worker } from "@/data/workers";
 import { CustomJob, calcTotal, paymentUnits } from "@/types/custom-job";
 import { WalletTransaction, EscrowEvent, calcSplit, calcEscrowAmount, calcEmployerDeposit, DEFAULT_FEE_RATE, ADMIN_DISPUTE_FEE, DURATION_DAYS, CLOCKIN_GRACE_MS, DISPUTE_WINDOW_MS } from "@/types/escrow";
@@ -108,6 +109,7 @@ function toWorkerApplicationNotification(
     jobTitle: row.jobTitle || job.posisi,
     workerId: row.workerId,
     applicantName: row.workerName,
+    applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
     applicantNikMasked: row.workerNikMasked,
     applicantNpwpMasked: row.workerNpwpMasked,
     hasNpwp: row.hasNpwp,
@@ -251,6 +253,7 @@ export default function Home() {
     workerName: string; currentRole: "company" | "worker";
     hiringMode?: "cepat" | "lama"; jobId: number; workerId: string;
     feeRate?: number;
+    peerAvatarUrl?: string;
   } | null>(null);
 
   // ── Notifications ───────────────────────────────────────────────
@@ -518,6 +521,7 @@ export default function Home() {
               jobTitle: row.jobTitle,
               workerId: row.workerId,
               applicantName: row.workerName,
+              applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
               applicantNikMasked: row.workerNikMasked,
               applicantNpwpMasked: row.workerNpwpMasked,
               hasNpwp: row.hasNpwp,
@@ -635,6 +639,7 @@ export default function Home() {
               jobTitle: row.jobTitle,
               workerId: row.workerId,
               applicantName: row.workerName,
+              applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
               applicantNikMasked: row.workerNikMasked,
               applicantNpwpMasked: row.workerNpwpMasked,
               hasNpwp: row.hasNpwp,
@@ -1422,7 +1427,7 @@ export default function Home() {
 
   const handleOpenChatFromJob = useCallback((job: CustomJob) => {
     if (!canOpenChatForJob(job.id)) return;
-    setChatContext({ jobTitle: job.posisi, nominal: job.nominal, companyName: job.namaPerusahaan || "Perusahaan", workerName: workerProfile?.namaLengkap || "Pekerja", currentRole: "worker", hiringMode: job.hiringMode, jobId: job.id, workerId: currentUser?.id ?? "", feeRate: job.feeRate });
+    setChatContext({ jobTitle: job.posisi, nominal: job.nominal, companyName: job.namaPerusahaan || "Perusahaan", workerName: workerProfile?.namaLengkap || "Pekerja", currentRole: "worker", peerAvatarUrl: job.employerAvatarUrl ?? undefined, hiringMode: job.hiringMode, jobId: job.id, workerId: currentUser?.id ?? "", feeRate: job.feeRate });
   }, [workerProfile, currentUser, canOpenChatForJob]);
 
   const handleOpenChatFromNotif = useCallback((notif: ApplicationNotification) => {
@@ -1436,7 +1441,7 @@ export default function Home() {
     if (latestApplication?.status !== "diterima" && latestApplication?.status !== "selesai") return;
     const job = customJobs.find((j) => j.id === notif.jobId);
     if (!job) return;
-    setChatContext({ jobTitle: notif.jobTitle, nominal: job.nominal, companyName: job.namaPerusahaan || "Perusahaan Anda", workerName: notif.applicantName, currentRole: "company", hiringMode: job.hiringMode, jobId: job.id, workerId: notif.workerId, feeRate: job.feeRate });
+    setChatContext({ jobTitle: notif.jobTitle, nominal: job.nominal, companyName: job.namaPerusahaan || "Perusahaan Anda", workerName: notif.applicantName, currentRole: "company", peerAvatarUrl: notif.applicantAvatarUrl, hiringMode: job.hiringMode, jobId: job.id, workerId: notif.workerId, feeRate: job.feeRate });
   }, [customJobs, notifications]);
 
   const handleNominalUpdate = useCallback((newNominal: number) => {
@@ -1784,6 +1789,7 @@ export default function Home() {
           companyName={chatContext.companyName} workerName={chatContext.workerName}
           currentRole={chatContext.currentRole} hiringMode={chatContext.hiringMode}
           feeRate={chatContext.feeRate}
+          peerAvatarUrl={chatContext.peerAvatarUrl}
           wageLocked={customJobs.some(job => job.id === chatContext.jobId && (
             job.adminFeeAmount != null || job.totalWorkerPayout != null ||
             job.paymentStatus === "confirmed" || job.escrowStatus === "locked"
@@ -1920,9 +1926,15 @@ export default function Home() {
                     return (
                       <div key={n.id} className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
-                            {n.applicantName.charAt(0).toUpperCase()}
-                          </div>
+                          <AvatarImage
+                            src={isAccepted ? n.applicantAvatarUrl : undefined}
+                            className="w-10 h-10 rounded-full object-cover shrink-0"
+                            fallback={
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
+                                {n.applicantName.charAt(0).toUpperCase()}
+                              </div>
+                            }
+                          />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="text-sm font-bold text-gray-900">{n.applicantName}</p>
@@ -1945,7 +1957,7 @@ export default function Home() {
                           )}
                           {job && (
                             <button
-                              onClick={() => setChatContext({ jobTitle: n.jobTitle, nominal: job.nominal, companyName: job.namaPerusahaan || "Perusahaan Anda", workerName: n.applicantName, currentRole: "company", hiringMode: job.hiringMode, jobId: job.id, workerId: n.workerId, feeRate: job.feeRate })}
+                              onClick={() => setChatContext({ jobTitle: n.jobTitle, nominal: job.nominal, companyName: job.namaPerusahaan || "Perusahaan Anda", workerName: n.applicantName, currentRole: "company", peerAvatarUrl: n.applicantAvatarUrl, hiringMode: job.hiringMode, jobId: job.id, workerId: n.workerId, feeRate: job.feeRate })}
                               className="flex items-center gap-1.5 bg-primary text-white text-xs font-bold px-3 py-2 rounded-xl hover:bg-primary/90 transition-colors">
                               <MessageSquare className="w-3.5 h-3.5" /> Chat
                             </button>
@@ -1996,6 +2008,7 @@ export default function Home() {
               onJobUpdate={(updated) =>
                 setCustomJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)))
               }
+              onUserUpdated={setCurrentUser}
             />
           )}
         </div>

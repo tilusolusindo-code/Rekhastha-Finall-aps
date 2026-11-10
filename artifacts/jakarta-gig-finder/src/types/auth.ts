@@ -12,6 +12,7 @@ export interface AuthUser {
   role: UserRole;
   linkedWithGoogle: boolean;
   googleAvatar?: string;
+  avatarUrl?: string;
   // Company extra
   namaPerusahaan?: string;
   nibPerusahaan?: string;

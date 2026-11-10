@@ -28,6 +28,7 @@ import {
 } from "../lib/admin";
 import {
   kycUpload,
+  avatarUpload,
   documentUpload,
   persistPrivateUpload,
   UploadRejectedError,
@@ -505,6 +506,131 @@ router.get("/auth/me", async (req, res): Promise<void> => {
     return;
   }
   res.json(toAuthUser(user));
+});
+
+/** Akun apa pun yang sudah login boleh mengganti foto profilnya sendiri. */
+async function requireSession(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  next();
+}
+
+function parseAvatarUpload(req: Request, res: Response, next: NextFunction): void {
+  avatarUpload.single("avatar")(req, res, (err: unknown) => {
+    if (err) {
+      const tooBig = typeof err === "object" && err !== null && "code" in err && err.code === "LIMIT_FILE_SIZE";
+      res.status(400).json({
+        error: tooBig ? "Foto terlalu besar. Maksimal 2 MB." : "Format foto tidak didukung. Gunakan JPG atau PNG.",
+      });
+      return;
+    }
+    next();
+  });
+}
+
+router.post("/auth/avatar", requireSession, parseAvatarUpload, async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ error: "Pilih foto terlebih dahulu." });
+    return;
+  }
+  let filename: string;
+  try {
+    filename = await persistPrivateUpload(file, ["avatar"]);
+  } catch (err) {
+    if (err instanceof UploadRejectedError) {
+      recordSecurityEvent(req, "malware_detected", "high", err.reason);
+      res.status(400).json({ error: "Foto ditolak karena tidak lolos pemeriksaan keamanan." });
+      return;
+    }
+    req.log.error({ userId: user.id }, "Failed to store avatar");
+    res.status(503).json({ error: "Penyimpanan foto sedang tidak tersedia." });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ avatarUrl: `/api/uploads/avatar/${filename}` })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Akun tidak ditemukan." });
+    return;
+  }
+  res.json(toAuthUser(updated));
+});
+
+router.delete("/auth/avatar", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ avatarUrl: null })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+  res.json(toAuthUser(updated ?? user));
+});
+
+const accountSchema = z.object({
+  name: z.string().trim().min(2, "Nama minimal 2 karakter.").max(80, "Nama maksimal 80 karakter."),
+  whatsapp: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9]{8,16}$/, "Nomor WhatsApp tidak valid (hanya angka, 8–16 digit).")
+    .optional()
+    .or(z.literal("")),
+  namaPerusahaan: z.string().trim().min(2).max(120).optional(),
+  alamat: z.string().trim().max(300).optional(),
+});
+
+/**
+ * Edit profil dasar. Hanya field ini yang bisa diubah sendiri: nama tampilan,
+ * WhatsApp, serta nama usaha dan alamat (khusus akun perusahaan). Email, peran,
+ * data KTP/KYC, dan verifikasi TIDAK bisa diubah lewat sini.
+ */
+router.post("/auth/account", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const parsed = accountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Input tidak valid." });
+    return;
+  }
+  const { name, whatsapp, namaPerusahaan, alamat } = parsed.data;
+
+  const profile = { ...((user.profile ?? {}) as Record<string, unknown>) };
+  if (user.role === "perusahaan") {
+    if (namaPerusahaan !== undefined) profile["namaPerusahaan"] = namaPerusahaan;
+    if (alamat !== undefined) profile["alamat"] = alamat;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({
+      name,
+      whatsapp: whatsapp === undefined ? user.whatsapp : whatsapp || null,
+      profile,
+    })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Akun tidak ditemukan." });
+    return;
+  }
+  res.json(toAuthUser(updated));
 });
 
 router.post("/auth/profile", async (req, res): Promise<void> => {

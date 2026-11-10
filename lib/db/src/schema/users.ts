@@ -26,6 +26,8 @@ export const usersTable = pgTable("users", {
   suspended: boolean("suspended").notNull().default(false),
   profile: jsonb("profile").notNull().default({}),
   /** Path to the KTP document photo uploaded during KYC onboarding. */
+  /** Foto profil (JPG/PNG) yang diunggah pengguna sendiri. */
+  avatarUrl: text("avatar_url"),
   ktpPhotoUrl: text("ktp_photo_url"),
   /** Path to the selfie+KTP photo uploaded during KYC onboarding. */
   selfieWithKtpUrl: text("selfie_with_ktp_url"),

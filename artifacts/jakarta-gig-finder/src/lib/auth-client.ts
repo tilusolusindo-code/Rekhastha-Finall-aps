@@ -69,6 +69,44 @@ export function updateWorkerProfile(profile: WorkerProfile): Promise<AuthUser> {
   return request<AuthUser>("/auth/profile", profile);
 }
 
+async function sendJson<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    credentials: "include",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new AuthError((data as { error?: string }).error ?? "Terjadi kesalahan.", res.status);
+  return data as T;
+}
+
+/** Unggah foto profil (JPG/PNG, maks 2 MB). */
+export async function uploadAvatar(file: Blob): Promise<AuthUser> {
+  const form = new FormData();
+  form.append("avatar", file, "avatar.jpg");
+  const res = await fetch(`${API_BASE}/auth/avatar`, { method: "POST", credentials: "include", body: form });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new AuthError((data as { error?: string }).error ?? "Gagal mengunggah foto.", res.status);
+  return data as AuthUser;
+}
+
+export function removeAvatar(): Promise<AuthUser> {
+  return sendJson<AuthUser>("/auth/avatar", "DELETE");
+}
+
+export interface AccountPayload {
+  name: string;
+  whatsapp?: string;
+  namaPerusahaan?: string;
+  alamat?: string;
+}
+
+/** Edit profil dasar: nama tampilan, WhatsApp, nama usaha/alamat (perusahaan). */
+export function updateAccount(payload: AccountPayload): Promise<AuthUser> {
+  return sendJson<AuthUser>("/auth/account", "POST", payload);
+}
+
 /** Start the server-side Google OAuth authorization-code flow. */
 export function startGoogleLogin(): void {
   window.location.assign(`${API_BASE}/auth/google/start`);

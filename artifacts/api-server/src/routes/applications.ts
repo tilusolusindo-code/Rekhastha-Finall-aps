@@ -682,16 +682,19 @@ router.get("/applications", async (req, res): Promise<void> => {
     .select({
       application: applicationsTable,
       hiringMode: gigsTable.hiringMode,
+      workerAvatarUrl: usersTable.avatarUrl,
     })
     .from(applicationsTable)
     .leftJoin(gigsTable, eq(applicationsTable.jobId, gigsTable.id))
+    .leftJoin(usersTable, eq(applicationsTable.workerId, usersTable.id))
     .where(conditions)
     .orderBy(desc(applicationsTable.createdAt));
   const attachments = await getApplicationAttachments(rows.map(({ application }) => application.id));
   res.setHeader("Cache-Control", "no-store");
   res.json(
-    rows.map(({ application, hiringMode }) => ({
+    rows.map(({ application, hiringMode, workerAvatarUrl }) => ({
       ...application,
+      workerAvatarUrl: workerAvatarUrl ?? null,
       hiringMode: hiringMode ?? "lama",
       uploadedFiles: attachments.get(application.id) ?? [],
     })),

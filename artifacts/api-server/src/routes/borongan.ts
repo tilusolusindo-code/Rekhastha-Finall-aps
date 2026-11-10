@@ -187,7 +187,7 @@ router.post("/borongan/remote/approve", async (req, res): Promise<void> => {
   const result = await db.transaction(async (tx) => {
     const [gig] = await tx
       .update(gigsTable)
-      .set({ proofStatus: "approved", escrowStatus: "released" })
+      .set({ proofStatus: "approved", escrowStatus: "released", broadcastActive: false })
       .where(eq(gigsTable.id, parsed.data.jobId))
       .returning();
     await tx
@@ -411,6 +411,7 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
         daysPaid: dayIndex,
         boronganType: "onsite",
         escrowStatus: fullyPaid ? "released" : gig.escrowStatus ?? "locked",
+        ...(fullyPaid ? { broadcastActive: false } : {}),
       })
       .where(eq(gigsTable.id, gig.id))
       .returning();

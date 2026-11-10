@@ -110,6 +110,8 @@ app.use("/api", originGuard);
 
 // Rate limiting pada endpoint sensitif
 app.use("/api/auth/login",          rateLimit(10));  // maks 10 login/menit per IP
+app.use("/api/auth/avatar",         rateLimit(10));
+app.use("/api/auth/account",        rateLimit(20));
 app.use("/api/auth/register",       rateLimit(5));   // maks 5 register/menit per IP
 app.use("/api/auth/forgot-password", rateLimit(5));   // path sebenarnya (sebelumnya salah: /api/forgot-password)
 app.use("/api/auth/reset-password",  rateLimit(10));

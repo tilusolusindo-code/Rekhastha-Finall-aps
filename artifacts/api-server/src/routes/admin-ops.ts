@@ -74,7 +74,7 @@ router.post("/admin/refund", async (req, res): Promise<void> => {
 
   const [gig] = await db
     .update(gigsTable)
-    .set({ escrowStatus: "refunded" })
+    .set({ escrowStatus: "refunded", broadcastActive: false })
     .where(eq(gigsTable.id, parsed.data.jobId))
     .returning();
 
@@ -189,7 +189,7 @@ router.post("/admin/jobs/:id/refund", async (req, res): Promise<void> => {
 
   const [gig] = await db
     .update(gigsTable)
-    .set({ escrowStatus: "refunded" })
+    .set({ escrowStatus: "refunded", broadcastActive: false })
     .where(eq(gigsTable.id, jobId))
     .returning();
 

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { AvatarImage } from "@/components/profile-edit";
 import LocationPickerSection from "@/components/location-picker-section";
 import MidtransSnapModal from "@/components/midtrans-snap-modal";
 import {
@@ -97,6 +98,22 @@ const DEMO_KM: Record<string, number> = {};
 function getDemoKm(name: string): number {
   if (!DEMO_KM[name]) DEMO_KM[name] = +(0.5 + Math.random() * 4.5).toFixed(1);
   return DEMO_KM[name];
+}
+
+type JobPhase = "selesai" | "dibatalkan" | "sengketa" | "escrow" | "seleksi";
+
+/**
+ * Fase lowongan di sisi pemberi kerja. Sebelumnya semua yang bukan "escrow terkunci"
+ * ditampilkan "Menunggu Seleksi", termasuk lowongan yang sudah dicairkan/selesai.
+ */
+function jobPhase(job: CustomJob, locked: boolean, apps: Array<{ status: string }>): JobPhase {
+  const es = job.escrowStatus;
+  if (es === "refunded") return "dibatalkan";
+  if (es === "released") return "selesai";
+  if (es === "disputed" || es === "disputed_active") return "sengketa";
+  const accepted = apps.filter((a) => a.status === "diterima" || a.status === "selesai");
+  if (accepted.length > 0 && accepted.every((a) => a.status === "selesai")) return "selesai";
+  return locked ? "escrow" : "seleksi";
 }
 
 export default function HiringModePanel({
@@ -403,6 +420,7 @@ export default function HiringModePanel({
   };
 
   // ── Applicant sort ─────────────────────────────────────────────
+  const [showFinished, setShowFinished] = useState(false);
   const sortedApplicants = (jobId: number) => {
     const list = notifications.filter(n => n.jobId === jobId);
     return [...list].sort((a, b) => getDemoKm(a.applicantName) - getDemoKm(b.applicantName));
@@ -410,6 +428,19 @@ export default function HiringModePanel({
 
   const inputCls = "w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 transition-all";
   const labelCls = "text-xs font-semibold text-gray-700 mb-1 block";
+
+  // Pisahkan lowongan berjalan dari yang sudah selesai/dibatalkan.
+  const modeJobs = hiringMode === "cepat" ? cepatJobs : himaJobs(lamaJobs, legacyJobs, hiringMode);
+  const phaseOf = (job: CustomJob): JobPhase =>
+    jobPhase(job, job.escrowStatus === "locked" || lockedJobIds.has(job.id), notifications.filter((n) => n.jobId === job.id));
+  const activeJobs = modeJobs.filter((j) => {
+    const ph = phaseOf(j);
+    return ph !== "selesai" && ph !== "dibatalkan";
+  });
+  const finishedJobs = modeJobs.filter((j) => {
+    const ph = phaseOf(j);
+    return ph === "selesai" || ph === "dibatalkan";
+  });
 
   return (
     <>
@@ -1001,18 +1032,19 @@ export default function HiringModePanel({
         {/* Section label */}
         {customJobs.length > 0 && (
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            {hiringMode === "cepat" ? `⚡ Lowongan Broadcast Instan (${cepatJobs.length})` : `📅 Lowongan Posting Reguler (${lamaJobs.length})`}
+            {hiringMode === "cepat" ? `⚡ Lowongan Broadcast Instan (${activeJobs.length})` : `📅 Lowongan Posting Reguler (${activeJobs.length})`}
           </p>
         )}
 
         {/* Bisa Lama: sort control */}
 
         {/* Job cards */}
-        {(hiringMode === "cepat" ? cepatJobs : himaJobs(lamaJobs, legacyJobs, hiringMode)).map(job => {
+        {activeJobs.map(job => {
           const applicants = sortedApplicants(job.id);
           const pending  = applicants.filter(n => n.status === "ditinjau").length;
           const accepted = applicants.filter(n => n.status === "diterima" || n.status === "selesai").length;
           const isJobLocked = job.escrowStatus === "locked" || lockedJobIds.has(job.id);
+          const phase = jobPhase(job, isJobLocked, applicants);
           const isCepatJob = job.hiringMode === "cepat";
           const confirmingEscrow = escrowConfirmJobId === job.id;
           const jobExpanded = expandedJobId === job.id;
@@ -1045,7 +1077,11 @@ export default function HiringModePanel({
                     <p className="text-[10px] text-gray-400 mt-0.5">{job.namaPerusahaan || currentUser.name}</p>
                   </div>
                   {/* Escrow status */}
-                  {isJobLocked ? (
+                  {phase === "sengketa" ? (
+                    <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full shrink-0">
+                      ⚠️ Sengketa
+                    </span>
+                  ) : isJobLocked ? (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
                       <Lock className="w-2.5 h-2.5" /> Escrow Terkunci 🔒
                     </span>
@@ -1068,7 +1104,7 @@ export default function HiringModePanel({
                       <Lock className="w-3 h-3" /> {formatRp(job.escrowAmount)} di Escrow
                     </span>
                   ) : null}
-                  {isCepatJob && job.broadcastActive && (
+                  {isCepatJob && job.broadcastActive && (phase === "escrow" || phase === "seleksi") && (
                     <span className="flex items-center gap-1 text-orange-600 font-semibold animate-pulse">
                       <Radio className="w-3 h-3" /> Broadcast Aktif
                     </span>
@@ -1113,11 +1149,17 @@ export default function HiringModePanel({
                             ? "bg-emerald-50 border-emerald-200"
                             : "bg-white border-gray-100"
                         }`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 ${
-                            isLocked ? "bg-gray-300" : "bg-gradient-to-br from-blue-400 to-indigo-500"
-                          }`}>
-                            {isLocked ? <Lock className="w-3.5 h-3.5" /> : notif.applicantName.slice(0, 1)}
-                          </div>
+                          <AvatarImage
+                            src={!isLocked && (notif.status === "diterima" || notif.status === "selesai") ? notif.applicantAvatarUrl : undefined}
+                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                            fallback={
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0 ${
+                                isLocked ? "bg-gray-300" : "bg-gradient-to-br from-blue-400 to-indigo-500"
+                              }`}>
+                                {isLocked ? <Lock className="w-3.5 h-3.5" /> : notif.applicantName.slice(0, 1)}
+                              </div>
+                            }
+                          />
                           <div className="flex-1 min-w-0">
                             <p className={`text-xs font-bold truncate ${isLocked ? "text-gray-400 blur-[2px] select-none" : "text-gray-900"}`}>
                               {isLocked ? "Pelamar Terkunci" : maskName(notif.applicantName)}
@@ -1271,6 +1313,45 @@ export default function HiringModePanel({
             </div>
           );
         })}
+
+        {/* Riwayat: lowongan yang sudah selesai / dibatalkan */}
+        {finishedJobs.length > 0 && (
+          <div className="pt-2">
+            <button
+              onClick={() => setShowFinished((v) => !v)}
+              className="w-full flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider px-1 py-2"
+            >
+              <span>✅ Riwayat Selesai ({finishedJobs.length})</span>
+              {showFinished ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            {showFinished && (
+              <div className="space-y-2">
+                {finishedJobs.map((job) => {
+                  const apps = notifications.filter((n) => n.jobId === job.id);
+                  const done = apps.filter((a) => a.status === "diterima" || a.status === "selesai").length;
+                  const cancelled = phaseOf(job) === "dibatalkan";
+                  return (
+                    <div key={job.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-800 truncate">{job.posisi}</p>
+                        <p className="text-[10px] text-gray-400">
+                          {formatRp(job.nominal)} / {paymentUnits[job.pembayaran]} · {done} pekerja
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                        cancelled
+                          ? "bg-gray-50 text-gray-600 border-gray-200"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      }`}>
+                        {cancelled ? "Dibatalkan · dana kembali" : "✓ Selesai · dana dicairkan"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Legacy jobs (no hiring mode) */}
         {hiringMode === "lama" && legacyJobs.length > 0 && (

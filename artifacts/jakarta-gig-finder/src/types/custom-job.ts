@@ -63,6 +63,7 @@ export interface CustomJob {
   // ── Poster identity (for blacklist filtering) ────────
   employerId?: string;     // real account id of the employer who posted
   employerName?: string;   // display name of the poster
+  employerAvatarUrl?: string | null; // foto profil pemberi kerja
   // ── Kategori & biaya platform ────────────────────────
   jobCategory?: JobCategory;   // "umum" | "terampil" | "profesional"
   applicationQuestions?: JobApplicationQuestion[];

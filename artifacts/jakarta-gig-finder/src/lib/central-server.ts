@@ -51,6 +51,7 @@ export interface ApplicationEvent {
   jobTitle: string;
   workerId: string;
   workerName: string;
+  workerAvatarUrl?: string | null;
   workerNikMasked: string;
   workerNpwpMasked: string;
   hasNpwp: boolean;

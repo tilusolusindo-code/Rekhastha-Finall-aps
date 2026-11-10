@@ -28,10 +28,10 @@ function param(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
-function allowedExtension(kind: "kyc" | "documents" | "chat", filename: string): boolean {
+function allowedExtension(kind: "kyc" | "documents" | "chat" | "avatar", filename: string): boolean {
   if (!isSafeUploadFilename(filename)) return false;
   const extension = path.extname(filename).toLowerCase();
-  if (kind === "kyc") return [".jpg", ".jpeg", ".png", ".bin"].includes(extension);
+  if (kind === "kyc" || kind === "avatar") return [".jpg", ".jpeg", ".png", ".bin"].includes(extension);
   if (kind === "documents") return [".pdf", ".bin"].includes(extension);
   return [".jpg", ".jpeg", ".png", ".pdf", ".bin"].includes(extension);
 }
@@ -178,6 +178,41 @@ router.get("/kyc/:filename", async (req, res): Promise<void> => {
     path.join(UPLOAD_ROOT, "kyc"),
     filename,
     `/objects/uploads/kyc/${filename}`,
+  );
+});
+
+// Foto profil boleh dilihat pengguna yang sudah login (pemberi kerja melihat foto pelamar,
+// dst.), tetapi hanya berkas yang benar-benar terdaftar sebagai avatar seseorang.
+router.get("/avatar/:filename", async (req, res): Promise<void> => {
+  const filename = param(req.params["filename"]);
+  if (!allowedExtension("avatar", filename)) {
+    res.status(404).json({ error: "Berkas tidak ditemukan." });
+    return;
+  }
+  const [user, adminId] = await Promise.all([
+    getSessionUser(req.cookies?.[SESSION_COOKIE]),
+    adminSessionId(req.cookies?.[ADMIN_COOKIE]),
+  ]);
+  if (!user && !adminId) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const url = `/api/uploads/avatar/${filename}`;
+  const [owner] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.avatarUrl, url))
+    .limit(1);
+  if (!owner) {
+    res.status(404).json({ error: "Berkas tidak ditemukan." });
+    return;
+  }
+  await sendPrivateFile(
+    req,
+    res,
+    path.join(UPLOAD_ROOT, "avatar"),
+    filename,
+    `/objects/uploads/avatar/${filename}`,
   );
 });
 

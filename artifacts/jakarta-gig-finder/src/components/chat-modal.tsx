@@ -1,3 +1,4 @@
+import { AvatarImage } from "@/components/profile-edit";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   X, Send, ShieldCheck, Lock, AlertTriangle, Briefcase, ChevronRight,
@@ -42,6 +43,8 @@ export interface ChatModalProps {
   companyName: string;
   workerName: string;
   currentRole: "company" | "worker";
+  /** Foto profil lawan bicara (opsional). */
+  peerAvatarUrl?: string;
   hiringMode?: "cepat" | "lama";
   /** Platform fee rate stored at posting time (e.g. 0.03 / 0.05 / 0.08). */
   feeRate?: number;
@@ -116,7 +119,7 @@ function BuyOutModal({ jobTitle, nominal, onClose }: { jobTitle: string; nominal
 
 // ── Main Component ───────────────────────────────────────────────────
 export default function ChatModal({
-  jobTitle, nominal, companyName, workerName,
+  jobTitle, nominal, companyName, workerName, peerAvatarUrl,
   currentRole, hiringMode = "lama", jobId, workerId, onClose, onNominalUpdate, wageLocked = false,
 }: ChatModalProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -458,6 +461,11 @@ export default function ChatModal({
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
                 <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><X className="w-4 h-4 text-white" /></button>
+                <AvatarImage
+                  src={peerAvatarUrl}
+                  className="w-9 h-9 rounded-full object-cover border border-white/30 shrink-0"
+                  fallback={null}
+                />
                 <div>
                   <p className="font-bold text-sm leading-tight">{jobTitle}</p>
                   <p className="text-[10px] text-white/70">

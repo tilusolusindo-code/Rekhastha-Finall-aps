@@ -122,7 +122,7 @@ export async function forcePayoutGig(
 
     const [updatedGig] = await tx
       .update(gigsTable)
-      .set({ escrowStatus: "released" })
+      .set({ escrowStatus: "released", broadcastActive: false })
       .where(eq(gigsTable.id, jobId))
       .returning();
     await tx

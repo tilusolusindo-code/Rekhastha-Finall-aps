@@ -6,6 +6,7 @@ import { RatingPayload } from "@/components/rating-modal";
 import { ApplicationNotification } from "@/types/notification";
 import EscrowTimeline from "@/components/escrow-timeline";
 import { EscrowEvent } from "@/types/escrow";
+import { ProfileAvatar, EditProfileButton } from "@/components/profile-edit";
 import { approveRemoteProof, rejectRemoteProof } from "@/lib/borongan-client";
 
 interface CompanyProfilePageProps {
@@ -18,12 +19,13 @@ interface CompanyProfilePageProps {
   onDispute: (jobId: number) => void;
   onAdminResolve: (jobId: number, winner: "worker" | "company") => void;
   onJobUpdate?: (job: CustomJob) => void;
+  onUserUpdated?: (user: AuthUser) => void;
 }
 
 type ProfileTab = "data" | "riwayat";
 
 export default function CompanyProfilePage({
-  currentUser, customJobs, ratings, notifications, escrowEvents, onLogout, onDispute, onAdminResolve, onJobUpdate,
+  currentUser, customJobs, ratings, notifications, escrowEvents, onLogout, onDispute, onAdminResolve, onJobUpdate, onUserUpdated,
 }: CompanyProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>("data");
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -77,13 +79,20 @@ export default function CompanyProfilePage({
         className="px-5 pt-6 pb-5 flex flex-col items-center gap-3"
         style={{ background: "linear-gradient(160deg, #1E3A5F 0%, #1D4ED8 60%, #3B82F6 100%)" }}
       >
-        <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg,#2563EB,#7C3AED)" }}>
-          <span className="text-2xl font-black text-white">{initials}</span>
-        </div>
+        <ProfileAvatar
+          user={currentUser}
+          size={80}
+          fallbackBg="linear-gradient(135deg,#2563EB,#7C3AED)"
+          onUserUpdated={onUserUpdated}
+        />
         <div className="text-center">
           <h2 className="text-xl font-black text-white">{currentUser.namaPerusahaan || currentUser.name}</h2>
           <p className="text-sm text-blue-100">{currentUser.email}</p>
+          {onUserUpdated && (
+            <div className="mt-2 flex justify-center">
+              <EditProfileButton user={currentUser} onUserUpdated={onUserUpdated} company />
+            </div>
+          )}
           <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
             {currentUser.linkedWithGoogle && (
               <span className="text-[10px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">🔗 Linked with Google</span>

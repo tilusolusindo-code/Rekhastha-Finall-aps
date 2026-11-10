@@ -22,6 +22,8 @@ export interface ApplicationNotification {
   /** DB user-id of the worker who applied — used to scope the chat conversation. */
   workerId: string;
   applicantName: string;
+  /** Foto profil pelamar (hanya ditampilkan setelah pelamar diterima). */
+  applicantAvatarUrl?: string;
   applicantNikMasked: string;
   applicantNpwpMasked: string;
   hasNpwp: boolean;

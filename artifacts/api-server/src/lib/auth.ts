@@ -30,6 +30,7 @@ export function toAuthUser(user: User): Record<string, unknown> {
     whatsapp: user.whatsapp ?? undefined,
     role: user.role,
     linkedWithGoogle: user.linkedWithGoogle,
+    avatarUrl: user.avatarUrl ?? undefined,
     ktpPhotoUrl: user.ktpPhotoUrl ?? undefined,
     selfieWithKtpUrl: user.selfieWithKtpUrl ?? undefined,
     verificationStatus: user.verificationStatus,

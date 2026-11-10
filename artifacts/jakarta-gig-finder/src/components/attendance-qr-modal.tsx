@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, LogIn, LogOut, RefreshCw, CheckCircle, Zap, ShieldCheck } from "lucide-react";
 import QrCodeView from "./qr-code-view";
-import { requestAttendanceToken, type AttendanceKind } from "@/lib/attendance-client";
+import { fetchAcceptedWorkers, requestAttendanceToken, type AcceptedWorker, type AttendanceKind } from "@/lib/attendance-client";
 import { subscribeAttendance } from "@/lib/central-server";
 import CompanyBranchPicker from "./company-branch-picker";
 import type { CompanyBranch } from "@/lib/company-branches-client";
+
+/** QR diganti tiap 20 detik; token di server berlaku 30 detik. */
+const ROTATE_MS = 20_000;
 
 interface AttendanceQrModalProps {
   jobId: number;
@@ -25,36 +28,64 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
   const [error, setError] = useState<string | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<CompanyBranch | null>(null);
   const [confirmed, setConfirmed] = useState<{ workerName: string; kind: AttendanceKind } | null>(null);
+  const [workers, setWorkers] = useState<AcceptedWorker[]>([]);
+  const [workerId, setWorkerId] = useState<string>(""); // "" = semua pekerja
   const requestSequence = useRef(0);
+  const silentFailures = useRef(0);
+
+  // Daftar pekerja yang diterima, untuk QR khusus satu orang.
+  useEffect(() => {
+    let cancelled = false;
+    void fetchAcceptedWorkers(jobId).then((w) => { if (!cancelled) setWorkers(w); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [jobId]);
 
   const handleBranchChange = useCallback((branch: CompanyBranch | null) => {
     setSelectedBranch(branch);
     setConfirmed(null);
   }, []);
 
+  // `silent` = ganti QR tanpa menampilkan spinner (rotasi otomatis), agar layar tidak berkedip.
   const loadToken = useCallback(
-    async (k: AttendanceKind) => {
+    async (k: AttendanceKind, silent = false) => {
       const sequence = ++requestSequence.current;
-      setLoading(true);
-      setError(null);
-      setToken(null);
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+        setToken(null);
+      }
       try {
-        const t = await requestAttendanceToken(jobId, k, selectedBranch?.id);
-        if (requestSequence.current === sequence) setToken(t.token);
+        const t = await requestAttendanceToken(jobId, k, selectedBranch?.id, workerId || undefined);
+        if (requestSequence.current === sequence) {
+          silentFailures.current = 0;
+          setToken(t.token);
+          setError(null);
+        }
       } catch (err) {
         if (requestSequence.current === sequence) {
-          setError(err instanceof Error ? err.message : "Gagal membuat QR Presensi.");
+          // Rotasi senyap boleh gagal sekali; dua kali berturut-turut berarti QR di layar sudah basi.
+          if (!silent || ++silentFailures.current >= 2) {
+            setError(err instanceof Error ? err.message : "Gagal membuat QR Presensi.");
+          }
         }
       } finally {
-        if (requestSequence.current === sequence) setLoading(false);
+        if (requestSequence.current === sequence && !silent) setLoading(false);
       }
     },
-    [jobId, selectedBranch],
+    [jobId, selectedBranch, workerId],
   );
 
   useEffect(() => {
     void loadToken(kind);
     return () => { requestSequence.current += 1; };
+  }, [kind, loadToken]);
+
+  // QR berputar otomatis: tangkapan layar kedaluwarsa dalam hitungan detik.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") void loadToken(kind, true);
+    }, ROTATE_MS);
+    return () => clearInterval(id);
   }, [kind, loadToken]);
 
   // Live confirmation the instant the worker scans this job's QR.
@@ -66,9 +97,11 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
         e.kind === kind
       ) {
         setConfirmed({ workerName: e.workerName, kind: e.kind });
+        // Token tadi sudah terpakai: langsung siapkan QR baru untuk pekerja berikutnya.
+        void loadToken(kind, true);
       }
     });
-  }, [jobId, kind, selectedBranch?.id]);
+  }, [jobId, kind, selectedBranch?.id, loadToken]);
 
   const isMasuk = kind === "masuk";
 
@@ -109,6 +142,30 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
             <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-800">
               Tanpa cabang, QR memakai titik GPS lowongan dengan radius presensi 500 m. Pemindaian tetap memerlukan GPS pekerja yang akurat.
             </p>
+          )}
+
+          {/* QR khusus satu pekerja (opsional) */}
+          {workers.length > 0 && (
+            <div>
+              <label htmlFor="qr-worker" className="mb-1 block text-xs font-bold text-gray-700">
+                QR untuk
+              </label>
+              <select
+                id="qr-worker"
+                value={workerId}
+                onChange={(e) => { setWorkerId(e.target.value); setConfirmed(null); }}
+                data-testid="select-qr-worker"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm"
+              >
+                <option value="">Semua pekerja (sekali pakai, berganti otomatis)</option>
+                {workers.map((w) => (
+                  <option key={w.workerId} value={w.workerId}>Khusus {w.workerName}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-[10px] text-gray-500">
+                Pilih nama pekerja agar QR tidak bisa dipakai orang lain, walau difoto atau dikirim.
+              </p>
+            </div>
           )}
 
           {/* Masuk / Pulang toggle */}
@@ -154,7 +211,7 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
             {!loading && !error && token && <QrCodeView value={token} />}
             <div className="flex items-center gap-2 text-[10px] text-gray-500">
               <Zap className="h-3 w-3 text-orange-500" />
-              <span>QR unik & sekali pakai — kadaluarsa otomatis dalam 3 menit</span>
+              <span>QR sekali pakai — berganti otomatis tiap 20 detik</span>
             </div>
             <button
               onClick={() => void loadToken(kind)}

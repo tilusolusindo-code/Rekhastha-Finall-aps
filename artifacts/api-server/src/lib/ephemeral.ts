@@ -80,3 +80,15 @@ export async function kvReleaseFlag(key: string, rawField: string): Promise<void
 export async function kvPurgeExpired(): Promise<void> {
   await db.delete(ephemeralKvTable).where(lte(ephemeralKvTable.expiresAt, sql`now()`));
 }
+
+/**
+ * Percepat kedaluwarsa sebuah kunci (tidak pernah memperpanjang) tanpa menyentuh isinya,
+ * sehingga flag "processing" yang sedang berjalan tidak terganggu.
+ */
+export async function kvShortenTtl(key: string, ttlMs: number): Promise<void> {
+  await db.execute(sql`
+    UPDATE ephemeral_kv
+    SET expires_at = LEAST(expires_at, now() + (${ttlMs} * interval '1 millisecond'))
+    WHERE key = ${key}
+  `);
+}

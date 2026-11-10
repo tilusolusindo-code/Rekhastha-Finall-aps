@@ -46,6 +46,19 @@ export default function ClockInModal({
   const [timer, setTimer] = useState("00:00:00");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const doneRef = useRef(false);
+  // Fix GPS terbaru, dihangatkan selagi kamera memindai agar tidak menunggu GPS setelah QR terbaca
+  // (QR hanya berlaku ~30 detik).
+  const warmFixRef = useRef<{ pos: GeolocationPosition; at: number } | null>(null);
+
+  useEffect(() => {
+    if (phase !== "scanning" || !navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (pos) => { warmFixRef.current = { pos, at: Date.now() }; },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, [phase]);
 
   const distance = haversineMeters(userLat, userLng, job.lat, job.lng);
 
@@ -66,8 +79,11 @@ export default function ClockInModal({
         throw new Error("Browser ini tidak mendukung GPS. Gunakan browser yang mendukung lokasi.");
       }
       let position: GeolocationPosition;
+      const warm = warmFixRef.current;
       try {
-        position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (warm && Date.now() - warm.at < 15_000 && warm.pos.coords.accuracy <= 100) {
+          position = warm.pos;
+        } else position = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             timeout: 12000,

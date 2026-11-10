@@ -12,7 +12,8 @@ import {
 import { broadcastAttendance } from "../lib/realtime";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import { requirePremium } from "../lib/premium";
-import { kvClaimFlag, kvDelete, kvGet, kvPut, kvReleaseFlag } from "../lib/ephemeral";
+import { kvClaimFlag, kvDelete, kvGet, kvPut, kvReleaseFlag, kvShortenTtl } from "../lib/ephemeral";
+import { checkAttendanceWindow } from "../lib/attendance-window";
 
 const router: IRouter = Router();
 
@@ -25,12 +26,21 @@ const router: IRouter = Router();
  * shared by every serverless instance) and expire quickly so a stale
  * screenshot of the QR cannot be reused (anti-joki).
  */
-const TOKEN_TTL_MS = 3 * 60 * 1000;
+/**
+ * QR berputar: klien pemberi kerja meminta token baru tiap ~20 detik. Token berlaku 30 detik,
+ * dan saat token baru dibuat token sebelumnya hanya diberi sisa tenggang singkat (cukup untuk
+ * pekerja yang sudah memindai tepat sebelum QR berganti). Tangkapan layar jadi tak berguna
+ * dalam hitungan detik. Sebelumnya 3 menit.
+ */
+const TOKEN_TTL_MS = 30 * 1000;
+const OLD_TOKEN_GRACE_MS = 8 * 1000;
 
 interface TokenRecord {
   jobId: number;
   branchId: number | null;
   kind: "masuk" | "pulang";
+  /** Bila terisi, hanya pekerja ini yang boleh memakai QR (QR tak bisa diteruskan ke orang lain). */
+  workerId: string | null;
   latitude: number;
   longitude: number;
   radiusMeters: number;
@@ -48,6 +58,7 @@ const tokenBody = z.object({
   jobId: z.coerce.number(),
   kind: z.enum(["masuk", "pulang"]),
   branchId: z.coerce.number().int().positive().optional(),
+  workerId: z.string().min(1).max(128).optional(),
 });
 
 /**
@@ -141,6 +152,26 @@ router.post("/attendance/token", requirePremium, async (req, res): Promise<void>
     radiusMeters = branchLocation.radiusMeters;
   }
 
+  const boundWorkerId = parsed.data.workerId ?? null;
+  if (boundWorkerId) {
+    const [accepted] = await db
+      .select({ id: applicationsTable.id })
+      .from(applicationsTable)
+      .where(
+        and(
+          eq(applicationsTable.jobId, parsed.data.jobId),
+          eq(applicationsTable.employerId, user.id),
+          eq(applicationsTable.workerId, boundWorkerId),
+          eq(applicationsTable.status, "diterima"),
+        ),
+      )
+      .limit(1);
+    if (!accepted) {
+      res.status(404).json({ error: "Pekerja tidak ditemukan atau lamarannya belum diterima." });
+      return;
+    }
+  }
+
   const token = randomBytes(32).toString("base64url");
   const expiresAt = Date.now() + TOKEN_TTL_MS;
   await kvPut(
@@ -149,13 +180,21 @@ router.post("/attendance/token", requirePremium, async (req, res): Promise<void>
       jobId: parsed.data.jobId,
       branchId,
       kind: parsed.data.kind,
+      workerId: boundWorkerId,
       latitude,
       longitude,
       radiusMeters,
     } satisfies TokenRecord,
     TOKEN_TTL_MS,
   );
-  res.status(201).json({ token, expiresAt });
+
+  // Rotasi: token sebelumnya untuk QR yang sama hanya diberi tenggang singkat.
+  const latestKey = `attlatest:${user.id}:${parsed.data.jobId}:${parsed.data.kind}:${branchId ?? 0}:${boundWorkerId ?? "*"}`;
+  const previous = await kvGet<{ token: string }>(latestKey);
+  if (previous?.token) await kvShortenTtl(tokenKey(previous.token), OLD_TOKEN_GRACE_MS);
+  await kvPut(latestKey, { token }, TOKEN_TTL_MS * 4);
+
+  res.status(201).json({ token, expiresAt, ttlMs: TOKEN_TTL_MS });
 });
 
 const scanBody = z.object({
@@ -218,6 +257,13 @@ router.post("/attendance/scan", async (req, res): Promise<void> => {
     return;
   }
 
+  // QR khusus pekerja tertentu: tolak tanpa menghanguskan token agar pekerja yang berhak masih bisa memakainya.
+  if (rec.workerId && rec.workerId !== user.id) {
+    await kvReleaseFlag(key, "processing");
+    res.status(403).json({ error: "QR ini dibuat khusus untuk pekerja lain." });
+    return;
+  }
+
   // A worker can only record attendance after this employer has accepted their
   // latest application for the job.
   const [application] = await db
@@ -235,6 +281,21 @@ router.post("/attendance/scan", async (req, res): Promise<void> => {
     await kvReleaseFlag(key, "processing");
     res.status(403).json({ error: "Presensi hanya tersedia untuk pekerja yang lamarannya diterima." });
     return;
+  }
+
+  // Jendela waktu presensi (sesuai tanggal & jam kerja lowongan).
+  const [windowGig] = await db
+    .select({ jobDate: gigsTable.jobDate, jumlahHari: gigsTable.jumlahHari, jamKerja: gigsTable.jamKerja })
+    .from(gigsTable)
+    .where(eq(gigsTable.id, rec.jobId))
+    .limit(1);
+  if (windowGig) {
+    const win = checkAttendanceWindow({ kind: rec.kind, now: new Date(), ...windowGig });
+    if (!win.ok) {
+      await kvReleaseFlag(key, "processing");
+      res.status(403).json({ error: win.error });
+      return;
+    }
   }
 
   let targetLatitude = rec.latitude;

@@ -1,11 +1,9 @@
-Perbaikan keamanan Rekhastha
-=============================
-1. Salin isi ZIP ini ke root repo (timpa file yang sama).
-2. Hapus folder duplikat dari repo:
-     git rm -r -q Rekhastha-Finall-aps-main rekhastha-app
-3. Commit & push:
-     git add -A
-     git commit -m "Perkuat keamanan: rate limit, kunci login per akun, update dependensi, hapus folder duplikat"
-     git push
-4. Vercel akan build otomatis. Tidak ada env baru yang wajib.
-   Opsional: GLOBAL_RATE_LIMIT_PER_MIN (default 300 permintaan/menit per IP).
+Perbaikan absensi QR Rekhastha
+==============================
+1. Salin isi ZIP ke root repo (timpa file yang sama). ZIP ini tidak bergantung pada ZIP alur uang; boleh dipasang lebih dulu atau belakangan.
+2. git add -A && git commit -m "Perkuat absensi QR" && git push
+3. Tidak ada env atau migrasi baru.
+Uji cepat setelah deploy:
+  - Pemberi kerja buka QR Presensi: QR berganti sendiri tiap 20 detik.
+  - Pilih "Khusus <nama pekerja>": pekerja lain yang memindai mendapat "QR ini dibuat khusus untuk pekerja lain."
+  - Pindai di luar jam kerja lowongan: ditolak dengan pesan jam dibuka/ditutup.

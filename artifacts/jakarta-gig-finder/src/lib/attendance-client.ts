@@ -17,6 +17,31 @@ export type AttendanceKind = "masuk" | "pulang";
 export interface AttendanceToken {
   token: string;
   expiresAt: number;
+  /** Masa berlaku token di server (ms). QR perlu diganti sebelum ini habis. */
+  ttlMs?: number;
+}
+
+export interface AcceptedWorker {
+  workerId: string;
+  workerName: string;
+}
+
+/** Employer: pekerja yang lamarannya sudah diterima untuk sebuah lowongan (untuk QR khusus pekerja). */
+export async function fetchAcceptedWorkers(jobId: number): Promise<AcceptedWorker[]> {
+  const res = await fetch(`${API_BASE}/applications?jobId=${jobId}`, {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  const rows = (await res.json().catch(() => [])) as Array<{ workerId: string; workerName: string; status: string }>;
+  const seen = new Set<string>();
+  const out: AcceptedWorker[] = [];
+  for (const r of rows) {
+    if (r.status !== "diterima" || seen.has(r.workerId)) continue;
+    seen.add(r.workerId);
+    out.push({ workerId: r.workerId, workerName: r.workerName });
+  }
+  return out;
 }
 
 /** Employer: mint a single-use, short-lived QR token for a job + presence kind. */
@@ -24,12 +49,13 @@ export async function requestAttendanceToken(
   jobId: number,
   kind: AttendanceKind,
   branchId?: number,
+  workerId?: string,
 ): Promise<AttendanceToken> {
   const res = await fetch(`${API_BASE}/attendance/token`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jobId, kind, ...(branchId ? { branchId } : {}) }),
+    body: JSON.stringify({ jobId, kind, ...(branchId ? { branchId } : {}), ...(workerId ? { workerId } : {}) }),
   });
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };

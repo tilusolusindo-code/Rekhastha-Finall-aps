@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   companySubscriptionsTable,
@@ -77,6 +77,59 @@ router.get("/gigs", async (req, res): Promise<void> => {
     )
     .orderBy(desc(gigsTable.postedAt));
   res.json(rows.map(({ gig, employerAvatarUrl }) => ({ ...gig, employerAvatarUrl: employerAvatarUrl ?? null })));
+});
+
+/**
+ * Pemberi kerja membatalkan lowongannya sendiri. Status disimpan di server agar
+ * lowongan dan pelamarnya tidak muncul lagi sebagai aktif setelah login ulang.
+ * Hanya pemilik lowongan yang boleh membatalkan; lowongan yang sudah selesai,
+ * sudah dibatalkan, atau sedang bersengketa ditolak.
+ */
+router.post("/gigs/:id/cancel", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  if (user.role !== "perusahaan") {
+    res.status(403).json({ error: "Hanya pemberi kerja yang dapat membatalkan lowongan." });
+    return;
+  }
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "ID lowongan tidak valid." });
+    return;
+  }
+
+  const [gig] = await db
+    .select()
+    .from(gigsTable)
+    .where(and(eq(gigsTable.id, id), eq(gigsTable.employerId, user.id)));
+  if (!gig) {
+    res.status(404).json({ error: "Lowongan tidak ditemukan." });
+    return;
+  }
+  if (gig.escrowStatus === "released") {
+    res.status(409).json({ error: "Lowongan sudah selesai dan tidak bisa dibatalkan." });
+    return;
+  }
+  if (gig.escrowStatus === "refunded") {
+    res.json({ ok: true, alreadyCancelled: true });
+    return;
+  }
+  if (gig.escrowStatus === "disputed" || gig.escrowStatus === "disputed_active") {
+    res.status(409).json({ error: "Lowongan sedang disengketakan. Tunggu keputusan admin." });
+    return;
+  }
+
+  const [updated] = await db
+    .update(gigsTable)
+    .set({ escrowStatus: "refunded", broadcastActive: false })
+    .where(and(eq(gigsTable.id, id), eq(gigsTable.employerId, user.id)))
+    .returning();
+  if (updated) broadcastGig(updated);
+  req.log.info({ jobId: id }, "Employer cancelled gig");
+  res.json({ ok: true });
 });
 
 router.post("/gigs", async (req, res): Promise<void> => {

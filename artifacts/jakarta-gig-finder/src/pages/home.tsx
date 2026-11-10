@@ -963,7 +963,9 @@ export default function Home() {
   }, [notifications, disputeJob]);
 
   const handleCancelJob = useCallback((jobId: number, deductFee: boolean) => {
-    setCustomJobs(prev => prev.filter(j => j.id !== jobId));
+    // Simpan pembatalan ke server agar tetap berlaku setelah login ulang.
+    void fetch(`/api/gigs/${jobId}/cancel`, { method: "POST" }).catch(() => { /* coba lagi lewat sinkron berikutnya */ });
+    setCustomJobs(prev => prev.map(j => j.id === jobId ? { ...j, escrowStatus: "refunded" as const, broadcastActive: false } : j));
     if (deductFee) {
       setWalletBalance(prev => prev + 20_000);
       setWalletTransactions(prev => [{
@@ -1127,7 +1129,9 @@ export default function Home() {
   }, [centralGigs, customJobs, blockedEmployerIds]);
 
   const workerOpenJobs = useMemo(() => {
-    if (currentUser?.role !== "pekerja" || !myApplicationRows) return allJobs;
+    // Lowongan yang sudah selesai atau dibatalkan tidak lagi ditawarkan ke pekerja.
+    const openJobs = allJobs.filter((job) => job.escrowStatus !== "released" && job.escrowStatus !== "refunded");
+    if (currentUser?.role !== "pekerja" || !myApplicationRows) return openJobs;
     const latestStatusByJob = new globalThis.Map<number, string>();
     for (const row of myApplicationRows) {
       if (!latestStatusByJob.has(row.jobId)) latestStatusByJob.set(row.jobId, row.status);
@@ -1137,7 +1141,7 @@ export default function Home() {
         .filter(([, status]) => status !== "ditolak")
         .map(([jobId]) => jobId),
     );
-    return allJobs.filter((job) => !alreadyApplied.has(job.id));
+    return openJobs.filter((job) => !alreadyApplied.has(job.id));
   }, [allJobs, currentUser, myApplicationRows]);
 
   // Rebuild the worker's current shift from durable applications and QR scans,
@@ -1253,14 +1257,26 @@ export default function Home() {
   }, [searchQuery, activeTags]);
 
   // ── Employer toast: detect new applicants ───────────────────────
+  // Notifikasi pelamar yang masih relevan: sembunyikan milik lowongan yang sudah
+  // selesai (dana cair / semua pekerja berstatus selesai) atau dibatalkan.
+  const visibleNotifications = useMemo(() => {
+    return notifications.filter((n) => {
+      const job = customJobs.find((j) => j.id === n.jobId);
+      if (job && (job.escrowStatus === "released" || job.escrowStatus === "refunded")) return false;
+      const accepted = notifications.filter((x) => x.jobId === n.jobId && (x.status === "diterima" || x.status === "selesai"));
+      return !(accepted.length > 0 && accepted.every((x) => x.status === "selesai"));
+    });
+  }, [notifications, customJobs]);
+
   useEffect(() => {
     if (mode !== "perusahaan") return;
-    const newest = notifications.find(n => !seenNotifIds.current.has(n.id));
+    // Pop-up hanya untuk pelamar baru yang belum ditinjau pada lowongan yang masih aktif.
+    const newest = visibleNotifications.find(n => n.status === "baru" && !seenNotifIds.current.has(n.id));
     if (newest && !applicantToast) {
       seenNotifIds.current.add(newest.id);
       setApplicantToast(newest);
     }
-  }, [notifications, mode, applicantToast]);
+  }, [visibleNotifications, mode, applicantToast]);
 
   // ── Job posting ─────────────────────────────────────────────────
   const [workerMapFlyTarget, setWorkerMapFlyTarget] = useState<[number, number] | null>(null);
@@ -1838,7 +1854,7 @@ export default function Home() {
           <nav className="flex-1 flex flex-col gap-1 px-3 pt-4">
             <SidebarBtn icon={<HomeIcon className="w-5 h-5" />} label={mode === "pekerja" ? "Radar" : "Beranda"} active={activeTab === "home"} onClick={() => setActiveTab("home")} />
             <SidebarBtn icon={<MessageSquare className="w-5 h-5" />} label="Chat" tour="nav-chat" active={activeTab === "chat"} onClick={() => setActiveTab("chat")}
-              badge={mode === "perusahaan" ? notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length : undefined} />
+              badge={mode === "perusahaan" ? visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length : undefined} />
             <SidebarBtn icon={<Briefcase className="w-5 h-5" />} label="Proyek" active={activeTab === "proyek"} onClick={() => setActiveTab("proyek")} />
             {currentUser.role === "perusahaan" && (
               <SidebarBtn icon={<Banknote className="w-5 h-5" />} label="Rekhastha Bisnis" tour="nav-bisnis" active={activeTab === "bisnis"} onClick={() => setActiveTab("bisnis")} />
@@ -1946,12 +1962,12 @@ export default function Home() {
             )
           ) : (
             /* ── COMPANY CHAT LIST ── */
-            notifications.filter(n => n.status === "diterima").length === 0 ? (
+            visibleNotifications.filter(n => n.status === "diterima").length === 0 ? (
               <ChatEmptyState label="Belum ada percakapan aktif" sub="Terima lamaran pekerja terlebih dahulu untuk mulai berkomunikasi." />
             ) : (
               <div className="p-4 space-y-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Pelamar Diterima</p>
-                {notifications
+                {visibleNotifications
                   .filter(n => n.status === "diterima")
                   .map((n) => {
                     const job = customJobs.find(j => j.id === n.jobId);
@@ -2068,7 +2084,7 @@ export default function Home() {
                 <RekhasthaLogo size={34} showSubtitle wordmarkClassName="text-lg" />
                 {mode === "perusahaan" && (
                   <span data-tour="bell" className="inline-flex">
-                    <NotificationPanel notifications={notifications} onStatusChange={handleStatusChange} onOpenChat={handleOpenChatFromNotif} onMarkComplete={handleSplitPayment} onDispute={handleNotifDispute} />
+                    <NotificationPanel notifications={visibleNotifications} onStatusChange={handleStatusChange} onOpenChat={handleOpenChatFromNotif} onMarkComplete={handleSplitPayment} onDispute={handleNotifDispute} />
                   </span>
                 )}
               </div>
@@ -2529,9 +2545,9 @@ export default function Home() {
             <div className="relative">
               <MessageSquare className="w-5 h-5" />
               {/* Unread chat badge */}
-              {mode === "perusahaan" && notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 0 && (
+              {mode === "perusahaan" && visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
-                  {notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 9 ? "9+" : notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length}
+                  {visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 9 ? "9+" : visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length}
                 </span>
               )}
               {mode === "pekerja" && (allJobs.length > 0 || activeJob) && (

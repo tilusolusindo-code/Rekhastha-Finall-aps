@@ -122,6 +122,7 @@ export default function HiringModePanel({
 }: HiringModePanelProps) {
 
   // Tagihan lowongan yang sedang dibayar lewat Midtrans Snap (null = modal tertutup).
+  const [showAllUnpaid, setShowAllUnpaid] = useState(false);
   const [snapJob, setSnapJob] = useState<{
     id: number; title: string; amount: number; wage: number; fee: number;
   } | null>(null);
@@ -486,7 +487,7 @@ export default function HiringModePanel({
       );
     })()}
 
-    <div className="flex-1 overflow-y-auto bg-gray-50">
+    <div className="flex-1 overflow-y-auto bg-gray-50 pb-24">
 
       {/* ── Lowongan menunggu pembayaran (bayar lewat Midtrans) ───── */}
       {unpaidJobs.length > 0 && (
@@ -494,11 +495,11 @@ export default function HiringModePanel({
           <p className="text-xs font-black text-amber-800">
             ⏳ {unpaidJobs.length} lowongan menunggu pembayaran
           </p>
-          {unpaidJobs.map((job) => (
+          {(showAllUnpaid ? unpaidJobs : unpaidJobs.slice(0, 3)).map((job) => (
             <div key={job.id} className="flex items-center justify-between gap-2 rounded-xl bg-white border border-amber-100 px-3 py-2">
               <div className="min-w-0">
                 <p className="truncate text-xs font-bold text-gray-800">{job.posisi}</p>
-                <p className="text-[11px] text-gray-500">{formatRp((job.escrowAmount ?? 0) + (job.adminFeeAmount ?? 0))}</p>
+                <p className="text-[11px] text-gray-500 tabular-nums">{formatRp((job.escrowAmount ?? 0) + (job.adminFeeAmount ?? 0))}</p>
               </div>
               <button
                 type="button"
@@ -509,6 +510,16 @@ export default function HiringModePanel({
               </button>
             </div>
           ))}
+          {unpaidJobs.length > 3 && (
+            <button
+              type="button"
+              onClick={() => setShowAllUnpaid(v => !v)}
+              aria-expanded={showAllUnpaid}
+              className="w-full rounded-lg py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100/60"
+            >
+              {showAllUnpaid ? "Sembunyikan" : `Lihat semua (${unpaidJobs.length})`}
+            </button>
+          )}
         </div>
       )}
 

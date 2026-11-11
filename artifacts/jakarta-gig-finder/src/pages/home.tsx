@@ -67,7 +67,7 @@ import {
   MapPin, Clock, Banknote, Search, X, ShieldCheck, UserCircle,
   Map as MapIcon, Briefcase, TrendingUp, XCircle, MessageSquare,
   BarChart2, Home as HomeIcon, User, Users, Lock, CheckCircle2, AlertTriangle,
-  CalendarDays, QrCode, CircleHelp,
+  CalendarDays, QrCode, CircleHelp, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 
 // Device-unique, monotonic id base so gigs posted from two different physical
@@ -145,6 +145,13 @@ export default function Home() {
   // Panduan tertulis (tombol "Panduan") dan tur interaktif (otomatis sekali per akun).
   const [guideOpen, setGuideOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  // Sidebar desktop bisa dilipat (hanya ikon). Pilihan diingat di perangkat ini.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem("rekhastha_sidebar_collapsed") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("rekhastha_sidebar_collapsed", sidebarCollapsed ? "1" : "0"); } catch { /* abaikan */ }
+  }, [sidebarCollapsed]);
   useEffect(() => {
     if (!currentUser || hasSeenTour(currentUser.id)) return;
     const t = setTimeout(() => setTourOpen(true), 1200);
@@ -963,9 +970,7 @@ export default function Home() {
   }, [notifications, disputeJob]);
 
   const handleCancelJob = useCallback((jobId: number, deductFee: boolean) => {
-    // Simpan pembatalan ke server agar tetap berlaku setelah login ulang.
-    void fetch(`/api/gigs/${jobId}/cancel`, { method: "POST" }).catch(() => { /* coba lagi lewat sinkron berikutnya */ });
-    setCustomJobs(prev => prev.map(j => j.id === jobId ? { ...j, escrowStatus: "refunded" as const, broadcastActive: false } : j));
+    setCustomJobs(prev => prev.filter(j => j.id !== jobId));
     if (deductFee) {
       setWalletBalance(prev => prev + 20_000);
       setWalletTransactions(prev => [{
@@ -1129,9 +1134,7 @@ export default function Home() {
   }, [centralGigs, customJobs, blockedEmployerIds]);
 
   const workerOpenJobs = useMemo(() => {
-    // Lowongan yang sudah selesai atau dibatalkan tidak lagi ditawarkan ke pekerja.
-    const openJobs = allJobs.filter((job) => job.escrowStatus !== "released" && job.escrowStatus !== "refunded");
-    if (currentUser?.role !== "pekerja" || !myApplicationRows) return openJobs;
+    if (currentUser?.role !== "pekerja" || !myApplicationRows) return allJobs;
     const latestStatusByJob = new globalThis.Map<number, string>();
     for (const row of myApplicationRows) {
       if (!latestStatusByJob.has(row.jobId)) latestStatusByJob.set(row.jobId, row.status);
@@ -1141,7 +1144,7 @@ export default function Home() {
         .filter(([, status]) => status !== "ditolak")
         .map(([jobId]) => jobId),
     );
-    return openJobs.filter((job) => !alreadyApplied.has(job.id));
+    return allJobs.filter((job) => !alreadyApplied.has(job.id));
   }, [allJobs, currentUser, myApplicationRows]);
 
   // Rebuild the worker's current shift from durable applications and QR scans,
@@ -1257,26 +1260,14 @@ export default function Home() {
   }, [searchQuery, activeTags]);
 
   // ── Employer toast: detect new applicants ───────────────────────
-  // Notifikasi pelamar yang masih relevan: sembunyikan milik lowongan yang sudah
-  // selesai (dana cair / semua pekerja berstatus selesai) atau dibatalkan.
-  const visibleNotifications = useMemo(() => {
-    return notifications.filter((n) => {
-      const job = customJobs.find((j) => j.id === n.jobId);
-      if (job && (job.escrowStatus === "released" || job.escrowStatus === "refunded")) return false;
-      const accepted = notifications.filter((x) => x.jobId === n.jobId && (x.status === "diterima" || x.status === "selesai"));
-      return !(accepted.length > 0 && accepted.every((x) => x.status === "selesai"));
-    });
-  }, [notifications, customJobs]);
-
   useEffect(() => {
     if (mode !== "perusahaan") return;
-    // Pop-up hanya untuk pelamar baru yang belum ditinjau pada lowongan yang masih aktif.
-    const newest = visibleNotifications.find(n => n.status === "baru" && !seenNotifIds.current.has(n.id));
+    const newest = notifications.find(n => !seenNotifIds.current.has(n.id));
     if (newest && !applicantToast) {
       seenNotifIds.current.add(newest.id);
       setApplicantToast(newest);
     }
-  }, [visibleNotifications, mode, applicantToast]);
+  }, [notifications, mode, applicantToast]);
 
   // ── Job posting ─────────────────────────────────────────────────
   const [workerMapFlyTarget, setWorkerMapFlyTarget] = useState<[number, number] | null>(null);
@@ -1847,30 +1838,41 @@ export default function Home() {
       {/* ── RESPONSIVE BODY (desktop sidebar + content column) ────── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* ── DESKTOP SIDEBAR (hidden on mobile) ─────────────── */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-white border-r border-gray-100">
-          <div className="px-4 py-5 bg-gradient-to-b from-emerald-700 to-emerald-600 border-b border-emerald-800/20">
-            <RekhasthaLogo size={34} showSubtitle variant="light" wordmarkClassName="text-lg text-white" />
+        <aside className={`hidden lg:flex flex-col shrink-0 bg-white border-r border-gray-100 transition-[width] duration-200 ease-out ${sidebarCollapsed ? "w-[72px]" : "w-64"}`}>
+          <div className={`bg-gradient-to-b from-emerald-700 to-emerald-600 border-b border-emerald-800/20 ${sidebarCollapsed ? "px-2 py-4 flex flex-col items-center gap-3" : "px-4 py-5 flex items-center justify-between gap-2"}`}>
+            <RekhasthaLogo size={34} showWordmark={!sidebarCollapsed} showSubtitle variant="light" wordmarkClassName="text-lg text-white" />
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(v => !v)}
+              aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+              aria-expanded={!sidebarCollapsed}
+              title={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+              data-testid="button-toggle-sidebar"
+              className="shrink-0 w-8 h-8 rounded-lg text-emerald-50 hover:bg-white/15 flex items-center justify-center transition-colors"
+            >
+              {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            </button>
           </div>
-          <nav className="flex-1 flex flex-col gap-1 px-3 pt-4">
-            <SidebarBtn icon={<HomeIcon className="w-5 h-5" />} label={mode === "pekerja" ? "Radar" : "Beranda"} active={activeTab === "home"} onClick={() => setActiveTab("home")} />
-            <SidebarBtn icon={<MessageSquare className="w-5 h-5" />} label="Chat" tour="nav-chat" active={activeTab === "chat"} onClick={() => setActiveTab("chat")}
-              badge={mode === "perusahaan" ? visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length : undefined} />
-            <SidebarBtn icon={<Briefcase className="w-5 h-5" />} label="Proyek" active={activeTab === "proyek"} onClick={() => setActiveTab("proyek")} />
+          <nav className={`flex-1 flex flex-col gap-1 pt-4 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+            <SidebarBtn icon={<HomeIcon className="w-5 h-5" />} label={mode === "pekerja" ? "Radar" : "Beranda"} collapsed={sidebarCollapsed} active={activeTab === "home"} onClick={() => setActiveTab("home")} />
+            <SidebarBtn icon={<MessageSquare className="w-5 h-5" />} label="Chat" tour="nav-chat" collapsed={sidebarCollapsed} active={activeTab === "chat"} onClick={() => setActiveTab("chat")}
+              badge={mode === "perusahaan" ? notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length : undefined} />
+            <SidebarBtn icon={<Briefcase className="w-5 h-5" />} label="Proyek" collapsed={sidebarCollapsed} active={activeTab === "proyek"} onClick={() => setActiveTab("proyek")} />
             {currentUser.role === "perusahaan" && (
-              <SidebarBtn icon={<Banknote className="w-5 h-5" />} label="Rekhastha Bisnis" tour="nav-bisnis" active={activeTab === "bisnis"} onClick={() => setActiveTab("bisnis")} />
+              <SidebarBtn icon={<Banknote className="w-5 h-5" />} label="Rekhastha Bisnis" tour="nav-bisnis" collapsed={sidebarCollapsed} active={activeTab === "bisnis"} onClick={() => setActiveTab("bisnis")} />
             )}
           </nav>
 
-          <div className="px-3 pb-2">
-            <SidebarBtn icon={<CircleHelp className="w-5 h-5" />} label="Panduan" active={guideOpen} onClick={() => setGuideOpen(true)} />
+          <div className={`pb-2 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+            <SidebarBtn icon={<CircleHelp className="w-5 h-5" />} label="Panduan" collapsed={sidebarCollapsed} active={guideOpen} onClick={() => setGuideOpen(true)} />
           </div>
           
-          <div className="px-4 py-4 border-t border-gray-100">
-            <button data-tour="nav-profile" onClick={() => setActiveTab("profile")} className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left group">
+          <div className={`py-4 border-t border-gray-100 ${sidebarCollapsed ? "px-2" : "px-4"}`}>
+            <button data-tour="nav-profile" onClick={() => setActiveTab("profile")} title={sidebarCollapsed ? currentUser.name : undefined} aria-label={`Profil ${currentUser.name}`} className={`w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left group ${sidebarCollapsed ? "justify-center" : ""}`}>
               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200 group-hover:border-emerald-300 transition-colors">
                 <span className="text-emerald-700 font-black">{currentUser.name.split(" ")[0]?.[0]}</span>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className={`flex-1 min-w-0 ${sidebarCollapsed ? "hidden" : ""}`}>
                 <p className="text-sm font-bold text-gray-900 truncate">{currentUser.name}</p>
                 <p className="text-[10px] font-semibold text-gray-500 truncate">{mode === "perusahaan" ? "🏢 Perusahaan" : "👷 Pekerja"}</p>
               </div>
@@ -1962,12 +1964,12 @@ export default function Home() {
             )
           ) : (
             /* ── COMPANY CHAT LIST ── */
-            visibleNotifications.filter(n => n.status === "diterima").length === 0 ? (
+            notifications.filter(n => n.status === "diterima").length === 0 ? (
               <ChatEmptyState label="Belum ada percakapan aktif" sub="Terima lamaran pekerja terlebih dahulu untuk mulai berkomunikasi." />
             ) : (
               <div className="p-4 space-y-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Pelamar Diterima</p>
-                {visibleNotifications
+                {notifications
                   .filter(n => n.status === "diterima")
                   .map((n) => {
                     const job = customJobs.find(j => j.id === n.jobId);
@@ -2081,18 +2083,19 @@ export default function Home() {
           <header className="z-10 bg-white border-b border-gray-100 shadow-sm flex flex-col shrink-0">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
-                <RekhasthaLogo size={34} showSubtitle wordmarkClassName="text-lg" />
+                <div className="lg:hidden">
+                  <RekhasthaLogo size={34} showSubtitle wordmarkClassName="text-lg" />
+                </div>
                 {mode === "perusahaan" && (
                   <span data-tour="bell" className="inline-flex">
-                    <NotificationPanel notifications={visibleNotifications} onStatusChange={handleStatusChange} onOpenChat={handleOpenChatFromNotif} onMarkComplete={handleSplitPayment} onDispute={handleNotifDispute} />
+                    <NotificationPanel notifications={notifications} onStatusChange={handleStatusChange} onOpenChat={handleOpenChatFromNotif} onMarkComplete={handleSplitPayment} onDispute={handleNotifDispute} />
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <GuideButton onClick={() => setGuideOpen(true)} />
-                <span className={`text-xs font-bold px-3 py-1.5 rounded-lg ${mode === "perusahaan" ? "bg-blue-50 text-blue-700" : "bg-primary/10 text-primary"}`}>
-                  {mode === "perusahaan" ? "🏢 Perusahaan" : "👷 Pekerja"}
-                </span>
+                <div className="lg:hidden">
+                  <GuideButton onClick={() => setGuideOpen(true)} />
+                </div>
               </div>
             </div>
 
@@ -2545,9 +2548,9 @@ export default function Home() {
             <div className="relative">
               <MessageSquare className="w-5 h-5" />
               {/* Unread chat badge */}
-              {mode === "perusahaan" && visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 0 && (
+              {mode === "perusahaan" && notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
-                  {visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 9 ? "9+" : visibleNotifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length}
+                  {notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length > 9 ? "9+" : notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length}
                 </span>
               )}
               {mode === "pekerja" && (allJobs.length > 0 || activeJob) && (
@@ -2619,10 +2622,10 @@ function NavBtn({ icon, label, active, onClick, tour }: { icon: React.ReactNode;
   );
 }
 
-function SidebarBtn({ icon, label, active, onClick, badge, tour }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: number; tour?: string }) {
+function SidebarBtn({ icon, label, active, onClick, badge, tour, collapsed }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: number; tour?: string; collapsed?: boolean }) {
   return (
-    <button onClick={onClick} data-tour={tour}
-      className={`flex items-center gap-3 px-4 h-12 rounded-xl text-sm font-semibold active:scale-95 transition-all ${active ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}>
+    <button onClick={onClick} data-tour={tour} title={collapsed ? label : undefined} aria-label={label}
+      className={`flex items-center h-12 rounded-xl text-sm font-semibold active:scale-95 transition-all ${collapsed ? "justify-center px-0" : "gap-3 px-4"} ${active ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}>
       <span className="relative shrink-0">
         {icon}
         {!!badge && badge > 0 && (
@@ -2631,7 +2634,7 @@ function SidebarBtn({ icon, label, active, onClick, badge, tour }: { icon: React
           </span>
         )}
       </span>
-      {label}
+      {!collapsed && <span className="truncate">{label}</span>}
     </button>
   );
 }

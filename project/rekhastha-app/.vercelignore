@@ -1,0 +1,11 @@
+.agents
+.git
+attached_assets
+screenshots
+*.mp4
+zipFile.zip
+node_modules
+artifacts/rekhastha-gig-finder-film
+artifacts/mockup-sandbox
+artifacts/rekhastha-pitch-deck
+artifacts/api-server/uploads

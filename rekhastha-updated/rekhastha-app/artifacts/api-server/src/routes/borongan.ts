@@ -1,0 +1,444 @@
+import { Router, type IRouter } from "express";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod/v4";
+import {
+  db,
+  gigsTable,
+  dailyPayoutsTable,
+  attendanceTable,
+  applicationsTable,
+  walletEntriesTable,
+} from "@workspace/db";
+import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
+import { calculateTotalWorkerPayout } from "../lib/pricing";
+import { broadcastGig, broadcastDailyPayout } from "../lib/realtime";
+
+const router: IRouter = Router();
+
+/**
+ * The admin fee is billed separately from wages. `dailyFractionFor` splits the
+ * saved worker-wage snapshot across the contract duration and settles any
+ * rounding remainder on the FINAL day. `dayIndex` is 1-based.
+ */
+function dailyFractionFor(
+  workerWageTotal: number,
+  days: number,
+  dayIndex: number,
+): { grossFraction: number; platformFee: number; netToWorker: number } {
+  const d = Math.max(1, days);
+  const perDayNet = Math.floor(workerWageTotal / d);
+  const isFinal = dayIndex >= d;
+  const netToWorker = isFinal ? workerWageTotal - perDayNet * (d - 1) : perDayNet;
+  return { grossFraction: netToWorker, platformFee: 0, netToWorker };
+}
+
+// ── Borongan Jarak Jauh (Remote milestone proof-of-work) ─────────────
+
+const submitBody = z.object({
+  jobId: z.coerce.number(),
+  proofUrl: z.string().url().refine(
+    (u) => u.startsWith("https://") || u.startsWith("http://"),
+    { message: "URL bukti kerja harus menggunakan protokol http atau https." },
+  ),
+});
+
+/** Worker submits a proof-of-work URL to claim milestone payment. */
+router.post("/borongan/remote/submit-proof", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  if (user.role !== "pekerja") {
+    res.status(403).json({ error: "Hanya pekerja yang ditugaskan dapat mengirim bukti kerja." });
+    return;
+  }
+  const parsed = submitBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(gigsTable)
+    .where(eq(gigsTable.id, parsed.data.jobId));
+  if (!existing) {
+    res.status(404).json({ error: "Proyek tidak ditemukan." });
+    return;
+  }
+  const [acceptedApplication] = await db
+    .select({ id: applicationsTable.id })
+    .from(applicationsTable)
+    .where(
+      and(
+        eq(applicationsTable.jobId, parsed.data.jobId),
+        eq(applicationsTable.workerId, user.id),
+        eq(applicationsTable.status, "diterima"),
+      ),
+    )
+    .limit(1);
+  if (!acceptedApplication) {
+    res.status(403).json({ error: "Bukti kerja hanya dapat dikirim oleh pekerja yang diterima pada proyek ini." });
+    return;
+  }
+  // A finalized milestone (already paid out) must not be re-opened by a new proof.
+  if (existing.proofStatus === "approved" || existing.escrowStatus === "released") {
+    res.status(409).json({ error: "Proyek sudah selesai dan tidak dapat diajukan ulang." });
+    return;
+  }
+
+  const [gig] = await db
+    .update(gigsTable)
+    .set({
+      proofUrl: parsed.data.proofUrl,
+      proofStatus: "submitted",
+      boronganType: "remote",
+    })
+    .where(eq(gigsTable.id, parsed.data.jobId))
+    .returning();
+
+  broadcastGig(gig);
+  req.log.info({ jobId: gig.id }, "Remote borongan proof submitted");
+  res.json(gig);
+});
+
+const decisionBody = z.object({ jobId: z.coerce.number() });
+
+async function loadOwnedGig(
+  jobId: number,
+  employerId: string,
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const [gig] = await db.select().from(gigsTable).where(eq(gigsTable.id, jobId));
+  if (!gig) return { ok: false, status: 404, error: "Proyek tidak ditemukan." };
+  // Ownership must be positively verifiable: a gig with no recorded employer
+  // cannot be approved/rejected by anyone (prevents IDOR escrow manipulation).
+  if (!gig.employerId || gig.employerId !== employerId) {
+    return { ok: false, status: 403, error: "Hanya pemberi kerja pemilik proyek yang dapat memutuskan." };
+  }
+  if (gig.paymentStatus !== "confirmed") {
+    return { ok: false, status: 409, error: "Pembayaran proyek belum dikonfirmasi admin." };
+  }
+  return { ok: true };
+}
+
+/**
+ * Employer approves the proof and credits the saved wage amount to the worker.
+ */
+router.post("/borongan/remote/approve", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const parsed = decisionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "jobId tidak valid." });
+    return;
+  }
+  const owned = await loadOwnedGig(parsed.data.jobId, user.id);
+  if (!owned.ok) {
+    res.status(owned.status).json({ error: owned.error });
+    return;
+  }
+
+  const [application] = await db
+    .select()
+    .from(applicationsTable)
+    .where(
+      and(
+        eq(applicationsTable.jobId, parsed.data.jobId),
+        eq(applicationsTable.status, "diterima"),
+      ),
+    )
+    .limit(1);
+  if (!application) {
+    res.status(409).json({ error: "Belum ada pekerja yang diterima pada proyek ini." });
+    return;
+  }
+  const [currentGig] = await db
+    .select()
+    .from(gigsTable)
+    .where(eq(gigsTable.id, parsed.data.jobId))
+    .limit(1);
+  if (!currentGig || currentGig.proofStatus !== "submitted") {
+    res.status(409).json({ error: "Bukti kerja belum menunggu persetujuan." });
+    return;
+  }
+  const workerCount = Math.max(1, currentGig.kuota ?? 1);
+  const expectedTotal = calculateTotalWorkerPayout(
+    currentGig.nominal,
+    currentGig.pembayaran,
+    currentGig.jumlahHari,
+    workerCount,
+  );
+  const totalWorkerPayout = currentGig.totalWorkerPayout ?? expectedTotal;
+  const amount = totalWorkerPayout / workerCount;
+  if (
+    totalWorkerPayout !== expectedTotal ||
+    !Number.isSafeInteger(totalWorkerPayout) ||
+    !Number.isSafeInteger(amount) ||
+    amount <= 0 ||
+    (currentGig.escrowAmount ?? 0) < totalWorkerPayout
+  ) {
+    res.status(409).json({ error: "Snapshot upah atau dana proyek tidak valid." });
+    return;
+  }
+  const result = await db.transaction(async (tx) => {
+    const [gig] = await tx
+      .update(gigsTable)
+      .set({ proofStatus: "approved", escrowStatus: "released" })
+      .where(eq(gigsTable.id, parsed.data.jobId))
+      .returning();
+    await tx
+      .insert(walletEntriesTable)
+      .values({
+        workerId: application.workerId,
+        sourceType: "remote_borongan",
+        sourceId: String(gig.id),
+        amount,
+        description: `Upah proyek: ${gig.posisi}`,
+      })
+      .onConflictDoNothing();
+    return gig;
+  });
+
+  broadcastGig(result);
+  req.log.info({ jobId: result.id, workerId: application.workerId }, "Remote borongan approved and credited to wallet");
+  res.json({ ...result, payoutStatus: "available_for_manual_withdrawal" });
+});
+
+/**
+ * Employer REJECTS the proof: the project freezes into `disputed_active` and is
+ * routed to the Admin "Pusat Resolusi" for a manual ruling.
+ */
+router.post("/borongan/remote/reject", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const parsed = decisionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "jobId tidak valid." });
+    return;
+  }
+  const owned = await loadOwnedGig(parsed.data.jobId, user.id);
+  if (!owned.ok) {
+    res.status(owned.status).json({ error: owned.error });
+    return;
+  }
+
+  const [gig] = await db
+    .update(gigsTable)
+    .set({ proofStatus: "rejected", escrowStatus: "disputed_active" })
+    .where(eq(gigsTable.id, parsed.data.jobId))
+    .returning();
+
+  broadcastGig(gig);
+  req.log.warn({ jobId: gig.id }, "Remote borongan proof rejected → disputed_active");
+  res.json(gig);
+});
+
+// ── Borongan Di Tempat (On-site daily QR fractional payout) ──────────
+
+/** Returns today's date as "YYYY-MM-DD" in the Asia/Jakarta timezone. */
+function jakartaDateString(): string {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+}
+
+const checkoutBody = z.object({ jobId: z.coerce.number() });
+
+/**
+ * Worker performs a verified daily QR check-out on an on-site borongan. One
+ * day's fraction of the saved worker wage is released to the worker and logged
+ * for audit. The flat admin fee is a separate employer charge.
+ *
+ * Pre-condition: the worker must have a "masuk" (check-in) attendance record
+ * for this job today. Without it the checkout is blocked with 403.
+ */
+router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const parsed = checkoutBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "jobId tidak valid." });
+    return;
+  }
+
+  // Attendance pre-condition: a "masuk" scan must exist for this worker today
+  // before any escrow fraction can be released. This prevents a worker from
+  // calling checkout without ever having QR-scanned in on site.
+  const today = jakartaDateString();
+  const [checkIn] = await db
+    .select({ id: attendanceTable.id })
+    .from(attendanceTable)
+    .where(
+      and(
+        eq(attendanceTable.jobId, parsed.data.jobId),
+        eq(attendanceTable.workerId, user.id),
+        eq(attendanceTable.kind, "masuk"),
+        eq(attendanceTable.scanDate, today),
+      ),
+    )
+    .limit(1);
+
+  if (!checkIn) {
+    res.status(403).json({
+      error:
+        "Kamu belum scan presensi masuk hari ini. Minta employer tampilkan QR masuk terlebih dahulu.",
+    });
+    return;
+  }
+
+  // Read-modify-write under a row lock inside a single transaction so two
+  // concurrent check-outs can never pay the same day twice or overshoot the
+  // contract duration.
+  //
+  // Per-day dedup: a "pulang" attendance record is inserted atomically inside
+  // the transaction. If the DB unique constraint on (jobId, workerId, kind,
+  // scanDate) fires (concurrent or repeated request), onConflictDoNothing
+  // returns an empty array → 409. This is the authoritative guard; the row is
+  // also the audit trail for today's check-out.
+  const outcome = await db.transaction(async (tx) => {
+    const [gig] = await tx
+      .select()
+      .from(gigsTable)
+      .where(eq(gigsTable.id, parsed.data.jobId))
+      .for("update");
+    if (!gig) return { status: 404 as const, error: "Proyek tidak ditemukan." };
+
+    if (gig.paymentStatus !== "confirmed") {
+      return { status: 409 as const, error: "Pembayaran proyek belum dikonfirmasi admin." };
+    }
+    const totalDays = gig.jumlahHari ?? 1;
+    const already = gig.daysPaid ?? 0;
+    const workerCount = Math.max(1, gig.kuota ?? 1);
+    const expectedTotalWages = calculateTotalWorkerPayout(
+      gig.nominal,
+      gig.pembayaran,
+      totalDays,
+      workerCount,
+    );
+    const totalWorkerPayout = gig.totalWorkerPayout ?? expectedTotalWages;
+    const totalDeposit = gig.escrowAmount ?? 0;
+    const workerWageTotal = totalWorkerPayout / workerCount;
+    const fundedPerWorker = Math.floor(totalDeposit / workerCount);
+    if (
+      totalWorkerPayout !== expectedTotalWages ||
+      !Number.isSafeInteger(totalWorkerPayout) ||
+      !Number.isSafeInteger(workerWageTotal) ||
+      workerWageTotal <= 0 ||
+      totalDeposit < totalWorkerPayout
+    ) {
+      return { status: 409 as const, error: "Snapshot upah atau dana proyek tidak valid." };
+    }
+    // Hard cap: reject the (jumlahHari+1)th checkout before it releases wages.
+    // Mathematical proof in scripts/src/escrow-invariant-check.ts (checkOverdrawGuard):
+    //   k = jumlahHari+1  →  (days+1) × floor(wage/days) > wage
+    // — the cumulative payout exceeds the contracted worker allocation.
+    // The transaction lock (FOR UPDATE) ensures two concurrent checkouts never
+    // both read `already < totalDays`.
+    if (already >= totalDays) {
+      return { status: 409 as const, error: "Semua pembayaran harian sudah dicairkan." };
+    }
+
+    // Atomic per-day dedup: insert the "pulang" attendance record now.
+    // onConflictDoNothing silently skips on a unique-constraint violation so
+    // the transaction doesn't abort; an empty returning() means today's
+    // checkout was already claimed → return 409 before any funds move.
+    const pulangRows = await tx
+      .insert(attendanceTable)
+      .values({
+        jobId: gig.id,
+        workerId: user.id,
+        workerName: user.name,
+        kind: "pulang",
+        scanDate: today,
+      })
+      .onConflictDoNothing()
+      .returning({ id: attendanceTable.id });
+
+    if (pulangRows.length === 0) {
+      return {
+        status: 409 as const,
+        error: "Kamu sudah checkout hari ini. Hanya satu checkout per hari yang diperbolehkan.",
+      };
+    }
+
+    const dayIndex = already + 1;
+    const { grossFraction, platformFee, netToWorker } = dailyFractionFor(
+      workerWageTotal,
+      totalDays,
+      dayIndex,
+    );
+    const residualForEmployer = dayIndex >= totalDays
+      ? Math.max(0, fundedPerWorker - workerWageTotal)
+      : 0;
+
+    const [payout] = await tx
+      .insert(dailyPayoutsTable)
+      .values({
+        jobId: gig.id,
+        workerId: user.id,
+        status: "credited_to_wallet",
+        workerName: user.name,
+        dayIndex,
+        grossFraction,
+        platformFee,
+        netToWorker,
+      })
+      .returning();
+
+    await tx
+      .insert(walletEntriesTable)
+      .values({
+        workerId: user.id,
+        sourceType: "onsite_daily",
+        sourceId: String(payout.id),
+        amount: netToWorker,
+        description: `Upah harian ke-${dayIndex}: ${gig.posisi}`,
+      })
+      .onConflictDoNothing();
+
+    const fullyPaid = dayIndex >= totalDays;
+    const [updated] = await tx
+      .update(gigsTable)
+      .set({
+        daysPaid: dayIndex,
+        boronganType: "onsite",
+        escrowStatus: fullyPaid ? "released" : gig.escrowStatus ?? "locked",
+      })
+      .where(eq(gigsTable.id, gig.id))
+      .returning();
+
+    return { status: 201 as const, gig: updated, payout, dayIndex, netToWorker, residualForEmployer };
+  });
+
+  if (outcome.status !== 201) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+
+  broadcastGig(outcome.gig);
+  broadcastDailyPayout(outcome.payout);
+  req.log.info(
+    {
+      jobId: outcome.gig.id,
+      dayIndex: outcome.dayIndex,
+      netToWorker: outcome.netToWorker,
+      residualForEmployer: outcome.residualForEmployer,
+    },
+    "On-site borongan daily fraction released",
+  );
+  res.status(201).json({
+    gig: outcome.gig,
+    payout: outcome.payout,
+    residualForEmployer: outcome.residualForEmployer,
+  });
+});
+
+export default router;

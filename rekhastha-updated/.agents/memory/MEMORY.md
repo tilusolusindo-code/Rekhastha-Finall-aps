@@ -1,0 +1,13 @@
+- [Escrow Engine Architecture](escrow-engine.md) — new gigs use flat category admin fees and full-wage snapshots; legacy splits remain for old rows.
+- [QR Presensi & Blacklist](attendance-blacklist.md) — attendance/blacklist routes derive identity from session (not body); tokens single-use+TTL; escrow release deduped on WS event id.
+- [Worker radar & instant classification](worker-radar.md) — isInstantGig is cepat-only; locked lama jobs broadcast but must stay silent (scheduled feed + purple pins).
+- [Payment type & wage model](payment-model.md) — 4 categories (no per_jam), legacy `per_projek` key, flat wage math, clean WS payload, profile-sourced payout details.
+- [Realtime gig sync](realtime-gig-sync.md) — Postgres + WS live feed: client-provided PK, employer-silent/worker-alert gating, reconnect re-hydrate, drizzle-zod (not OpenAPI).
+- [Real accounts & sessions](auth-accounts.md) — custom bcrypt email/password auth (not Clerk), httpOnly cookie, profile jsonb, never purge sessions on login (multi-device).
+- [Admin control-plane persistence](admin-control-plane.md) — admin sessions + login throttle live in Postgres (survive restart); all admin auth helpers async, `requireAdmin` must be awaited.
+- [Applications sync pattern](applications-sync.md) — keep worker applications/QR attendance durable across refresh; same-ID gig updates must not look or alert like new posts.
+- [KYC verification flow](kyc-verification.md) — verificationStatus defaults "pending" at signup, so admin queue filters by doc presence not status; resubmission resets to pending.
+- [Xendit escrow projects](xendit-escrow-projects.md) — separate project/milestone escrow using real Xendit Invoice+Disbursement APIs, distinct from the fee-based internal escrow engine.
+- [Flat admin fees and manual checkout](flat-rate-paywall-pivot.md) — all new postings use category fees with trial/subscription waivers, manual payment, and full wage snapshots.
+- [Company radar geolocation](company-radar-geolocation.md) — company-facing radar is aggregate-count-only (no map/pins/contact info), anti-bypass/privacy fix; plus an in-page @media-print gotcha.
+- [Rekhastha Bisnis subscription](rekhastha-bisnis-subscription.md) — tiered premium (users.isPremium/expiredAt) gates GPS attendance + wage calc; kept separate from the older flat Rp149k applicant-paywall subscription.

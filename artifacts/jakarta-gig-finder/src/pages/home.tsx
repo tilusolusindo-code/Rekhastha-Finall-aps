@@ -67,7 +67,7 @@ import {
   MapPin, Clock, Banknote, Search, X, ShieldCheck, UserCircle,
   Map as MapIcon, Briefcase, TrendingUp, XCircle, MessageSquare,
   BarChart2, Home as HomeIcon, User, Users, Lock, CheckCircle2, AlertTriangle,
-  CalendarDays, QrCode, CircleHelp, PanelLeftClose, PanelLeftOpen,
+  CalendarDays, QrCode, CircleHelp, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 // Device-unique, monotonic id base so gigs posted from two different physical
@@ -1838,22 +1838,22 @@ export default function Home() {
       {/* ── RESPONSIVE BODY (desktop sidebar + content column) ────── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* ── DESKTOP SIDEBAR (hidden on mobile) ─────────────── */}
-        <aside className={`hidden lg:flex flex-col shrink-0 bg-white border-r border-gray-100 transition-[width] duration-200 ease-out ${sidebarCollapsed ? "w-[72px]" : "w-64"}`}>
-          <div className={`bg-gradient-to-b from-emerald-700 to-emerald-600 border-b border-emerald-800/20 ${sidebarCollapsed ? "px-2 py-4 flex flex-col items-center gap-3" : "px-4 py-5 flex items-center justify-between gap-2"}`}>
-            <RekhasthaLogo size={34} showWordmark={!sidebarCollapsed} showSubtitle variant="light" wordmarkClassName="text-lg text-white" />
-            <button
-              type="button"
-              onClick={() => setSidebarCollapsed(v => !v)}
-              aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
-              aria-expanded={!sidebarCollapsed}
-              title={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
-              data-testid="button-toggle-sidebar"
-              className="shrink-0 w-8 h-8 rounded-lg text-emerald-50 hover:bg-white/15 flex items-center justify-center transition-colors"
-            >
-              {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-            </button>
+        <aside className={`relative hidden lg:flex flex-col shrink-0 bg-white border-r border-gray-200/80 transition-[width] duration-200 ease-out ${sidebarCollapsed ? "w-[76px]" : "w-64"}`}>
+          <div className={`h-16 shrink-0 flex items-center border-b border-gray-100 ${sidebarCollapsed ? "justify-center px-2" : "px-5"}`}>
+            <RekhasthaLogo size={32} showWordmark={!sidebarCollapsed} showSubtitle wordmarkClassName="text-[17px]" />
           </div>
-          <nav className={`flex-1 flex flex-col gap-1 pt-4 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(v => !v)}
+            aria-label={sidebarCollapsed ? "Buka sidebar" : "Tutup sidebar"}
+            aria-expanded={!sidebarCollapsed}
+            data-testid="button-toggle-sidebar"
+            className="absolute -right-3 top-[52px] z-30 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-sm text-gray-500 hover:text-primary hover:border-primary/40 flex items-center justify-center transition-colors"
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          </button>
+          <nav className={`flex-1 flex flex-col gap-1 pt-5 ${sidebarCollapsed ? "px-3 items-center" : "px-3"}`}>
+            {!sidebarCollapsed && <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">Menu</p>}
             <SidebarBtn icon={<HomeIcon className="w-5 h-5" />} label={mode === "pekerja" ? "Radar" : "Beranda"} collapsed={sidebarCollapsed} active={activeTab === "home"} onClick={() => setActiveTab("home")} />
             <SidebarBtn icon={<MessageSquare className="w-5 h-5" />} label="Chat" tour="nav-chat" collapsed={sidebarCollapsed} active={activeTab === "chat"} onClick={() => setActiveTab("chat")}
               badge={mode === "perusahaan" ? notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length : undefined} />
@@ -1863,7 +1863,7 @@ export default function Home() {
             )}
           </nav>
 
-          <div className={`pb-2 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+          <div className={`pb-3 ${sidebarCollapsed ? "px-3 flex justify-center" : "px-3"}`}>
             <SidebarBtn icon={<CircleHelp className="w-5 h-5" />} label="Panduan" collapsed={sidebarCollapsed} active={guideOpen} onClick={() => setGuideOpen(true)} />
           </div>
           
@@ -2624,17 +2624,23 @@ function NavBtn({ icon, label, active, onClick, tour }: { icon: React.ReactNode;
 
 function SidebarBtn({ icon, label, active, onClick, badge, tour, collapsed }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; badge?: number; tour?: string; collapsed?: boolean }) {
   return (
-    <button onClick={onClick} data-tour={tour} title={collapsed ? label : undefined} aria-label={label}
-      className={`flex items-center h-12 rounded-xl text-sm font-semibold active:scale-95 transition-all ${collapsed ? "justify-center px-0" : "gap-3 px-4"} ${active ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"}`}>
+    <button onClick={onClick} data-tour={tour} aria-label={label} aria-current={active ? "page" : undefined}
+      className={`group relative flex items-center rounded-xl text-[14px] font-semibold transition-colors active:scale-[0.98] ${collapsed ? "w-11 h-11 justify-center" : "w-full h-11 gap-3 px-3"} ${active ? "bg-primary/10 text-primary" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"}`}>
+      {active && !collapsed && <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-primary" />}
       <span className="relative shrink-0">
         {icon}
         {!!badge && badge > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
+          <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
             {badge > 9 ? "9+" : badge}
           </span>
         )}
       </span>
       {!collapsed && <span className="truncate">{label}</span>}
+      {collapsed && (
+        <span className="pointer-events-none absolute left-full ml-3 z-50 whitespace-nowrap rounded-md bg-gray-900 px-2.5 py-1 text-xs font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+          {label}
+        </span>
+      )}
     </button>
   );
 }

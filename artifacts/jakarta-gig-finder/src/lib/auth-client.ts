@@ -214,3 +214,11 @@ export async function submitDocuments(files: {
   }
   return data as AuthUser;
 }
+
+
+/** Simpan pilihan jenis email notifikasi (hanya kunci yang dikirim yang berubah). */
+export function updateNotificationPrefs(
+  prefs: Partial<Record<"applicant" | "status" | "payment" | "payout" | "invite", boolean>>,
+): Promise<AuthUser> {
+  return sendJson<AuthUser>("/auth/notification-prefs", "PATCH", prefs);
+}

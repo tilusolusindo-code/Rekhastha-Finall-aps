@@ -1,3 +1,4 @@
+import { WorkerStatsLine } from "@/components/worker-badges";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { AvatarImage } from "@/components/profile-edit";
 import LocationPickerSection from "@/components/location-picker-section";
@@ -1195,6 +1196,7 @@ export default function HiringModePanel({
                                 </>
                               )}
                             </div>
+                            {!isLocked && <WorkerStatsLine stats={notif.workerStats} skills={notif.workerSkills} />}
                           </div>
                           {isLocked ? (
                             <button

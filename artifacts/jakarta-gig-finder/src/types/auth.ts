@@ -13,6 +13,8 @@ export interface AuthUser {
   linkedWithGoogle: boolean;
   googleAvatar?: string;
   avatarUrl?: string;
+  /** Preferensi email notifikasi; kunci yang tidak ada dianggap aktif. */
+  notificationPrefs?: Partial<Record<"applicant" | "status" | "payment" | "payout" | "invite", boolean>>;
   // Company extra
   namaPerusahaan?: string;
   nibPerusahaan?: string;

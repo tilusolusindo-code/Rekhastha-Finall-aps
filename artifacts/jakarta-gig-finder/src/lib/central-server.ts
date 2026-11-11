@@ -52,6 +52,9 @@ export interface ApplicationEvent {
   workerId: string;
   workerName: string;
   workerAvatarUrl?: string | null;
+  workerSkills?: string[];
+  workerStats?: { ratingAvg: number | null; ratingCount: number; completedJobs: number };
+  isFavorite?: boolean;
   workerNikMasked: string;
   workerNpwpMasked: string;
   hasNpwp: boolean;

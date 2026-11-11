@@ -21,6 +21,8 @@ export interface EscrowEvent {
 }
 
 export interface WalletTransaction {
+  /** ID entri dompet di server (hanya untuk upah masuk); dipakai untuk unduh slip. */
+  slipId?: number;
   id: number;
   type: "credit" | "debit";
   amount: number;

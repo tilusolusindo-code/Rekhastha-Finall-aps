@@ -22,6 +22,8 @@ import dokuRouter from "./doku";
 import companyBranchesRouter from "./company-branches";
 import teamRouter from "./team";
 import realtimeRouter from "./realtime";
+import favoritesRouter from "./favorites";
+import receiptsRouter from "./receipts";
 import passwordResetRouter from "./password-reset";
 
 const router: IRouter = Router();
@@ -50,5 +52,7 @@ router.use(companyBranchesRouter);
 router.use(teamRouter);
 router.use(realtimeRouter);
 router.use(passwordResetRouter);
+router.use(favoritesRouter);
+router.use(receiptsRouter);
 
 export default router;

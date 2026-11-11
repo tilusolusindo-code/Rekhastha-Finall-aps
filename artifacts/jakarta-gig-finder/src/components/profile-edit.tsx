@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Camera, Loader2, Pencil, Trash2, X } from "lucide-react";
 import type { AuthUser } from "@/types/auth";
-import { removeAvatar, updateAccount, uploadAvatar } from "@/lib/auth-client";
+import { removeAvatar, updateAccount, updateNotificationPrefs, uploadAvatar } from "@/lib/auth-client";
 
 /** Perkecil foto dari kamera HP (bisa 5–10 MB) menjadi JPEG maks 640px agar muat batas 2 MB. */
 async function shrinkImage(file: File, maxSide = 640): Promise<Blob> {
@@ -238,6 +238,8 @@ export function EditProfileButton({ user, onUserUpdated, company = false }: Edit
               </>
             )}
 
+            <NotificationToggles user={user} company={company} onUserUpdated={onUserUpdated} />
+
             <p className="text-[11px] text-gray-400 leading-relaxed">
               Email, data KTP, dan status verifikasi tidak bisa diubah dari sini.
             </p>
@@ -256,5 +258,60 @@ export function EditProfileButton({ user, onUserUpdated, company = false }: Edit
         </div>
       )}
     </>
+  );
+}
+
+
+type NotifKey = "applicant" | "status" | "payment" | "payout" | "invite";
+
+const WORKER_TOGGLES: Array<[NotifKey, string]> = [
+  ["status", "Lamaran diterima atau ditolak"],
+  ["payout", "Upah masuk ke dompet"],
+  ["invite", "Ajakan bekerja dari pemberi kerja"],
+];
+const COMPANY_TOGGLES: Array<[NotifKey, string]> = [
+  ["applicant", "Pelamar baru"],
+  ["payment", "Pembayaran lowongan dan langganan"],
+];
+
+/** Pilihan jenis email notifikasi; tersimpan langsung saat diubah. */
+function NotificationToggles({ user, company, onUserUpdated }: { user: AuthUser; company: boolean; onUserUpdated: (u: AuthUser) => void }) {
+  const [busy, setBusy] = useState<NotifKey | null>(null);
+  const [err, setErr] = useState("");
+  const toggles = company ? COMPANY_TOGGLES : WORKER_TOGGLES;
+
+  async function flip(key: NotifKey, next: boolean) {
+    setBusy(key);
+    setErr("");
+    try {
+      onUserUpdated(await updateNotificationPrefs({ [key]: next }));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Gagal menyimpan pengaturan.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <fieldset className="space-y-2 border-t border-gray-100 pt-3">
+      <legend className="text-xs font-bold text-gray-600 mb-1">Notifikasi email</legend>
+      {toggles.map(([key, label]) => {
+        const on = user.notificationPrefs?.[key] !== false;
+        return (
+          <label key={key} className="flex items-center justify-between gap-3 text-sm text-gray-700">
+            <span>{label}</span>
+            <input
+              type="checkbox"
+              checked={on}
+              disabled={busy === key}
+              onChange={(e) => void flip(key, e.target.checked)}
+              className="h-4 w-4 accent-emerald-600"
+              data-testid={`notif-toggle-${key}`}
+            />
+          </label>
+        );
+      })}
+      {err && <p role="alert" className="text-xs font-semibold text-red-600">{err}</p>}
+    </fieldset>
   );
 }

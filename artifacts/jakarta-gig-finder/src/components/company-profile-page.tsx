@@ -1,3 +1,4 @@
+import FavoriteWorkersSection from "@/components/favorite-workers-section";
 import { useState } from "react";
 import { ShieldCheck, LogOut, Building2, Lock, AlertTriangle, Gavel, CheckCircle, RefreshCcw, History, ExternalLink, FileCheck } from "lucide-react";
 import { AuthUser } from "@/types/auth";
@@ -163,6 +164,12 @@ export default function CompanyProfilePage({
             </div>
           )}
 
+          <FavoriteWorkersSection
+            jobs={customJobs
+              .filter((j) => j.escrowStatus === "locked")
+              .map((j) => ({ id: j.id, posisi: j.posisi }))}
+          />
+
           {/* ── Active Escrow Jobs ───────────────────── */}
           {lockedJobs.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -178,7 +185,10 @@ export default function CompanyProfilePage({
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{job.posisi}</p>
-                          <p className="text-xs text-gray-500">Escrow: {fmt(job.escrowAmount ?? 0)}</p>
+                          <p className="text-xs text-gray-500">
+                            Escrow: {fmt(job.escrowAmount ?? 0)} ·{" "}
+                            <a href={`/api/receipts/invoice/${job.id}`} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 underline">Invoice</a>
+                          </p>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${isDisputed ? "bg-red-100 text-red-700 animate-pulse" : "bg-emerald-100 text-emerald-700"}`}>
                           {isDisputed ? "🔴 DIBEKUKAN" : "🔒 DIKUNCI"}

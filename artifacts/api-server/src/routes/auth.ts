@@ -1,4 +1,5 @@
 import { recordSecurityEvent } from "../lib/security-events";
+import { sanitizePrefs } from "../lib/notify";
 import { randomBytes, randomUUID } from "node:crypto";
 import { kvDelete, kvGet, kvPut } from "../lib/ephemeral";
 import {
@@ -565,6 +566,22 @@ router.post("/auth/avatar", requireSession, parseAvatarUpload, async (req, res):
     return;
   }
   res.json(toAuthUser(updated));
+});
+
+/** Atur jenis email notifikasi yang ingin diterima (kunci yang tidak dikirim tidak berubah). */
+router.patch("/auth/notification-prefs", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const merged = { ...sanitizePrefs(user.notificationPrefs), ...sanitizePrefs(req.body) };
+  const [updated] = await db
+    .update(usersTable)
+    .set({ notificationPrefs: merged })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+  res.json(toAuthUser(updated ?? user));
 });
 
 router.delete("/auth/avatar", async (req, res): Promise<void> => {

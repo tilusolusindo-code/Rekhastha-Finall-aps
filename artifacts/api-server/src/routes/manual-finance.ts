@@ -1,3 +1,4 @@
+import { notifyByEmail } from "../lib/notify";
 import { Router, type IRouter, type Request } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -348,6 +349,13 @@ router.post("/gigs/:jobId/release-wage", async (req, res): Promise<void> => {
     return;
   }
   if (!result.duplicate) {
+    if (result.entry?.amount) {
+      void notifyByEmail(result.application.workerId, {
+        kind: "payout",
+        jobTitle: result.gig.posisi,
+        amount: result.entry.amount,
+      });
+    }
     broadcastApplicationStatus(
       result.application.id,
       "selesai",

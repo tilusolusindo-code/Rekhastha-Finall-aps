@@ -35,6 +35,7 @@ export * from "./monetization";
 export * from "./subscription-plans";
 export * from "./midtrans-payments";
 export * from "./manual-finance";
+export * from "./favorites";
 export * from "./ephemeral";
 export * from "./password-reset-tokens";
 

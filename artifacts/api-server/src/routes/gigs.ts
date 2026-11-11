@@ -111,15 +111,16 @@ router.get("/gigs/fee-quote", async (req, res): Promise<void> => {
 router.get("/gigs", async (req, res): Promise<void> => {
   const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
   const rows = await db
-    .select()
+    .select({ gig: gigsTable, employerAvatarUrl: usersTable.avatarUrl })
     .from(gigsTable)
+    .leftJoin(usersTable, eq(gigsTable.employerId, usersTable.id))
     .where(
       user?.role === "perusahaan"
         ? or(eq(gigsTable.paymentStatus, "confirmed"), eq(gigsTable.employerId, user.id))
         : eq(gigsTable.paymentStatus, "confirmed"),
     )
     .orderBy(desc(gigsTable.postedAt));
-  res.json(rows);
+  res.json(rows.map(({ gig, employerAvatarUrl }) => ({ ...gig, employerAvatarUrl: employerAvatarUrl ?? null })));
 });
 
 router.post("/gigs", async (req, res): Promise<void> => {

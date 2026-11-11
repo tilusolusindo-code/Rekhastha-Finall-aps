@@ -1,3 +1,4 @@
+import { notifyByEmail } from "../lib/notify";
 import { recordSecurityEvent } from "../lib/security-events";
 /**
  * Midtrans Snap Payment Routes
@@ -363,6 +364,11 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
           message: `Pembayaran Rekhastha Bisnis berhasil! Langganan aktif hingga ${expiredAt.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}.`,
           type: "subscription_paid",
         }).catch(() => {});
+        void notifyByEmail(companyId, {
+          kind: "payment",
+          title: "Pembayaran Rekhastha Bisnis berhasil",
+          detail: `Langganan Rekhastha Bisnis Anda aktif hingga ${expiredAt.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}.`,
+        });
         logger.info({ companyId, expiredAt }, "[midtrans] Langganan diaktifkan");
       } else {
         logger.info({ orderId }, "[midtrans] Order langganan sudah diproses sebelumnya");
@@ -444,6 +450,13 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
           message: `Pembayaran lowongan "${outcome.gig.posisi}" berhasil! Lowongan Anda sudah tayang.`,
           type: "posting_paid",
         }).catch(() => {});
+        if (outcome.gig.employerId) {
+          void notifyByEmail(String(outcome.gig.employerId), {
+            kind: "payment",
+            title: `Pembayaran lowongan berhasil — ${outcome.gig.posisi}`,
+            detail: `Pembayaran lowongan "${outcome.gig.posisi}" sudah kami terima dan lowongan Anda sudah tayang. Invoice bisa diunduh dari profil Anda.`,
+          });
+        }
         logger.info({ gigId, orderId }, "[midtrans] Lowongan diaktifkan");
       }
     }

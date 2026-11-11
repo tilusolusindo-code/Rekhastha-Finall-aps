@@ -9,6 +9,8 @@
 
 export {
   appBaseUrl,
+  sendEmail,
+  escapeHtml,
   gmailConfigured,
   sendPasswordResetEmail,
   sendWelcomeEmail,

@@ -133,7 +133,7 @@ function buildRawMessage(params: {
   return Buffer.from(message).toString("base64url");
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (ch) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] ?? ch,
   );
@@ -150,7 +150,7 @@ export function appBaseUrl(): string | null {
   }
 }
 
-async function sendViaGmailApi(params: {
+async function sendViaGmailApiOnly(params: {
   to: string;
   subject: string;
   html: string;
@@ -197,6 +197,45 @@ async function sendViaGmailApi(params: {
   }
 }
 
+async function sendViaResend(params: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<boolean> {
+  const key = process.env["RESEND_API_KEY"];
+  const from = process.env["MAIL_FROM"];
+  if (!key || !from) return false;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from, to: [params.to], subject: params.subject, html: params.html, text: params.text }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      logger.error({ status: res.status, body }, "Resend rejected email");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.error({ err }, "Resend send failed");
+    return false;
+  }
+}
+
+/** Kirim email: Gmail API lebih dulu, lalu Resend sebagai cadangan bila Gmail tidak terpasang atau gagal. */
+export async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+}): Promise<boolean> {
+  if (gmailConfigured() && (await sendViaGmailApiOnly(params))) return true;
+  return sendViaResend(params);
+}
+
 // ── Public helpers ────────────────────────────────────────────────
 
 export async function sendPasswordResetEmail(
@@ -212,7 +251,7 @@ export async function sendPasswordResetEmail(
   const link = `${base}/?reset_token=${encodeURIComponent(token)}`;
   const safeName = escapeHtml(name || "Pengguna");
 
-  return sendViaGmailApi({
+  return sendEmail({
     to,
     subject: "Reset kata sandi Rekhastha",
     html:
@@ -232,7 +271,7 @@ export async function sendPasswordResetEmail(
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
   const base = appBaseUrl() ?? "https://rekhastha.my.id";
   const safeName = escapeHtml(name || "Pengguna");
-  return sendViaGmailApi({
+  return sendEmail({
     to,
     subject: "Selamat datang di Rekhastha!",
     html:
@@ -256,7 +295,7 @@ export async function sendApplicationStatusEmail(params: {
   const { to, workerName, gigTitle, status } = params;
   const safe = (s: string): string => escapeHtml(s);
   const accepted = status === "diterima";
-  return sendViaGmailApi({
+  return sendEmail({
     to,
     subject: `Lamaran Anda ${accepted ? "diterima" : "ditolak"} — ${gigTitle}`,
     html:
@@ -282,7 +321,7 @@ export async function sendPayoutNotificationEmail(params: {
   const { to, workerName, gigTitle, amount, dayIndex } = params;
   const safe = (s: string): string => escapeHtml(s);
   const formatted = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
-  return sendViaGmailApi({
+  return sendEmail({
     to,
     subject: `Pembayaran hari ke-${dayIndex} sudah masuk — ${gigTitle}`,
     html:
@@ -310,7 +349,7 @@ export async function sendTeamInvitationEmail(params: {
   const label = roleLabel[role] ?? role;
   const esc = (s: string) => s.replace(/[&<>"']/g, c =>
     ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c] ?? c);
-  return sendViaGmailApi({
+  return sendEmail({
     to,
     subject: `${esc(companyName)} mengundang Anda bergabung ke tim Rekhastha`,
     html:

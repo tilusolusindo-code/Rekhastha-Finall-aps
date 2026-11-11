@@ -1,3 +1,4 @@
+import { notifyByEmail } from "./notify";
 import { and, eq, inArray } from "drizzle-orm";
 import {
   applicationsTable,
@@ -155,10 +156,20 @@ export async function forcePayoutGig(
       credited,
       duplicate,
       workers,
+      perWorker,
     };
   });
 
   if (result.ok) {
+    if (!result.duplicate) {
+      for (const worker of result.workers) {
+        void notifyByEmail(worker.workerId, {
+          kind: "payout",
+          jobTitle: result.gig.posisi,
+          amount: result.perWorker,
+        });
+      }
+    }
     broadcastGig(result.gig);
     for (const worker of result.workers) {
       if (worker.status !== "selesai") {

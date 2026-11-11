@@ -168,6 +168,11 @@ export default function EscrowWalletPanel({
                     <p className="text-sm font-semibold text-gray-900 truncate">{t.label}</p>
                     <p className="text-[10px] text-gray-400 truncate">{t.jobTitle} · {timeAgo(t.timestamp)}</p>
                     {t.note && <p className="text-[10px] text-gray-400 truncate">{t.note}</p>}
+                    {t.slipId && (
+                      <a href={`/api/receipts/slip/${t.slipId}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-blue-600 underline">
+                        Lihat slip
+                      </a>
+                    )}
                   </div>
                 </div>
                 <p className={`text-sm font-black shrink-0 ${t.type === "credit" ? "text-emerald-600" : "text-red-500"}`}>

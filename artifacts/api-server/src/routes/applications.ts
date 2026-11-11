@@ -7,10 +7,13 @@ import {
   applicationUploadsTable,
   gigsTable,
   usersTable,
+  favoriteWorkersTable,
   notificationsTable,
   walletEntriesTable,
 } from "@workspace/db";
 import { escrowAllowsPayout } from "../lib/wage-ledger";
+import { notifyByEmail } from "../lib/notify";
+import { getWorkerStats } from "../lib/worker-stats";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
   createPrivateDownloadUrl,
@@ -605,6 +608,15 @@ router.post("/applications", async (req, res): Promise<void> => {
     result.gig.employerId!,
   );
 
+  if (result.gig.employerId) {
+    void notifyByEmail(result.gig.employerId, {
+      kind: "applicant",
+      applicantName: result.row.workerName,
+      jobTitle: result.row.jobTitle || result.gig.title,
+      jobId: result.row.jobId,
+    });
+  }
+
   req.log.info(
     {
       applicationId: result.row.id,
@@ -684,18 +696,34 @@ router.get("/applications", async (req, res): Promise<void> => {
     .select({
       application: applicationsTable,
       hiringMode: gigsTable.hiringMode,
+      workerAvatarUrl: usersTable.avatarUrl,
+      workerSkills: usersTable.skills,
     })
     .from(applicationsTable)
     .leftJoin(gigsTable, eq(applicationsTable.jobId, gigsTable.id))
+    .leftJoin(usersTable, eq(applicationsTable.workerId, usersTable.id))
     .where(conditions)
     .orderBy(desc(applicationsTable.createdAt));
   const attachments = await getApplicationAttachments(rows.map(({ application }) => application.id));
+  const stats = await getWorkerStats(rows.map(({ application }) => application.workerId));
+  const favorites = new Set(
+    (
+      await db
+        .select({ workerId: favoriteWorkersTable.workerId })
+        .from(favoriteWorkersTable)
+        .where(eq(favoriteWorkersTable.employerId, user.id))
+    ).map((f) => f.workerId),
+  );
   res.setHeader("Cache-Control", "no-store");
   res.json(
-    rows.map(({ application, hiringMode }) => ({
+    rows.map(({ application, hiringMode, workerAvatarUrl, workerSkills }) => ({
       ...application,
       hiringMode: hiringMode ?? "lama",
       uploadedFiles: attachments.get(application.id) ?? [],
+      workerAvatarUrl: workerAvatarUrl ?? null,
+      workerSkills: workerSkills ?? [],
+      workerStats: stats.get(application.workerId) ?? { ratingAvg: null, ratingCount: 0, completedJobs: 0 },
+      isFavorite: favorites.has(application.workerId),
     })),
   );
 });
@@ -761,7 +789,7 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
 
     const prev = current.status;
     const next = parsed.data.status;
-    if (next === prev) return { row: current };
+    if (next === prev) return { row: current, changed: false as const };
 
     // Upah sudah cair → status final.
     if (prev === "selesai") return { error: "locked" as const };
@@ -807,7 +835,7 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
       .set({ status: next })
       .where(eq(applicationsTable.id, id))
       .returning();
-    return { row: updated };
+    return { row: updated, changed: true as const };
   });
 
   if ("error" in outcome) {
@@ -819,13 +847,16 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
       quota_full: [409, "Kuota pekerja untuk lowongan ini sudah terpenuhi."],
       worker_unverified: [409, "Pekerja ini belum lolos verifikasi KYC."],
     } as const;
-    const [status, error] = messages[outcome.error];
+    const [status, error] = messages[outcome.error as keyof typeof messages];
     res.status(status).json({ error });
     return;
   }
   const row = outcome.row;
 
   broadcastApplicationStatus(row.id, row.status, row.jobId, row.workerId);
+  if (outcome.changed && (row.status === "diterima" || row.status === "ditolak")) {
+    void notifyByEmail(row.workerId, { kind: "status", status: row.status, jobTitle: row.jobTitle });
+  }
   req.log.info(
     { applicationId: row.id, status: row.status },
     "Application status updated",

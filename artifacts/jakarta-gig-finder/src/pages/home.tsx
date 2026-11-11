@@ -12,6 +12,7 @@ import RatingModal, { RatingPayload } from "@/components/rating-modal";
 import EmergencySOS from "@/components/emergency-sos";
 import BoronganWorkerPanel from "@/components/borongan-worker-panel";
 import PaySlipModal from "@/components/pay-slip-modal";
+import { FavoriteStar, WorkerStatsLine } from "@/components/worker-badges";
 import EarningsDashboard from "@/components/earnings-dashboard";
 import ChatModal from "@/components/chat-modal";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
@@ -112,6 +113,9 @@ function toWorkerApplicationNotification(
     workerId: row.workerId,
     applicantName: row.workerName,
     applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
+    workerSkills: row.workerSkills,
+    workerStats: row.workerStats,
+    isFavorite: row.isFavorite,
     applicantNikMasked: row.workerNikMasked,
     applicantNpwpMasked: row.workerNpwpMasked,
     hasNpwp: row.hasNpwp,
@@ -230,6 +234,7 @@ export default function Home() {
       };
       const entries: WalletTransaction[] = data.entries.map((entry) => ({
         id: entry.id,
+        slipId: entry.id,
         type: "credit",
         amount: entry.amount,
         label: entry.description,
@@ -540,6 +545,9 @@ export default function Home() {
               workerId: row.workerId,
               applicantName: row.workerName,
               applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
+    workerSkills: row.workerSkills,
+    workerStats: row.workerStats,
+    isFavorite: row.isFavorite,
               applicantNikMasked: row.workerNikMasked,
               applicantNpwpMasked: row.workerNpwpMasked,
               hasNpwp: row.hasNpwp,
@@ -659,6 +667,9 @@ export default function Home() {
               workerId: row.workerId,
               applicantName: row.workerName,
               applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
+    workerSkills: row.workerSkills,
+    workerStats: row.workerStats,
+    isFavorite: row.isFavorite,
               applicantNikMasked: row.workerNikMasked,
               applicantNpwpMasked: row.workerNpwpMasked,
               hasNpwp: row.hasNpwp,
@@ -1956,9 +1967,11 @@ export default function Home() {
                             </div>
                             <p className="text-xs text-gray-500 truncate">{n.jobTitle}</p>
                             {n.hasNpwp && <p className="text-[10px] text-primary font-medium mt-0.5">✓ NPWP Terverifikasi</p>}
+                            <WorkerStatsLine stats={n.workerStats} skills={n.workerSkills} />
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                          <FavoriteStar workerId={n.workerId} initial={n.isFavorite ?? false} />
                           {job && (
                             <button
                               onClick={() => setAttendanceQrJob(job)}

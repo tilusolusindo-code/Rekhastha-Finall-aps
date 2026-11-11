@@ -28,6 +28,8 @@ export const usersTable = pgTable("users", {
   /** Path to the KTP document photo uploaded during KYC onboarding. */
   /** Foto profil (JPG/PNG) yang diunggah pengguna sendiri. */
   avatarUrl: text("avatar_url"),
+  /** Preferensi notifikasi email, mis. { applicant: false }. Kunci yang tidak ada dianggap aktif. */
+  notificationPrefs: jsonb("notification_prefs").notNull().default({}),
   ktpPhotoUrl: text("ktp_photo_url"),
   /** Path to the selfie+KTP photo uploaded during KYC onboarding. */
   selfieWithKtpUrl: text("selfie_with_ktp_url"),

@@ -26,6 +26,10 @@ export interface ApplicationNotification {
   applicantName: string;
   /** Foto profil pelamar (hanya ditampilkan setelah pelamar diterima). */
   applicantAvatarUrl?: string;
+  /** Statistik publik pekerja untuk membantu pemberi kerja memilih. */
+  workerSkills?: string[];
+  workerStats?: { ratingAvg: number | null; ratingCount: number; completedJobs: number };
+  isFavorite?: boolean;
   applicantNikMasked: string;
   applicantNpwpMasked: string;
   hasNpwp: boolean;

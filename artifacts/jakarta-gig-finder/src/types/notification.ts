@@ -17,6 +17,8 @@ export interface ApplicationNotification {
   id: number;
   /** Server-assigned DB row id — present after a successful POST /api/applications. */
   serverId?: number;
+  /** Dimuat ulang dari server saat refresh: tampil di panel, tapi tidak memicu toast "pelamar baru". */
+  hydrated?: boolean;
   jobId: number;
   jobTitle: string;
   /** DB user-id of the worker who applied — used to scope the chat conversation. */

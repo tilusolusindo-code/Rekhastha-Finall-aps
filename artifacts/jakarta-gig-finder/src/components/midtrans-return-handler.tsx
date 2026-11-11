@@ -28,7 +28,7 @@
  * Tidak perlu prop apa pun. Tidak merender apa-apa kalau tidak ada
  * parameter `?payment=...` di URL.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { CheckCircle2, Clock3, XCircle, X } from "lucide-react";
 
 type Outcome = "checking" | "success" | "pending" | "failed" | "unknown";
@@ -110,7 +110,7 @@ export default function MidtransReturnHandler() {
 
   if (!outcome) return null;
 
-  const content: Record<Outcome, { icon: JSX.Element; title: string; body: string; tone: string }> = {
+  const content: Record<Outcome, { icon: ReactElement; title: string; body: string; tone: string }> = {
     checking: {
       icon: <Clock3 className="w-6 h-6 text-blue-500 animate-pulse" />,
       title: "Memeriksa status pembayaran…",

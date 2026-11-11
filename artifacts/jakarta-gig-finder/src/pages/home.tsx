@@ -533,6 +533,7 @@ export default function Home() {
             .filter((row) => !existingIds.has(row.id) && isFirstSync)
             .map((row) => ({
               id: nextNotifId++,
+              hydrated: true,
               serverId: row.id,
               jobId: row.jobId,
               jobTitle: row.jobTitle,
@@ -651,6 +652,7 @@ export default function Home() {
             .filter((row) => !existingIds.has(row.id))
             .map((row) => ({
               id: nextNotifId++,
+              hydrated: true,
               serverId: row.id,
               jobId: row.jobId,
               jobTitle: row.jobTitle,
@@ -1262,7 +1264,7 @@ export default function Home() {
   // ── Employer toast: detect new applicants ───────────────────────
   useEffect(() => {
     if (mode !== "perusahaan") return;
-    const newest = notifications.find(n => !seenNotifIds.current.has(n.id));
+    const newest = notifications.find(n => !n.hydrated && !seenNotifIds.current.has(n.id));
     if (newest && !applicantToast) {
       seenNotifIds.current.add(newest.id);
       setApplicantToast(newest);

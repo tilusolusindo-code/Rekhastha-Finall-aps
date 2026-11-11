@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -8,9 +8,11 @@ import {
   attendanceTable,
   applicationsTable,
   walletEntriesTable,
+  usersTable,
 } from "@workspace/db";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import { calculateTotalWorkerPayout } from "../lib/pricing";
+import { creditedWagesForJob, escrowAllowsPayout } from "../lib/wage-ledger";
 import { broadcastGig, broadcastDailyPayout } from "../lib/realtime";
 
 const router: IRouter = Router();
@@ -93,6 +95,7 @@ router.post("/borongan/remote/submit-proof", async (req, res): Promise<void> => 
     .set({
       proofUrl: parsed.data.proofUrl,
       proofStatus: "submitted",
+      proofSubmittedBy: user.id,
       boronganType: "remote",
     })
     .where(eq(gigsTable.id, parsed.data.jobId))
@@ -116,10 +119,19 @@ async function loadOwnedGig(
   if (!gig.employerId || gig.employerId !== employerId) {
     return { ok: false, status: 403, error: "Hanya pemberi kerja pemilik proyek yang dapat memutuskan." };
   }
-  if (gig.paymentStatus !== "confirmed") {
-    return { ok: false, status: 409, error: "Pembayaran proyek belum dikonfirmasi admin." };
+  if (gig.paymentStatus !== "confirmed" || !escrowAllowsPayout(gig.escrowStatus)) {
+    return { ok: false, status: 409, error: "Pembayaran proyek belum dikonfirmasi admin, atau sedang disengketakan/direfund." };
   }
   return { ok: true };
+}
+
+async function workerIsVerified(workerId: string): Promise<boolean> {
+  const [worker] = await db
+    .select({ verificationStatus: usersTable.verificationStatus })
+    .from(usersTable)
+    .where(eq(usersTable.id, workerId))
+    .limit(1);
+  return worker?.verificationStatus === "verified";
 }
 
 /**
@@ -142,27 +154,34 @@ router.post("/borongan/remote/approve", async (req, res): Promise<void> => {
     return;
   }
 
+  // Dibayar adalah pekerja yang MENGIRIM bukti, bukan "pelamar diterima pertama"
+  // tanpa urutan (audit T2). proofSubmittedBy diisi saat submit-proof.
+  const [currentGig] = await db
+    .select()
+    .from(gigsTable)
+    .where(eq(gigsTable.id, parsed.data.jobId))
+    .limit(1);
+  if (!currentGig || currentGig.proofStatus !== "submitted" || !currentGig.proofSubmittedBy) {
+    res.status(409).json({ error: "Bukti kerja belum menunggu persetujuan." });
+    return;
+  }
   const [application] = await db
     .select()
     .from(applicationsTable)
     .where(
       and(
         eq(applicationsTable.jobId, parsed.data.jobId),
+        eq(applicationsTable.workerId, currentGig.proofSubmittedBy),
         eq(applicationsTable.status, "diterima"),
       ),
     )
     .limit(1);
   if (!application) {
-    res.status(409).json({ error: "Belum ada pekerja yang diterima pada proyek ini." });
+    res.status(409).json({ error: "Pekerja pengirim bukti tidak lagi berstatus diterima." });
     return;
   }
-  const [currentGig] = await db
-    .select()
-    .from(gigsTable)
-    .where(eq(gigsTable.id, parsed.data.jobId))
-    .limit(1);
-  if (!currentGig || currentGig.proofStatus !== "submitted") {
-    res.status(409).json({ error: "Bukti kerja belum menunggu persetujuan." });
+  if (!(await workerIsVerified(application.workerId))) {
+    res.status(409).json({ error: "Pekerja ini belum lolos verifikasi KYC." });
     return;
   }
   const workerCount = Math.max(1, currentGig.kuota ?? 1);
@@ -185,9 +204,20 @@ router.post("/borongan/remote/approve", async (req, res): Promise<void> => {
     return;
   }
   const result = await db.transaction(async (tx) => {
+    const [locked] = await tx
+      .select({ id: gigsTable.id, proofStatus: gigsTable.proofStatus, totalWorkerPayout: gigsTable.totalWorkerPayout })
+      .from(gigsTable)
+      .where(eq(gigsTable.id, parsed.data.jobId))
+      .for("update")
+      .limit(1);
+    if (!locked || locked.proofStatus !== "submitted") return { error: "not_pending" as const };
+    const alreadyCredited = await creditedWagesForJob(tx, parsed.data.jobId);
+    if (alreadyCredited + amount > (locked.totalWorkerPayout ?? 0)) {
+      return { error: "budget_exceeded" as const };
+    }
     const [gig] = await tx
       .update(gigsTable)
-      .set({ proofStatus: "approved", escrowStatus: "released", broadcastActive: false })
+      .set({ proofStatus: "approved", escrowStatus: "released" })
       .where(eq(gigsTable.id, parsed.data.jobId))
       .returning();
     await tx
@@ -200,12 +230,16 @@ router.post("/borongan/remote/approve", async (req, res): Promise<void> => {
         description: `Upah proyek: ${gig.posisi}`,
       })
       .onConflictDoNothing();
-    return gig;
+    return { gig };
   });
+  if ("error" in result) {
+    res.status(409).json({ error: result.error === "not_pending" ? "Bukti kerja tidak lagi menunggu persetujuan." : "Dana proyek tidak mencukupi." });
+    return;
+  }
 
-  broadcastGig(result);
-  req.log.info({ jobId: result.id, workerId: application.workerId }, "Remote borongan approved and credited to wallet");
-  res.json({ ...result, payoutStatus: "available_for_manual_withdrawal" });
+  broadcastGig(result.gig);
+  req.log.info({ jobId: result.gig.id, workerId: application.workerId }, "Remote borongan approved and credited to wallet");
+  res.json({ ...result.gig, payoutStatus: "available_for_manual_withdrawal" });
 });
 
 /**
@@ -229,11 +263,17 @@ router.post("/borongan/remote/reject", async (req, res): Promise<void> => {
     return;
   }
 
+  // Hanya bukti yang sedang menunggu yang boleh ditolak (audit T2): mencegah
+  // reject sebelum ada bukti, atau setelah upah sudah dibayar (approved).
   const [gig] = await db
     .update(gigsTable)
     .set({ proofStatus: "rejected", escrowStatus: "disputed_active" })
-    .where(eq(gigsTable.id, parsed.data.jobId))
+    .where(and(eq(gigsTable.id, parsed.data.jobId), eq(gigsTable.proofStatus, "submitted")))
     .returning();
+  if (!gig) {
+    res.status(409).json({ error: "Bukti kerja tidak dalam status menunggu persetujuan." });
+    return;
+  }
 
   broadcastGig(gig);
   req.log.warn({ jobId: gig.id }, "Remote borongan proof rejected → disputed_active");
@@ -315,7 +355,6 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
       return { status: 409 as const, error: "Pembayaran proyek belum dikonfirmasi admin." };
     }
     const totalDays = gig.jumlahHari ?? 1;
-    const already = gig.daysPaid ?? 0;
     const workerCount = Math.max(1, gig.kuota ?? 1);
     const expectedTotalWages = calculateTotalWorkerPayout(
       gig.nominal,
@@ -326,7 +365,6 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
     const totalWorkerPayout = gig.totalWorkerPayout ?? expectedTotalWages;
     const totalDeposit = gig.escrowAmount ?? 0;
     const workerWageTotal = totalWorkerPayout / workerCount;
-    const fundedPerWorker = Math.floor(totalDeposit / workerCount);
     if (
       totalWorkerPayout !== expectedTotalWages ||
       !Number.isSafeInteger(totalWorkerPayout) ||
@@ -336,15 +374,40 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
     ) {
       return { status: 409 as const, error: "Snapshot upah atau dana proyek tidak valid." };
     }
-    // Hard cap: reject the (jumlahHari+1)th checkout before it releases wages.
-    // Mathematical proof in scripts/src/escrow-invariant-check.ts (checkOverdrawGuard):
-    //   k = jumlahHari+1  →  (days+1) × floor(wage/days) > wage
-    // — the cumulative payout exceeds the contracted worker allocation.
-    // The transaction lock (FOR UPDATE) ensures two concurrent checkouts never
-    // both read `already < totalDays`.
-    if (already >= totalDays) {
-      return { status: 409 as const, error: "Semua pembayaran harian sudah dicairkan." };
+
+    // Pelamar harus diterima dan lolos KYC sebelum menerima upah harian (audit K1/T1).
+    const [acceptedApplication] = await tx
+      .select({ id: applicationsTable.id })
+      .from(applicationsTable)
+      .where(and(
+        eq(applicationsTable.jobId, gig.id),
+        eq(applicationsTable.workerId, user.id),
+        eq(applicationsTable.status, "diterima"),
+      ))
+      .limit(1);
+    if (!acceptedApplication) {
+      return { status: 403 as const, error: "Kamu bukan pekerja yang diterima pada proyek ini." };
     }
+    if (!(await workerIsVerified(user.id))) {
+      return { status: 403 as const, error: "Verifikasi KYC kamu belum disetujui admin." };
+    }
+
+    // Progres dihitung PER PEKERJA dari jumlah hari yang sudah dibayar ke pekerja
+    // ini (audit T1: daysPaid di level lowongan salah untuk kuota > 1), dan dari
+    // kehadiran "pulang" yang sah untuk hari ini — tidak bisa dipicu sendiri tanpa
+    // pulang yang sah kecuali disetujui employer secara eksplisit (lihat di bawah).
+    const myPayouts = await tx
+      .select({ dayIndex: dailyPayoutsTable.dayIndex })
+      .from(dailyPayoutsTable)
+      .where(and(eq(dailyPayoutsTable.jobId, gig.id), eq(dailyPayoutsTable.workerId, user.id)));
+    const already = myPayouts.length;
+    if (already >= totalDays) {
+      return { status: 409 as const, error: "Semua pembayaran harian untukmu sudah dicairkan." };
+    }
+    // Pagar anggaran lintas jalur: total upah yang sudah dikreditkan untuk
+    // lowongan ini (semua pekerja, semua jalur) tidak boleh melampaui dana yang
+    // sudah didanai (audit K1).
+    const alreadyCreditedJob = await creditedWagesForJob(tx, gig.id);
 
     // Atomic per-day dedup: insert the "pulang" attendance record now.
     // onConflictDoNothing silently skips on a unique-constraint violation so
@@ -375,6 +438,10 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
       totalDays,
       dayIndex,
     );
+    if (alreadyCreditedJob + netToWorker > totalWorkerPayout) {
+      return { status: 409 as const, error: "Dana proyek tidak mencukupi untuk pembayaran hari ini." };
+    }
+    const fundedPerWorker = Math.floor(totalDeposit / workerCount);
     const residualForEmployer = dayIndex >= totalDays
       ? Math.max(0, fundedPerWorker - workerWageTotal)
       : 0;
@@ -404,14 +471,35 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
       })
       .onConflictDoNothing();
 
-    const fullyPaid = dayIndex >= totalDays;
+    // "released" hanya ditetapkan saat SEMUA pekerja yang diterima sudah
+    // menuntaskan kontraknya (audit T1: versi lama menandai released begitu
+    // satu pekerja selesai, padahal pekerja lain pada kuota > 1 belum dibayar).
+    const acceptedWorkers = await tx
+      .select({ workerId: applicationsTable.workerId })
+      .from(applicationsTable)
+      .where(and(
+        eq(applicationsTable.jobId, gig.id),
+        inArray(applicationsTable.status, ["diterima", "selesai"]),
+      ));
+    const otherWorkerIds = acceptedWorkers
+      .map((w) => w.workerId)
+      .filter((id): id is string => !!id && id !== user.id);
+    const othersDayCounts = otherWorkerIds.length
+      ? await tx
+          .select({ workerId: dailyPayoutsTable.workerId, n: sql<number>`count(*)::int` })
+          .from(dailyPayoutsTable)
+          .where(and(eq(dailyPayoutsTable.jobId, gig.id), inArray(dailyPayoutsTable.workerId, otherWorkerIds)))
+          .groupBy(dailyPayoutsTable.workerId)
+      : [];
+    const othersDoneMap = new Map(othersDayCounts.map((r) => [r.workerId, r.n]));
+    const othersComplete = otherWorkerIds.every((id) => (othersDoneMap.get(id) ?? 0) >= totalDays);
+    const fullyPaid = dayIndex >= totalDays && othersComplete;
     const [updated] = await tx
       .update(gigsTable)
       .set({
-        daysPaid: dayIndex,
+        daysPaid: dayIndex, // dipertahankan untuk kompatibilitas tampilan lama; bukan lagi sumber kebenaran
         boronganType: "onsite",
         escrowStatus: fullyPaid ? "released" : gig.escrowStatus ?? "locked",
-        ...(fullyPaid ? { broadcastActive: false } : {}),
       })
       .where(eq(gigsTable.id, gig.id))
       .returning();

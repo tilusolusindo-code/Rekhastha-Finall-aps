@@ -30,7 +30,6 @@ export function toAuthUser(user: User): Record<string, unknown> {
     whatsapp: user.whatsapp ?? undefined,
     role: user.role,
     linkedWithGoogle: user.linkedWithGoogle,
-    avatarUrl: user.avatarUrl ?? undefined,
     ktpPhotoUrl: user.ktpPhotoUrl ?? undefined,
     selfieWithKtpUrl: user.selfieWithKtpUrl ?? undefined,
     verificationStatus: user.verificationStatus,
@@ -70,6 +69,12 @@ export async function getSessionUser(
     .where(
       and(eq(sessionsTable.token, token), gt(sessionsTable.expiresAt, new Date())),
     );
+
+  // Audit T5: sebelumnya hanya /auth/me dan login yang memeriksa `suspended`,
+  // sehingga akun yang baru ditangguhkan tetap bisa memakai cookie 30 hari
+  // yang masih ada di SETIAP endpoint lain (posting, melamar, menarik saldo).
+  // Memeriksanya di sini menutup jalur itu untuk semua pemanggil sekaligus.
+  if (row?.user?.suspended) return null;
 
   return row?.user ?? null;
 }

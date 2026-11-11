@@ -20,6 +20,7 @@ import {
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import { ADMIN_COOKIE, adminSessionId } from "../lib/admin";
 import { calculateTotalWorkerPayout } from "../lib/pricing";
+import { creditedWagesForJob, escrowAllowsPayout } from "../lib/wage-ledger";
 import {
   broadcastApplicationStatus,
   broadcastGig,
@@ -232,7 +233,7 @@ router.post("/gigs/:jobId/release-wage", async (req, res): Promise<void> => {
       .for("update")
       .limit(1);
     if (!gig || gig.employerId !== user.id) return { error: "not_found" as const };
-    if (gig.paymentStatus !== "confirmed" || gig.escrowStatus === "disputed") {
+    if (gig.paymentStatus !== "confirmed" || !escrowAllowsPayout(gig.escrowStatus)) {
       return { error: "not_funded" as const };
     }
     const [application] = await tx
@@ -248,6 +249,15 @@ router.post("/gigs/:jobId/release-wage", async (req, res): Promise<void> => {
       .limit(1);
     if (!application || !["diterima", "selesai"].includes(application.status)) {
       return { error: "not_accepted" as const };
+    }
+    // KYC wajib sebelum upah dicairkan (audit K1).
+    const [worker] = await tx
+      .select({ verificationStatus: usersTable.verificationStatus })
+      .from(usersTable)
+      .where(eq(usersTable.id, application.workerId))
+      .limit(1);
+    if (worker?.verificationStatus !== "verified") {
+      return { error: "worker_unverified" as const };
     }
     const [existingEntry] = await tx
       .select()
@@ -281,6 +291,12 @@ router.post("/gigs/:jobId/release-wage", async (req, res): Promise<void> => {
       (gig.escrowAmount ?? 0) < expectedTotalPayout
     ) {
       return { error: "invalid_amount" as const };
+    }
+    // Pagar global: total yang SUDAH dikreditkan (lewat jalur apa pun) + upah baru
+    // ini tidak boleh melebihi dana yang sudah didanai untuk lowongan ini (audit K1).
+    const alreadyCredited = await creditedWagesForJob(tx, jobId);
+    if (alreadyCredited + amount > gig.totalWorkerPayout) {
+      return { error: "budget_exceeded" as const };
     }
     const [entry] = await tx
       .insert(walletEntriesTable)
@@ -323,7 +339,11 @@ router.post("/gigs/:jobId/release-wage", async (req, res): Promise<void> => {
   });
 
   if ("error" in result) {
-    const status = result.error === "not_found" ? 404 : result.error === "not_accepted" ? 409 : 422;
+    const status =
+      result.error === "not_found" ? 404 :
+      result.error === "not_accepted" ? 409 :
+      result.error === "worker_unverified" ? 409 :
+      result.error === "budget_exceeded" ? 409 : 422;
     res.status(status).json({ error: result.error });
     return;
   }

@@ -8,7 +8,9 @@ import {
   gigsTable,
   usersTable,
   notificationsTable,
+  walletEntriesTable,
 } from "@workspace/db";
+import { escrowAllowsPayout } from "../lib/wage-ledger";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
   createPrivateDownloadUrl,
@@ -682,19 +684,16 @@ router.get("/applications", async (req, res): Promise<void> => {
     .select({
       application: applicationsTable,
       hiringMode: gigsTable.hiringMode,
-      workerAvatarUrl: usersTable.avatarUrl,
     })
     .from(applicationsTable)
     .leftJoin(gigsTable, eq(applicationsTable.jobId, gigsTable.id))
-    .leftJoin(usersTable, eq(applicationsTable.workerId, usersTable.id))
     .where(conditions)
     .orderBy(desc(applicationsTable.createdAt));
   const attachments = await getApplicationAttachments(rows.map(({ application }) => application.id));
   res.setHeader("Cache-Control", "no-store");
   res.json(
-    rows.map(({ application, hiringMode, workerAvatarUrl }) => ({
+    rows.map(({ application, hiringMode }) => ({
       ...application,
-      workerAvatarUrl: workerAvatarUrl ?? null,
       hiringMode: hiringMode ?? "lama",
       uploadedFiles: attachments.get(application.id) ?? [],
     })),
@@ -734,25 +733,97 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
     return;
   }
 
-  // Ownership check: only the employer who owns the job (or unassigned demo rows)
-  // may change the status. We use an inline WHERE rather than a pre-fetch so the
-  // check and the update happen atomically and no row is returned on mismatch.
-  const [row] = await db
-    .update(applicationsTable)
-    .set({ status: parsed.data.status })
-    .where(
-      and(
-        eq(applicationsTable.id, id),
-        eq(applicationsTable.employerId, user.id),
-      ),
-    )
-    .returning();
+  // Seluruh keputusan (kuota, pendanaan, KYC, transisi) diambil di dalam satu
+  // transaksi dengan baris lowongan terkunci, supaya dua permintaan paralel tidak
+  // bisa sama-sama lolos batas kuota (audit K1).
+  const outcome = await db.transaction(async (tx) => {
+    const [owned] = await tx
+      .select({ jobId: applicationsTable.jobId })
+      .from(applicationsTable)
+      .where(and(eq(applicationsTable.id, id), eq(applicationsTable.employerId, user.id)))
+      .limit(1);
+    // Tidak ditemukan ATAU bukan milik pemanggil → 404 agar tidak membocorkan keberadaan.
+    if (!owned) return { error: "not_found" as const };
 
-  if (!row) {
-    // Row not found OR caller doesn't own it — report 404 to avoid leaking existence.
-    res.status(404).json({ error: "Lamaran tidak ditemukan." });
+    const [gig] = await tx
+      .select()
+      .from(gigsTable)
+      .where(eq(gigsTable.id, owned.jobId))
+      .for("update")
+      .limit(1);
+    const [current] = await tx
+      .select()
+      .from(applicationsTable)
+      .where(and(eq(applicationsTable.id, id), eq(applicationsTable.employerId, user.id)))
+      .for("update")
+      .limit(1);
+    if (!current) return { error: "not_found" as const };
+
+    const prev = current.status;
+    const next = parsed.data.status;
+    if (next === prev) return { row: current };
+
+    // Upah sudah cair → status final.
+    if (prev === "selesai") return { error: "locked" as const };
+    const [credited] = await tx
+      .select({ id: walletEntriesTable.id })
+      .from(walletEntriesTable)
+      .where(and(
+        eq(walletEntriesTable.sourceType, "gig_wage"),
+        eq(walletEntriesTable.sourceId, String(id)),
+      ))
+      .limit(1);
+    if (credited) return { error: "locked" as const };
+
+    // "selesai" hanya boleh dari "diterima" (pencairan upah ada di release-wage).
+    if (next === "selesai" && prev !== "diterima") return { error: "invalid_transition" as const };
+
+    const holdsSlot = prev === "diterima" || prev === "selesai";
+    const consumesSlot = next === "diterima" || next === "selesai";
+    if (consumesSlot && !holdsSlot) {
+      if (!gig || gig.paymentStatus !== "confirmed" || !escrowAllowsPayout(gig.escrowStatus)) {
+        return { error: "gig_not_funded" as const };
+      }
+      const [{ n } = { n: 0 }] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(applicationsTable)
+        .where(and(
+          eq(applicationsTable.jobId, owned.jobId),
+          inArray(applicationsTable.status, ["diterima", "selesai"]),
+        ));
+      if (n >= Math.max(1, gig.kuota ?? 1)) return { error: "quota_full" as const };
+
+      // Hanya pekerja yang lolos KYC yang boleh diterima (dan akhirnya dibayar).
+      const [worker] = await tx
+        .select({ verificationStatus: usersTable.verificationStatus })
+        .from(usersTable)
+        .where(eq(usersTable.id, current.workerId))
+        .limit(1);
+      if (worker?.verificationStatus !== "verified") return { error: "worker_unverified" as const };
+    }
+
+    const [updated] = await tx
+      .update(applicationsTable)
+      .set({ status: next })
+      .where(eq(applicationsTable.id, id))
+      .returning();
+    return { row: updated };
+  });
+
+  if ("error" in outcome) {
+    const messages = {
+      not_found: [404, "Lamaran tidak ditemukan."],
+      locked: [409, "Status tidak dapat diubah karena upah sudah dikreditkan."],
+      invalid_transition: [409, "Perubahan status tidak valid."],
+      gig_not_funded: [409, "Lowongan belum didanai atau sedang dalam sengketa/refund."],
+      quota_full: [409, "Kuota pekerja untuk lowongan ini sudah terpenuhi."],
+      worker_unverified: [409, "Pekerja ini belum lolos verifikasi KYC."],
+    } as const;
+    const [status, error] = messages[outcome.error];
+    res.status(status).json({ error });
     return;
   }
+  const row = outcome.row;
 
   broadcastApplicationStatus(row.id, row.status, row.jobId, row.workerId);
   req.log.info(

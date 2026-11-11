@@ -73,6 +73,9 @@ export const gigsTable = pgTable("gigs", {
   proofUrl: text("proof_url"),
   // Remote milestone state: "submitted" | "approved" | "rejected".
   proofStatus: text("proof_status"),
+  // Worker id who submitted the current proof (audit T2: pays the submitter,
+  // not "first accepted applicant").
+  proofSubmittedBy: text("proof_submitted_by"),
   // On-site: how many daily wage fractions have already been released.
   daysPaid: integer("days_paid").notNull().default(0),
   postedAt: timestamp("posted_at", { withTimezone: true }).notNull().defaultNow(),

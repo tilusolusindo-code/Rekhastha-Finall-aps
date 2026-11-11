@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { broadcastApplicationStatus, broadcastGig } from "./realtime";
 import { calculateTotalWorkerPayout } from "./pricing";
+import { creditedWagesForJob } from "./wage-ledger";
 
 type PayoutFailure =
   | "not_found"
@@ -40,7 +41,7 @@ export async function forcePayoutGig(
     if (gig.paymentStatus !== "confirmed") {
       return { ok: false as const, error: "not_confirmed" as const };
     }
-    if (!["pending", "processing", "locked"].includes(gig.escrowStatus ?? "")) {
+    if (!["pending", "processing", "locked", "disputed_active"].includes(gig.escrowStatus ?? "")) {
       return { ok: false as const, error: "invalid_status" as const };
     }
 
@@ -78,6 +79,12 @@ export async function forcePayoutGig(
       !Number.isSafeInteger(perWorker) ||
       perWorker <= 0
     ) {
+      return { ok: false as const, error: "amount_mismatch" as const };
+    }
+    // Pagar anggaran lintas jalur (audit K1): total yang sudah dikreditkan lewat
+    // jalur mana pun + yang akan dibayar di sini tidak boleh melampaui dana.
+    const alreadyCredited = await creditedWagesForJob(tx, jobId);
+    if (alreadyCredited + perWorker * workers.length > totalPayout) {
       return { ok: false as const, error: "amount_mismatch" as const };
     }
 
@@ -122,7 +129,7 @@ export async function forcePayoutGig(
 
     const [updatedGig] = await tx
       .update(gigsTable)
-      .set({ escrowStatus: "released", broadcastActive: false })
+      .set({ escrowStatus: "released" })
       .where(eq(gigsTable.id, jobId))
       .returning();
     await tx

@@ -1,10 +1,11 @@
 import { Router, type IRouter, type Request } from "express";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db, gigsTable, dailyPayoutsTable, adminLogsTable, radarScrapeAlertsTable, securityEventsTable, applicationsTable } from "@workspace/db";
+import { db, gigsTable, dailyPayoutsTable, adminLogsTable, radarScrapeAlertsTable, applicationsTable, walletEntriesTable, manualPaymentsTable } from "@workspace/db";
 import { ADMIN_COOKIE, isAdminSession, adminSessionId } from "../lib/admin";
 import { broadcastGig } from "../lib/realtime";
 import { forcePayoutGig } from "../lib/admin-finance";
+import { creditedWagesForJob } from "../lib/wage-ledger";
 
 const router: IRouter = Router();
 
@@ -60,31 +61,54 @@ router.get("/admin/disputes", async (req, res): Promise<void> => {
 
 const refundBody = z.object({ jobId: z.coerce.number() });
 
-/** Admin rules a dispute in the EMPLOYER's favour → refund the escrow. */
+const refundReasonBody = z.object({ jobId: z.coerce.number(), reason: z.string().min(1, "Alasan wajib diisi.") });
+
+/**
+ * Admin rules a dispute in the EMPLOYER's favour → refund the escrow.
+ * Audit T3: tidak boleh me-refund lowongan yang upahnya sudah (sebagian)
+ * dikreditkan ke wallet pekerja, dan setiap refund wajib tercatat.
+ */
 router.post("/admin/refund", async (req, res): Promise<void> => {
-  if (!(await requireAdmin(req))) {
+  const adminId = await getAdminId(req);
+  if (!adminId) {
     res.status(401).json({ error: "Sesi admin tidak valid." });
     return;
   }
-  const parsed = refundBody.safeParse(req.body);
+  const parsed = refundReasonBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "jobId tidak valid." });
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Permintaan tidak valid." });
     return;
   }
 
-  const [gig] = await db
-    .update(gigsTable)
-    .set({ escrowStatus: "refunded", broadcastActive: false })
-    .where(eq(gigsTable.id, parsed.data.jobId))
-    .returning();
+  const result = await db.transaction(async (tx) => {
+    const [gig] = await tx.select().from(gigsTable).where(eq(gigsTable.id, parsed.data.jobId)).for("update").limit(1);
+    if (!gig) return { error: "not_found" as const };
+    if (!["pending", "processing", "locked", "disputed_active"].includes(gig.escrowStatus ?? "")) {
+      return { error: "invalid_status" as const };
+    }
+    const credited = await creditedWagesForJob(tx, gig.id);
+    if (credited > 0) return { error: "already_paid_out" as const };
+    const [updated] = await tx
+      .update(gigsTable)
+      .set({ escrowStatus: "refunded" })
+      .where(eq(gigsTable.id, parsed.data.jobId))
+      .returning();
+    await tx.insert(adminLogsTable).values({
+      adminId,
+      action: "REFUND_DISPUTE",
+      targetId: String(gig.id),
+      reason: parsed.data.reason,
+    });
+    return { gig: updated };
+  });
 
-  if (!gig) {
-    res.status(404).json({ error: "Proyek tidak ditemukan." });
+  if ("error" in result) {
+    const status = result.error === "not_found" ? 404 : 409;
+    res.status(status).json({ error: result.error });
     return;
   }
-
-  broadcastGig(gig);
-  req.log.info({ jobId: gig.id }, "Admin refunded escrow to employer");
+  broadcastGig(result.gig);
+  req.log.info({ jobId: result.gig.id, adminId }, "Admin refunded escrow to employer");
   res.json({ ok: true });
 });
 
@@ -141,7 +165,7 @@ router.delete("/admin/jobs/:id", async (req, res): Promise<void> => {
   }
 
   const jobId = Number(req.params["id"]);
-  if (!Number.isFinite(jobId)) {
+  if (!Number.isSafeInteger(jobId) || jobId <= 0) {
     res.status(400).json({ error: "ID job tidak valid." });
     return;
   }
@@ -152,22 +176,34 @@ router.delete("/admin/jobs/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [deleted] = await db
-    .delete(gigsTable)
-    .where(eq(gigsTable.id, jobId))
-    .returning({ id: gigsTable.id });
+  // Audit T3: lowongan yang pernah didanai tidak boleh dihapus begitu saja —
+  // dana harus di-refund dulu (manual_payments jadi yatim dan uang hilang jika
+  // dihapus langsung). ID non-integer juga tidak lagi lolos (Number.isFinite
+  // menerima 1.5, sekarang Number.isSafeInteger).
+  const result = await db.transaction(async (tx) => {
+    const [gig] = await tx.select().from(gigsTable).where(eq(gigsTable.id, jobId)).for("update").limit(1);
+    if (!gig) return { error: "not_found" as const };
+    if (gig.paymentStatus === "confirmed" && !["refunded", null].includes(gig.escrowStatus)) {
+      return { error: "funded" as const };
+    }
+    await tx.delete(gigsTable).where(eq(gigsTable.id, jobId));
+    await tx.insert(adminLogsTable).values({ adminId, action: "DELETE_JOB", targetId: String(jobId), reason: parsed.data.reason });
+    return { ok: true as const };
+  });
 
-  if (!deleted) {
-    res.status(404).json({ error: "Job tidak ditemukan." });
+  if ("error" in result) {
+    const status = result.error === "not_found" ? 404 : 409;
+    const error = result.error === "funded"
+      ? "Lowongan ini sudah didanai. Refund dananya terlebih dahulu sebelum menghapus."
+      : "Job tidak ditemukan.";
+    res.status(status).json({ error });
     return;
   }
-
-  await logAdminAction(adminId, "DELETE_JOB", jobId, parsed.data.reason);
   req.log.info({ jobId, adminId }, "Admin deleted job posting");
   res.json({ ok: true });
 });
 
-/** POST /admin/jobs/:id/refund — Refund locked escrow back to employer. */
+/** POST /admin/jobs/:id/refund — Refund locked escrow back to employer. Satu-satunya jalur refund (audit T3: dua endpoint duplikat sebelumnya). */
 router.post("/admin/jobs/:id/refund", async (req, res): Promise<void> => {
   const adminId = await getAdminId(req);
   if (!adminId) {
@@ -176,7 +212,7 @@ router.post("/admin/jobs/:id/refund", async (req, res): Promise<void> => {
   }
 
   const jobId = Number(req.params["id"]);
-  if (!Number.isFinite(jobId)) {
+  if (!Number.isSafeInteger(jobId) || jobId <= 0) {
     res.status(400).json({ error: "ID job tidak valid." });
     return;
   }
@@ -187,19 +223,29 @@ router.post("/admin/jobs/:id/refund", async (req, res): Promise<void> => {
     return;
   }
 
-  const [gig] = await db
-    .update(gigsTable)
-    .set({ escrowStatus: "refunded", broadcastActive: false })
-    .where(eq(gigsTable.id, jobId))
-    .returning();
+  const result = await db.transaction(async (tx) => {
+    const [gig] = await tx.select().from(gigsTable).where(eq(gigsTable.id, jobId)).for("update").limit(1);
+    if (!gig) return { error: "not_found" as const };
+    if (!["pending", "processing", "locked", "disputed_active"].includes(gig.escrowStatus ?? "")) {
+      return { error: "invalid_status" as const };
+    }
+    const credited = await creditedWagesForJob(tx, gig.id);
+    if (credited > 0) return { error: "already_paid_out" as const };
+    const [updated] = await tx
+      .update(gigsTable)
+      .set({ escrowStatus: "refunded" })
+      .where(eq(gigsTable.id, jobId))
+      .returning();
+    await tx.insert(adminLogsTable).values({ adminId, action: "REFUND_JOB", targetId: String(jobId), reason: parsed.data.reason });
+    return { gig: updated };
+  });
 
-  if (!gig) {
-    res.status(404).json({ error: "Job tidak ditemukan." });
+  if ("error" in result) {
+    const status = result.error === "not_found" ? 404 : 409;
+    res.status(status).json({ error: result.error });
     return;
   }
-
-  broadcastGig(gig);
-  await logAdminAction(adminId, "REFUND_JOB", jobId, parsed.data.reason);
+  broadcastGig(result.gig);
   req.log.info({ jobId, adminId }, "Admin issued escrow refund for job");
   res.json({ ok: true });
 });
@@ -310,58 +356,6 @@ router.get("/admin/radar-alerts", async (req, res): Promise<void> => {
     .limit(200);
 
   res.json(alerts);
-});
-
-/**
- * GET /admin/security-events — catatan percobaan serangan (login brute-force,
- * input injeksi, CSRF, upload berbahaya, webhook palsu) + ringkasan 24 jam.
- * Query: ?severity=high|warn|info  &type=<jenis>
- */
-router.get("/admin/security-events", async (req, res): Promise<void> => {
-  if (!(await requireAdmin(req))) {
-    res.status(401).json({ error: "Sesi admin tidak valid." });
-    return;
-  }
-
-  const severity = typeof req.query["severity"] === "string" ? req.query["severity"] : "";
-  const type = typeof req.query["type"] === "string" ? req.query["type"] : "";
-  const filters = [];
-  if (["high", "warn", "info"].includes(severity)) filters.push(eq(securityEventsTable.severity, severity));
-  if (/^[a-z_]{1,40}$/.test(type)) filters.push(eq(securityEventsTable.type, type));
-
-  const since = new Date(Date.now() - 24 * 3600 * 1000);
-
-  const [events, byType, topIps] = await Promise.all([
-    db.select().from(securityEventsTable)
-      .where(filters.length ? and(...filters) : undefined)
-      .orderBy(desc(securityEventsTable.createdAt))
-      .limit(200),
-    db.select({
-      type: securityEventsTable.type,
-      severity: securityEventsTable.severity,
-      count: sql<number>`count(*)::int`,
-    }).from(securityEventsTable)
-      .where(gte(securityEventsTable.createdAt, since))
-      .groupBy(securityEventsTable.type, securityEventsTable.severity),
-    db.select({
-      ip: securityEventsTable.ip,
-      count: sql<number>`count(*)::int`,
-    }).from(securityEventsTable)
-      .where(gte(securityEventsTable.createdAt, since))
-      .groupBy(securityEventsTable.ip)
-      .orderBy(desc(sql`count(*)`))
-      .limit(5),
-  ]);
-
-  res.json({
-    events,
-    summary: {
-      last24h: byType.reduce((n, r) => n + r.count, 0),
-      high24h: byType.filter((r) => r.severity === "high").reduce((n, r) => n + r.count, 0),
-      byType,
-      topIps,
-    },
-  });
 });
 
 export default router;

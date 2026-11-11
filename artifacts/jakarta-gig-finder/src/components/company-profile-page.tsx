@@ -17,7 +17,6 @@ interface CompanyProfilePageProps {
   onLogout: () => void;
   escrowEvents: EscrowEvent[];
   onDispute: (jobId: number) => void;
-  onAdminResolve: (jobId: number, winner: "worker" | "company") => void;
   onJobUpdate?: (job: CustomJob) => void;
   onUserUpdated?: (user: AuthUser) => void;
 }
@@ -25,10 +24,9 @@ interface CompanyProfilePageProps {
 type ProfileTab = "data" | "riwayat";
 
 export default function CompanyProfilePage({
-  currentUser, customJobs, ratings, notifications, escrowEvents, onLogout, onDispute, onAdminResolve, onJobUpdate, onUserUpdated,
+  currentUser, customJobs, ratings, notifications, escrowEvents, onLogout, onDispute, onJobUpdate, onUserUpdated,
 }: CompanyProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>("data");
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [busyJobId, setBusyJobId] = useState<number | null>(null);
   const [proofErrors, setProofErrors] = useState<Record<number, string>>({});
   const nibValid = (currentUser.nibPerusahaan?.length ?? 0) === 13;
@@ -343,49 +341,6 @@ export default function CompanyProfilePage({
               </div>
             ))}
           </div>
-
-          {/* ── Admin Escrow Key Panel ───────────────── */}
-          <button onClick={() => setShowAdminPanel(p => !p)}
-            className="w-full flex items-center justify-center gap-2 bg-gray-900 text-amber-400 text-xs font-bold py-3 rounded-2xl hover:bg-gray-800 transition-colors border border-amber-900/30">
-            <Gavel className="w-3.5 h-3.5" /> 🔑 Admin Master Escrow Key {showAdminPanel ? "▲" : "▼"}
-          </button>
-
-          {showAdminPanel && (
-            <div className="bg-gray-900 rounded-2xl border border-amber-700/30 overflow-hidden">
-              <div className="px-4 py-3 border-b border-amber-700/20 flex items-center gap-2">
-                <Gavel className="w-4 h-4 text-amber-400" />
-                <p className="text-sm font-bold text-amber-400">Admin Escrow Command Center</p>
-              </div>
-              {disputedJobs.length === 0 ? (
-                <div className="px-4 py-6 text-center">
-                  <p className="text-sm text-gray-500">Tidak ada sengketa aktif</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-800">
-                  {disputedJobs.map(job => (
-                    <div key={job.id} className="px-4 py-4 space-y-3">
-                      <div>
-                        <p className="text-sm font-bold text-white">{job.posisi}</p>
-                        <p className="text-xs text-gray-400">Dana dibekukan: {fmt(job.escrowAmount ?? 0)}</p>
-                        <p className="text-[10px] text-red-400 mt-0.5">🔴 DANA DIBEKUKAN — INVESTIGASI ADMIN</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => onAdminResolve(job.id, "worker")}
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-emerald-500 transition-colors">
-                          <CheckCircle className="w-3.5 h-3.5" /> Menangkan Pekerja
-                        </button>
-                        <button onClick={() => onAdminResolve(job.id, "company")}
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-blue-600 transition-colors">
-                          <RefreshCcw className="w-3.5 h-3.5" /> Refund ke Perusahaan
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-gray-500 text-center">Menangkan pekerja → payout pekerja sesuai snapshot dilepas; biaya admin flat telah ditagihkan saat posting. Refund perusahaan mengikuti aturan biaya sengketa.</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           <button onClick={onLogout}
             className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-500 text-sm font-semibold py-3 rounded-2xl hover:bg-red-100 transition-colors">

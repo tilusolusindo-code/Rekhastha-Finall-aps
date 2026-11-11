@@ -1053,47 +1053,6 @@ export default function Home() {
     }]);
   }, [activeJob]);
 
-  const handleAdminResolve = useCallback((jobId: number, winner: "worker" | "company") => {
-    const job = customJobs.find(j => j.id === jobId);
-    if (!job) return;
-    const escrowAmount = job.escrowAmount ?? calcTotal(job.nominal, job.pembayaran);
-    if (winner === "worker") {
-      const workerNet = job.totalWorkerPayout ??
-        calcSplit(escrowAmount, job.feeRate ?? DEFAULT_FEE_RATE).workerNet;
-      setWalletBalance(prev => prev + workerNet);
-      setWalletTransactions(prev => [...prev, {
-        id: Date.now(),
-        type: "credit" as const,
-        amount: workerNet,
-        label: "Keputusan Admin — Pekerja Menang",
-        jobTitle: job.posisi,
-        timestamp: new Date(),
-        note: "Seluruh upah yang tersimpan pada lowongan dikreditkan ke saldo pekerja.",
-      }]);
-    } else {
-      setPlatformBalance(prev => prev + Math.round(escrowAmount * ADMIN_DISPUTE_FEE));
-    }
-    const finalStatus = winner === "worker" ? "released" as const : "refunded" as const;
-    setCustomJobs(prev => prev.map(j =>
-      j.id === jobId ? { ...j, escrowStatus: finalStatus } : j
-    ));
-    setEscrowEvents(prev => [...prev, {
-      id: Date.now(),
-      jobId,
-      jobTitle: job.posisi,
-      fromStatus: "disputed",
-      toStatus: finalStatus,
-      actor: "admin",
-      amount: winner === "worker"
-        ? job.totalWorkerPayout ?? job.escrowAmount!
-        : Math.round((job.escrowAmount ?? 0) * (1 - ADMIN_DISPUTE_FEE)),
-      timestamp: new Date(),
-      note: winner === "worker"
-        ? `Admin memutuskan pekerja menang. Upah dilepas memakai nilai payout yang tersimpan.`
-        : `Admin memutuskan perusahaan menang. Refund dikurangi biaya administrasi sengketa.`,
-    }]);
-  }, [customJobs, workerProfile]);
-
   const handleWithdraw = useCallback(async (_method: string, _account: string) => {
     if (walletBalance <= 0) return;
     try {
@@ -2057,7 +2016,6 @@ export default function Home() {
               escrowEvents={escrowEvents}
               onLogout={handleLogout}
               onDispute={handleJobDispute}
-              onAdminResolve={handleAdminResolve}
               onJobUpdate={(updated) =>
                 setCustomJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)))
               }

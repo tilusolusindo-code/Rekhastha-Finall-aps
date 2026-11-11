@@ -2120,7 +2120,7 @@ export default function Home() {
                     <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${radarOn ? "translate-x-5" : "translate-x-0"}`} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
                     {verified ? (
                       <button onClick={() => setShowEarnings(true)} className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
@@ -2134,11 +2134,11 @@ export default function Home() {
                       </button>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${isSuspended ? "bg-red-100 text-red-600" : reputationPoints < 80 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
-                      {isSuspended ? "Suspended" : `Rep: ${reputationPoints}`}
-                    </span>
-                    <div data-tour="worker-tabs" className="flex bg-gray-100/80 p-1 rounded-[14px] relative">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {isSuspended && (
+                      <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-600">Suspended</span>
+                    )}
+                    <div data-tour="worker-tabs" className="flex flex-1 sm:flex-none bg-gray-100/80 p-1 rounded-[14px] relative">
                       <div className="absolute inset-y-1 w-[calc(25%-2px)] bg-white rounded-[10px] shadow-sm transition-transform duration-300 ease-out" 
                            style={{ 
                              transform: workerView === "list" ? "translateX(2px)" 

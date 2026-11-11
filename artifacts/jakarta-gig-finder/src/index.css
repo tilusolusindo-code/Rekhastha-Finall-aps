@@ -243,3 +243,14 @@
   0%, 100% { box-shadow: 0 0 12px 4px rgba(16,185,129,0.3); }
   50%       { box-shadow: 0 0 28px 12px rgba(16,185,129,0.5); }
 }
+
+/*
+ * Leaflet memberi panel peta z-index 200–1000 dan kontrolnya 800–1000. Tanpa
+ * konteks tumpukan sendiri, semuanya menimpa dialog/modal aplikasi (z-50 dst.).
+ * `isolation: isolate` mengurung z-index internal peta di dalam kontainernya,
+ * sehingga peta cukup berada di level z-index 0 terhadap UI lain.
+ */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 0;
+}

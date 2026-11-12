@@ -223,13 +223,13 @@ export default function JobSheet({
 
           {/* Header */}
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center shrink-0">
-              <FileText className="w-7 h-7 text-violet-600" />
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
+              <FileText className="w-7 h-7 text-emerald-700" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold text-gray-900 leading-tight">{job.posisi}</h2>
-                <Badge className="bg-violet-100 text-violet-700 border-0 text-xs font-semibold">Lowongan Kustom</Badge>
+                <Badge className="bg-emerald-100 text-emerald-800 border-0 text-xs font-semibold">Lowongan Kustom</Badge>
                 <Badge className={`border-0 text-xs font-semibold ${isRegular ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
                   {isRegular ? "Reguler" : "Instan"}
                 </Badge>

@@ -63,14 +63,10 @@ export default function EmergencySOS({ activeJob, workerPhone }: EmergencySOSPro
           setError(null);
           setStep("confirm");
         }}
-        className="w-full flex items-center justify-center gap-2 rounded-2xl font-black text-white text-sm py-3.5 active:scale-[0.98] transition-transform"
-        style={{
-          background: "linear-gradient(135deg,#b91c1c,#dc2626)",
-          boxShadow: "0 8px 24px rgba(220,38,38,0.45)",
-        }}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-red-600 bg-white font-bold text-red-700 text-sm py-2.5 hover:bg-red-50 active:scale-[0.98] transition-colors"
       >
-        <AlertTriangle className="w-5 h-5" />
-        🚨 LAPOR DARURAT (SOS)
+        <AlertTriangle className="w-4 h-4" />
+        Lapor darurat (SOS)
       </button>
 
       {/* ── Confirmation step ── */}

@@ -8,7 +8,6 @@ import { WalletTransaction, EscrowEvent } from "@/types/escrow";
 import EscrowWalletPanel from "@/components/escrow-wallet-panel";
 import EscrowTimeline from "@/components/escrow-timeline";
 import { submitDocuments, submitKyc } from "@/lib/auth-client";
-import { ProfileAvatar, EditProfileButton } from "@/components/profile-edit";
 import { TeamMembershipBanner } from "@/components/team-membership-banner";
 
 interface WorkerProfilePageProps {
@@ -114,9 +113,16 @@ export default function WorkerProfilePage({
         style={{ background: "linear-gradient(160deg, #065F46, #059669 80%, #10B981)" }}
       >
         <div className="relative">
-          <ProfileAvatar user={currentUser} size={80} fallbackBg="#34d399" onUserUpdated={onUserUpdated} />
+          {currentUser.googleAvatar ? (
+            <img src={currentUser.googleAvatar} alt={currentUser.name}
+              className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover" />
+          ) : (
+            <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-emerald-400 flex items-center justify-center">
+              <span className="text-2xl font-black text-white">{initials}</span>
+            </div>
+          )}
           {currentUser.linkedWithGoogle && (
-            <div className="absolute -bottom-1 -left-1 w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-md">
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-md">
               <svg width="14" height="14" viewBox="0 0 48 48">
                 <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
                 <path d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
@@ -130,9 +136,6 @@ export default function WorkerProfilePage({
         <div className="text-center">
           <h2 className="text-xl font-black text-white">{currentUser.name}</h2>
           <p className="text-sm text-emerald-100">{currentUser.email}</p>
-          <div className="mt-2 flex justify-center">
-            <EditProfileButton user={currentUser} onUserUpdated={onUserUpdated} />
-          </div>
           <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
             {currentUser.linkedWithGoogle && (
               <span className="text-[10px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">🔗 Linked with Google</span>
@@ -296,7 +299,7 @@ export default function WorkerProfilePage({
                 />
                 <div className="flex items-center gap-2">
                   <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
-                    <FileText className="h-4 w-4 shrink-0 text-violet-700" />
+                    <FileText className="h-4 w-4 shrink-0 text-emerald-800" />
                     <span className="truncate text-xs font-semibold text-gray-700">
                       {currentUser.defaultPortfolioUrl ? "Portofolio tersimpan" : "Belum ada portofolio"}
                     </span>
@@ -306,7 +309,7 @@ export default function WorkerProfilePage({
                       href={currentUser.defaultPortfolioUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-lg px-2 py-2 text-[11px] font-bold text-violet-700 hover:bg-violet-50"
+                      className="rounded-lg px-2 py-2 text-[11px] font-bold text-emerald-800 hover:bg-emerald-50"
                     >
                       Lihat
                     </a>
@@ -315,7 +318,7 @@ export default function WorkerProfilePage({
                     type="button"
                     onClick={() => portfolioInputRef.current?.click()}
                     disabled={documentUploading !== null}
-                    className="flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-700 px-3 py-2 text-[11px] font-bold text-white hover:bg-violet-800 disabled:opacity-60"
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[11px] font-bold text-white hover:bg-primary/90 disabled:opacity-60"
                   >
                     {documentUploading === "portfolio" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                     {currentUser.defaultPortfolioUrl ? "Ganti" : "Unggah"}

@@ -12,7 +12,6 @@ import RatingModal, { RatingPayload } from "@/components/rating-modal";
 import EmergencySOS from "@/components/emergency-sos";
 import BoronganWorkerPanel from "@/components/borongan-worker-panel";
 import PaySlipModal from "@/components/pay-slip-modal";
-import { FavoriteStar, WorkerStatsLine } from "@/components/worker-badges";
 import EarningsDashboard from "@/components/earnings-dashboard";
 import ChatModal from "@/components/chat-modal";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
@@ -113,9 +112,6 @@ function toWorkerApplicationNotification(
     workerId: row.workerId,
     applicantName: row.workerName,
     applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
-    workerSkills: row.workerSkills,
-    workerStats: row.workerStats,
-    isFavorite: row.isFavorite,
     applicantNikMasked: row.workerNikMasked,
     applicantNpwpMasked: row.workerNpwpMasked,
     hasNpwp: row.hasNpwp,
@@ -234,7 +230,6 @@ export default function Home() {
       };
       const entries: WalletTransaction[] = data.entries.map((entry) => ({
         id: entry.id,
-        slipId: entry.id,
         type: "credit",
         amount: entry.amount,
         label: entry.description,
@@ -538,16 +533,12 @@ export default function Home() {
             .filter((row) => !existingIds.has(row.id) && isFirstSync)
             .map((row) => ({
               id: nextNotifId++,
-              hydrated: true,
               serverId: row.id,
               jobId: row.jobId,
               jobTitle: row.jobTitle,
               workerId: row.workerId,
               applicantName: row.workerName,
               applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
-    workerSkills: row.workerSkills,
-    workerStats: row.workerStats,
-    isFavorite: row.isFavorite,
               applicantNikMasked: row.workerNikMasked,
               applicantNpwpMasked: row.workerNpwpMasked,
               hasNpwp: row.hasNpwp,
@@ -660,16 +651,12 @@ export default function Home() {
             .filter((row) => !existingIds.has(row.id))
             .map((row) => ({
               id: nextNotifId++,
-              hydrated: true,
               serverId: row.id,
               jobId: row.jobId,
               jobTitle: row.jobTitle,
               workerId: row.workerId,
               applicantName: row.workerName,
               applicantAvatarUrl: row.workerAvatarUrl ?? undefined,
-    workerSkills: row.workerSkills,
-    workerStats: row.workerStats,
-    isFavorite: row.isFavorite,
               applicantNikMasked: row.workerNikMasked,
               applicantNpwpMasked: row.workerNpwpMasked,
               hasNpwp: row.hasNpwp,
@@ -1064,6 +1051,47 @@ export default function Home() {
     }]);
   }, [activeJob]);
 
+  const handleAdminResolve = useCallback((jobId: number, winner: "worker" | "company") => {
+    const job = customJobs.find(j => j.id === jobId);
+    if (!job) return;
+    const escrowAmount = job.escrowAmount ?? calcTotal(job.nominal, job.pembayaran);
+    if (winner === "worker") {
+      const workerNet = job.totalWorkerPayout ??
+        calcSplit(escrowAmount, job.feeRate ?? DEFAULT_FEE_RATE).workerNet;
+      setWalletBalance(prev => prev + workerNet);
+      setWalletTransactions(prev => [...prev, {
+        id: Date.now(),
+        type: "credit" as const,
+        amount: workerNet,
+        label: "Keputusan Admin — Pekerja Menang",
+        jobTitle: job.posisi,
+        timestamp: new Date(),
+        note: "Seluruh upah yang tersimpan pada lowongan dikreditkan ke saldo pekerja.",
+      }]);
+    } else {
+      setPlatformBalance(prev => prev + Math.round(escrowAmount * ADMIN_DISPUTE_FEE));
+    }
+    const finalStatus = winner === "worker" ? "released" as const : "refunded" as const;
+    setCustomJobs(prev => prev.map(j =>
+      j.id === jobId ? { ...j, escrowStatus: finalStatus } : j
+    ));
+    setEscrowEvents(prev => [...prev, {
+      id: Date.now(),
+      jobId,
+      jobTitle: job.posisi,
+      fromStatus: "disputed",
+      toStatus: finalStatus,
+      actor: "admin",
+      amount: winner === "worker"
+        ? job.totalWorkerPayout ?? job.escrowAmount!
+        : Math.round((job.escrowAmount ?? 0) * (1 - ADMIN_DISPUTE_FEE)),
+      timestamp: new Date(),
+      note: winner === "worker"
+        ? `Admin memutuskan pekerja menang. Upah dilepas memakai nilai payout yang tersimpan.`
+        : `Admin memutuskan perusahaan menang. Refund dikurangi biaya administrasi sengketa.`,
+    }]);
+  }, [customJobs, workerProfile]);
+
   const handleWithdraw = useCallback(async (_method: string, _account: string) => {
     if (walletBalance <= 0) return;
     try {
@@ -1234,7 +1262,7 @@ export default function Home() {
   // ── Employer toast: detect new applicants ───────────────────────
   useEffect(() => {
     if (mode !== "perusahaan") return;
-    const newest = notifications.find(n => !n.hydrated && !seenNotifIds.current.has(n.id));
+    const newest = notifications.find(n => !seenNotifIds.current.has(n.id));
     if (newest && !applicantToast) {
       seenNotifIds.current.add(newest.id);
       setApplicantToast(newest);
@@ -1771,10 +1799,7 @@ export default function Home() {
           onDownloadSlip={() => { setShowEarnings(false); setShowPaySlip(true); }} onClose={() => setShowEarnings(false)} />
       )}
       {showManualPayments && currentUser?.role === "perusahaan" && (
-        <ManualPaymentsPanel
-          onClose={() => setShowManualPayments(false)}
-          onGigCancelled={(id) => setCustomJobs((prev) => prev.filter((j) => j.id !== id))}
-        />
+        <ManualPaymentsPanel onClose={() => setShowManualPayments(false)} />
       )}
       {chatContext && (
         <ChatModal jobTitle={chatContext.jobTitle} nominal={chatContext.nominal}
@@ -1912,7 +1937,7 @@ export default function Home() {
                   return (
                     <div key={job.id} className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center font-black text-sm text-white ${job.isAgency ? "bg-gradient-to-br from-blue-600 to-violet-600" : "bg-violet-600"}`}>
+                        <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center font-black text-sm text-white ${job.isAgency ? "bg-gradient-to-br from-blue-600 to-emerald-700" : "bg-emerald-700"}`}>
                           {job.isAgency ? "AG" : "+"}
                         </div>
                         <div className="min-w-0">
@@ -1970,11 +1995,9 @@ export default function Home() {
                             </div>
                             <p className="text-xs text-gray-500 truncate">{n.jobTitle}</p>
                             {n.hasNpwp && <p className="text-[10px] text-primary font-medium mt-0.5">✓ NPWP Terverifikasi</p>}
-                            <WorkerStatsLine stats={n.workerStats} skills={n.workerSkills} />
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <FavoriteStar workerId={n.workerId} initial={n.isFavorite ?? false} />
                           {job && (
                             <button
                               onClick={() => setAttendanceQrJob(job)}
@@ -2032,6 +2055,7 @@ export default function Home() {
               escrowEvents={escrowEvents}
               onLogout={handleLogout}
               onDispute={handleJobDispute}
+              onAdminResolve={handleAdminResolve}
               onJobUpdate={(updated) =>
                 setCustomJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)))
               }
@@ -2123,7 +2147,7 @@ export default function Home() {
                     <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${radarOn ? "translate-x-5" : "translate-x-0"}`} />
                   </button>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {verified ? (
                       <button onClick={() => setShowEarnings(true)} className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
@@ -2137,11 +2161,11 @@ export default function Home() {
                       </button>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    {isSuspended && (
-                      <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-600">Suspended</span>
-                    )}
-                    <div data-tour="worker-tabs" className="flex flex-1 sm:flex-none bg-gray-100/80 p-1 rounded-[14px] relative">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${isSuspended ? "bg-red-100 text-red-600" : reputationPoints < 80 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
+                      {isSuspended ? "Suspended" : `Rep: ${reputationPoints}`}
+                    </span>
+                    <div data-tour="worker-tabs" className="flex bg-gray-100/80 p-1 rounded-[14px] relative">
                       <div className="absolute inset-y-1 w-[calc(25%-2px)] bg-white rounded-[10px] shadow-sm transition-transform duration-300 ease-out" 
                            style={{ 
                              transform: workerView === "list" ? "translateX(2px)" 
@@ -2297,7 +2321,6 @@ export default function Home() {
                   onDispute={handleJobDispute}
                   onStatusChange={handleStatusChange}
                   onCancelJob={handleCancelJob}
-                  onUnpaidCancelled={(id) => setCustomJobs((prev) => prev.filter((j) => j.id !== id))}
                 />
               )
 
@@ -2352,7 +2375,7 @@ export default function Home() {
                   )}
                   {mapPurpleJobs.length > 0 ? (
                     <div className="flex items-center gap-2">
-                      <span className="w-3.5 h-3.5 rounded-[3px] bg-violet-600 border-2 border-white shadow-sm shrink-0 flex items-center justify-center text-white text-[8px] font-black">+</span>
+                      <span className="w-3.5 h-3.5 rounded-[3px] bg-emerald-700 border-2 border-white shadow-sm shrink-0 flex items-center justify-center text-white text-[8px] font-black">+</span>
                       <span className="text-[10px] font-medium text-gray-600">{mapPurpleJobs.length} Lowongan</span>
                     </div>
                   ) : (!radarOn || instantGigs.length === 0) ? <p className="text-[10px] text-gray-400">Belum ada lowongan</p> : null}
@@ -2361,7 +2384,7 @@ export default function Home() {
                   <div className="absolute bottom-4 left-4 right-4 z-10 bg-white rounded-xl shadow-lg border border-gray-100 p-3 flex justify-between items-center">
                     <div>
                       <p className="text-xs font-bold text-gray-900 truncate">{selectedJob.posisi}</p>
-                      <p className="text-[10px] text-violet-600 font-medium">Klik pin untuk detail</p>
+                      <p className="text-[10px] text-emerald-700 font-medium">Klik pin untuk detail</p>
                     </div>
                     <button onClick={() => setSelectedJob(null)} className="text-gray-400 p-1"><X className="w-4 h-4" /></button>
                   </div>
@@ -2422,20 +2445,20 @@ export default function Home() {
                   )}
 
                   {allJobs.length > 0 && (
-                    <button onClick={() => setWorkerView("map")} className="w-full flex items-center justify-center gap-2 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold py-2.5 rounded-xl hover:bg-violet-100 transition-colors">
+                    <button onClick={() => setWorkerView("map")} className="w-full flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold py-2.5 rounded-xl hover:bg-emerald-100 transition-colors">
                       <MapIcon className="w-4 h-4" /> Lihat {allJobs.length} lowongan di Peta Radar
                     </button>
                   )}
 
                   {allJobs.map((job) => (
                     <div key={job.id} data-testid={`card-custom-job-${job.id}`}
-                      className={`bg-white p-4 rounded-xl border shadow-sm flex flex-col gap-3 ${job.flaggedSuspect ? "border-yellow-300 bg-yellow-50/50" : "border-violet-100"}`}>
+                      className={`bg-white p-4 rounded-xl border shadow-sm flex flex-col gap-3 ${job.flaggedSuspect ? "border-yellow-300 bg-yellow-50/50" : "border-emerald-100"}`}>
                       <div className="flex justify-between items-start">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-gray-900 truncate">{job.posisi}</h3>
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            {job.isAgency ? <span className="text-[10px] font-black px-2 py-0.5 rounded bg-gradient-to-r from-blue-100 to-violet-100 text-violet-700">[AGENCY JOB]</span>
-                              : <span className="text-xs text-violet-600 font-medium">Lowongan Kustom</span>}
+                            {job.isAgency ? <span className="text-[10px] font-black px-2 py-0.5 rounded bg-gradient-to-r from-blue-100 to-emerald-100 text-emerald-800">[AGENCY JOB]</span>
+                              : <span className="text-xs text-emerald-700 font-medium">Lowongan Kustom</span>}
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${job.hiringMode === "lama" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
                               {job.hiringMode === "lama" ? "Reguler" : "Instan"}
                             </span>
@@ -2443,7 +2466,7 @@ export default function Home() {
                             {job.flaggedSuspect && <span className="text-[10px] font-bold text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">⚠️ Ditinjau</span>}
                           </div>
                         </div>
-                        <span className="text-xs font-semibold bg-violet-100 text-violet-700 px-2 py-1 rounded ml-2 shrink-0">Baru</span>
+                        <span className="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-1 rounded ml-2 shrink-0">Baru</span>
                       </div>
                       <p className="text-sm text-gray-600 line-clamp-2">{job.deskripsi}</p>
                       {job.hiringMode === "lama" && (job.jobDate || job.jamKerja || job.alamat) && (
@@ -2476,7 +2499,7 @@ export default function Home() {
                       </div>
                       <div className="flex gap-2">
                         <Button disabled={isSuspended}
-                          className={`flex-1 font-semibold ${isSuspended ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-violet-600 hover:bg-violet-700 text-white"}`}
+                          className={`flex-1 font-semibold ${isSuspended ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-primary hover:bg-primary/90 text-white"}`}
                           onClick={() => !isSuspended && setSelectedJob(job)}>
                           {isSuspended ? "Ditangguhkan" : "Detail & Lamar"}
                         </Button>

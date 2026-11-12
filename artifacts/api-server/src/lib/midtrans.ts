@@ -184,6 +184,36 @@ export async function getMidtransTransactionStatus(orderId: string): Promise<Mid
   }
 }
 
+export type MidtransCancelResult = "cancelled" | "nothing_to_cancel" | "failed";
+
+/**
+ * Batalkan transaksi yang masih pending di Midtrans (nomor VA / QRIS langsung mati).
+ * - "nothing_to_cancel": belum ada transaksi (pembeli belum memilih metode) atau sudah final
+ *   (lunas/kedaluwarsa), jadi tidak ada yang perlu dibatalkan.
+ * - "failed": Midtrans tidak terjangkau / ditolak; pemanggil tetap lanjut (best effort).
+ */
+export async function cancelMidtransTransaction(orderId: string): Promise<MidtransCancelResult> {
+  const serverKey = cleanKey(process.env["MIDTRANS_SERVER_KEY"]);
+  if (!serverKey) return "failed";
+  const base = isMidtransProduction() ? "https://api.midtrans.com" : "https://api.sandbox.midtrans.com";
+  try {
+    const res = await fetch(`${base}/v2/${encodeURIComponent(orderId)}/cancel`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: basicAuth(serverKey) },
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = (await res.json().catch(() => null)) as { status_code?: string } | null;
+    const code = String(data?.status_code ?? res.status);
+    if (code === "200") return "cancelled";
+    if (code === "404" || code === "412") return "nothing_to_cancel";
+    logger.warn({ orderId, code }, "[midtrans] Cancel ditolak");
+    return "failed";
+  } catch (err) {
+    logger.error({ err, orderId }, "[midtrans] Cancel API gagal dihubungi");
+    return "failed";
+  }
+}
+
 export function logMidtransMode(): void {
   logger.info(
     { isProduction: isMidtransProduction(), mode: isMidtransProduction() ? "LIVE" : "SANDBOX" },

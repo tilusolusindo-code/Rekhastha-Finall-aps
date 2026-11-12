@@ -61,8 +61,20 @@ router.get("/manual-payments/mine", async (req, res): Promise<void> => {
     .from(manualPaymentsTable)
     .where(eq(manualPaymentsTable.payerId, user.id))
     .orderBy(desc(manualPaymentsTable.createdAt));
+  // Nama lowongan untuk tagihan gig_escrow agar daftar pembayaran mudah dikenali.
+  const gigIds = payments
+    .filter((p) => p.targetType === "gig_escrow" && /^\d+$/.test(p.targetId))
+    .map((p) => Number(p.targetId));
+  const gigTitles = new Map<number, string>();
+  if (gigIds.length > 0) {
+    const gigRows = await db.select({ id: gigsTable.id, posisi: gigsTable.posisi }).from(gigsTable).where(inArray(gigsTable.id, gigIds));
+    for (const g of gigRows) gigTitles.set(g.id, g.posisi);
+  }
   res.json({
-    payments,
+    payments: payments.map((p) => ({
+      ...p,
+      title: p.targetType === "gig_escrow" ? gigTitles.get(Number(p.targetId)) ?? null : null,
+    })),
     instructions: settings
       ? {
           bankName: settings.bankName,

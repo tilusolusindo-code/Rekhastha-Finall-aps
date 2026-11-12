@@ -34,8 +34,6 @@ interface Props {
   amount: number;
   /** Rincian untuk posting lowongan: upah (escrow) + biaya layanan. */
   breakdown?: { wage: number; fee: number };
-  /** Bila diisi, tampil tautan untuk beralih ke transfer bank manual. */
-  onUseManual?: () => void;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -45,7 +43,7 @@ type Step = "idle" | "loading" | "redirecting" | "error";
 const fmt = (n: number) => "Rp " + Math.round(n).toLocaleString("id-ID");
 
 export default function MidtransSnapModal({
-  type, planId, planLabel, jobId, jobTitle, amount, breakdown, onUseManual, onClose,
+  type, planId, planLabel, jobId, jobTitle, amount, breakdown, onClose,
 }: Props) {
   const [step, setStep] = useState<Step>("idle");
   const [errMsg, setErrMsg] = useState("");
@@ -191,15 +189,6 @@ export default function MidtransSnapModal({
                   <><CreditCard className="w-4 h-4" /> Bayar {fmt(amount)}</>
                 )}
               </button>
-              {onUseManual && step === "idle" && (
-                <button
-                  type="button"
-                  onClick={onUseManual}
-                  className="w-full text-center text-xs font-semibold text-gray-500 underline underline-offset-2"
-                >
-                  Lebih suka transfer bank manual
-                </button>
-              )}
             </>
           )}
         </div>

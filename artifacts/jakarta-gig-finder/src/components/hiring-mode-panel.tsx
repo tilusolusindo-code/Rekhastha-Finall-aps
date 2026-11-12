@@ -1469,7 +1469,6 @@ export default function HiringModePanel({
         jobTitle={snapJob.title}
         amount={snapJob.amount}
         breakdown={{ wage: snapJob.wage, fee: snapJob.fee }}
-        onUseManual={onOpenPayments ? () => { setSnapJob(null); onOpenPayments(); } : undefined}
         onSuccess={() => { const id = snapJob.id; setSnapJob(null); onJobPaid?.(id); }}
         onClose={() => setSnapJob(null)}
       />

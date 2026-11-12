@@ -1771,7 +1771,10 @@ export default function Home() {
           onDownloadSlip={() => { setShowEarnings(false); setShowPaySlip(true); }} onClose={() => setShowEarnings(false)} />
       )}
       {showManualPayments && currentUser?.role === "perusahaan" && (
-        <ManualPaymentsPanel onClose={() => setShowManualPayments(false)} />
+        <ManualPaymentsPanel
+          onClose={() => setShowManualPayments(false)}
+          onGigCancelled={(id) => setCustomJobs((prev) => prev.filter((j) => j.id !== id))}
+        />
       )}
       {chatContext && (
         <ChatModal jobTitle={chatContext.jobTitle} nominal={chatContext.nominal}

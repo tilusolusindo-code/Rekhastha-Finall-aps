@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { logger } from "./logger";
+import { cancelPendingFor } from "./midtrans-ledger";
 
 /** Lowongan yang belum dibayar ditutup otomatis setelah selama ini. */
 export const UNPAID_GIG_TTL_HOURS = 24;
@@ -34,7 +35,7 @@ export async function cancelUnpaidGig(
   gigId: number,
   employerId: string,
 ): Promise<"cancelled" | "not_found" | "not_unpaid"> {
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const found = await tx.execute<{ employer_id: string | null; payment_status: string }>(sql`
       SELECT employer_id, payment_status FROM gigs WHERE id = ${gigId} FOR UPDATE
     `);
@@ -48,6 +49,9 @@ export async function cancelUnpaidGig(
     await cancelGigs(tx, [gigId]);
     return "cancelled" as const;
   });
+  // Matikan nomor bayar / QRIS Midtrans yang masih hidup agar tidak bisa dibayar setelah ini.
+  if (result === "cancelled") await cancelPendingFor("posting", gigId);
+  return result;
 }
 
 /**
@@ -57,7 +61,7 @@ export async function cancelUnpaidGig(
  */
 export async function expireStaleUnpaidGigs(employerId: string): Promise<number> {
   try {
-    return await db.transaction(async (tx) => {
+    const ids = await db.transaction(async (tx) => {
       const stale = await tx.execute<{ id: number }>(sql`
         SELECT g.id FROM gigs g
         WHERE g.employer_id = ${employerId}
@@ -76,15 +80,17 @@ export async function expireStaleUnpaidGigs(employerId: string): Promise<number>
         FOR UPDATE OF g
       `);
       const ids = stale.rows.map((r) => Number(r.id));
-      if (ids.length === 0) return 0;
+      if (ids.length === 0) return [] as number[];
       const list = sql.join(ids.map((id) => sql`${id}`), sql`, `);
       await tx.execute(sql`
         UPDATE gigs SET payment_status = 'cancelled', escrow_status = 'cancelled', broadcast_active = false
         WHERE id IN (${list}) AND payment_status = 'awaiting_payment'
       `);
       await cancelGigs(tx, ids);
-      return ids.length;
+      return ids;
     });
+    for (const id of ids) await cancelPendingFor("posting", id);
+    return ids.length;
   } catch (err) {
     logger.error({ err, employerId }, "[unpaid-gigs] gagal menutup lowongan kedaluwarsa");
     return 0;

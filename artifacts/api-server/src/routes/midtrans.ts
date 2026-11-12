@@ -32,6 +32,12 @@ import {
 } from "../lib/midtrans";
 import { broadcastGig, broadcastInstantActivated } from "../lib/realtime";
 import { logger } from "../lib/logger";
+import {
+  cancelPendingFor,
+  cancelPendingSubscriptionsOf,
+  recordSnapOrder,
+  updateLedger,
+} from "../lib/midtrans-ledger";
 
 const router: IRouter = Router();
 logMidtransMode();
@@ -82,6 +88,10 @@ router.post("/payments/midtrans/snap/subscription", async (req, res): Promise<vo
   }
 
   try {
+    // Transaksi langganan lama yang masih pending dimatikan agar tidak menumpuk
+    // dan pembeli bebas memilih metode bayar lain.
+    await cancelPendingSubscriptionsOf(user.id);
+
     // Buat subscription order dulu
     const [order] = await db
       .insert(subscriptionOrdersTable)
@@ -126,6 +136,10 @@ router.post("/payments/midtrans/snap/subscription", async (req, res): Promise<vo
       WHERE id = ${order.id}
     `).catch(() => {}); // kolom mungkin belum ada, tidak blocking
 
+    await recordSnapOrder({
+      orderId, kind: "subscription", refId: order.id, grossAmount: plan.promoPrice,
+      snapToken: snapResponse.token, redirectUrl: snapResponse.redirect_url,
+    });
     logger.info({ orderId, planId: plan.id, userId: user.id }, "[midtrans] Snap subscription created");
 
     res.json({
@@ -203,6 +217,10 @@ router.post("/payments/midtrans/snap/posting", async (req, res): Promise<void> =
       return;
     }
 
+    // Transaksi lama untuk lowongan ini yang masih pending dimatikan dulu, supaya
+    // pembeli bisa memilih metode bayar lain dan tidak ada dua nomor bayar yang hidup.
+    await cancelPendingFor("posting", gigId);
+
     const orderId = makeOrderId("POST", gigId);
     const APP_BASE = appBase(req);
     const items = [
@@ -224,6 +242,10 @@ router.post("/payments/midtrans/snap/posting", async (req, res): Promise<void> =
       custom_field2: String(gigId),
     });
 
+    await recordSnapOrder({
+      orderId, kind: "posting", refId: gigId, grossAmount: amount,
+      snapToken: snapResponse.token, redirectUrl: snapResponse.redirect_url,
+    });
     logger.info({ orderId, gigId, amount }, "[midtrans] Snap posting created");
     res.json({
       snapToken: snapResponse.token,
@@ -255,6 +277,8 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
     signature_key?: string;
     transaction_status?: string;
     fraud_status?: string;
+    payment_type?: string;
+    transaction_id?: string;
   };
 
   const orderId = typeof body.order_id === "string" ? body.order_id : "";
@@ -302,6 +326,12 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
     fraudStatus = lookup.data.fraud_status;
     paidAmount = lookup.data.gross_amount;
   }
+
+  await updateLedger(orderId, transactionStatus, {
+    paymentType: typeof body.payment_type === "string" ? body.payment_type : undefined,
+    fraudStatus,
+    transactionId: typeof body.transaction_id === "string" ? body.transaction_id : undefined,
+  });
 
   const isSuccess =
     (transactionStatus === "capture" && fraudStatus === "accept") ||
@@ -510,6 +540,44 @@ router.get("/payments/midtrans/status/:orderId", async (req, res): Promise<void>
   }
 
   res.status(404).json({ error: "Order tidak ditemukan." });
+});
+
+// ── GET /api/payments/midtrans/mine ───────────────────────────────────────────
+/**
+ * Pembayaran langganan Midtrans yang masih menunggu (dibuat <24 jam lalu).
+ * Tagihan lowongan tidak dicantumkan di sini: daftarnya sudah ada di data lowongan,
+ * dan tombol "Bayar" selalu membuat transaksi baru.
+ */
+router.get("/payments/midtrans/mine", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) { res.status(401).json({ error: "Login diperlukan." }); return; }
+  const rows = await db.execute(sql`
+    SELECT m.order_id AS "orderId", m.redirect_url AS "redirectUrl", m.gross_amount AS amount,
+           m.created_at AS "createdAt", sp.label AS label
+    FROM midtrans_payments m
+    JOIN subscription_orders so ON so.id::text = m.job_id
+    JOIN subscription_plans sp ON sp.id = so.plan_id
+    WHERE m.job_type = 'subscription' AND m.status = 'pending'
+      AND so.company_id = ${user.id} AND so.status IS DISTINCT FROM 'paid'
+      AND m.created_at > now() - interval '24 hours'
+    ORDER BY m.created_at DESC
+  `).catch(() => ({ rows: [] }));
+  res.json({ subscriptions: rows.rows });
+});
+
+// ── POST /api/payments/midtrans/subscription/:orderId/cancel ──────────────────
+router.post("/payments/midtrans/subscription/:orderId/cancel", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user) { res.status(401).json({ error: "Login diperlukan." }); return; }
+  const match = ORDER_ID_RE.exec(String(req.params["orderId"] ?? ""));
+  if (!match || match[1] !== "SUB") { res.status(400).json({ error: "Order tidak valid." }); return; }
+  const owned = await db.execute(sql`
+    SELECT id FROM subscription_orders
+    WHERE id = ${Number(match[2])} AND company_id = ${user.id} AND status IS DISTINCT FROM 'paid' LIMIT 1
+  `).catch(() => ({ rows: [] }));
+  if (!owned.rows[0]) { res.status(404).json({ error: "Pembayaran tidak ditemukan atau sudah lunas." }); return; }
+  await cancelPendingFor("subscription", match[2] as string);
+  res.json({ ok: true });
 });
 
 export default router;

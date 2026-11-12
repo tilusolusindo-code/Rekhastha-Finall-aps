@@ -51,7 +51,7 @@ function formatRp(v: number): string {
   return "Rp " + Math.round(v).toLocaleString("id-ID");
 }
 
-type Tab = "dashboard" | "security" | "revenue" | "escrow" | "manual_finance" | "resolution" | "onsite" | "users" | "kyc" | "academy" | "jobs" | "logs" | "akun";
+type Tab = "dashboard" | "refunds" | "security" | "revenue" | "escrow" | "manual_finance" | "resolution" | "onsite" | "users" | "kyc" | "academy" | "jobs" | "logs" | "akun";
 
 function useAdminRealtimeRefresh(
   load: () => Promise<void>,
@@ -2885,6 +2885,114 @@ function SecurityTab() {
   );
 }
 
+type RefundRow = {
+  id: number;
+  gigId: number;
+  employerName: string | null;
+  employerEmail: string | null;
+  posisi: string | null;
+  amount: number;
+  source: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+  paidAt: string | null;
+  paidNote: string | null;
+};
+
+function RefundsTab() {
+  const [rows, setRows] = useState<RefundRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/refunds", { credentials: "include", cache: "no-store" });
+      const data = (await res.json()) as { refunds?: RefundRow[]; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Gagal memuat refund.");
+      setRows(data.refunds ?? []);
+      setError("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memuat refund.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+
+  async function markPaid(row: RefundRow) {
+    const note = window.prompt(`Transfer Rp ${row.amount.toLocaleString("id-ID")} ke ${row.employerName ?? row.employerEmail ?? "pemberi kerja"} sudah dilakukan?\nIsi referensi transfer (mis. nomor referensi bank):`);
+    if (!note || note.trim().length < 3) return;
+    setBusyId(row.id);
+    try {
+      const res = await fetch(`/api/admin/refunds/${row.id}/paid`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: note.trim() }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Gagal menyimpan.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menyimpan.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const pending = rows.filter((r) => r.status === "pending");
+  const pendingTotal = pending.reduce((sum, r) => sum + r.amount, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-[#d8e4db] bg-[#fffefa] p-4">
+        <p className="text-xs font-bold text-[#4d775e]">Perlu dikembalikan ke pemberi kerja</p>
+        <p className="mt-1 text-2xl font-black text-[#153c2e]">Rp {pendingTotal.toLocaleString("id-ID")}</p>
+        <p className="text-xs text-[#7d8c83]">{pending.length} refund menunggu transfer. Lowongan yang berakhir tanpa pekerja diterima masuk di sini otomatis.</p>
+      </div>
+      {error && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {loading ? (
+        <p className="py-8 text-center text-sm text-[#7d8c83]">Memuat…</p>
+      ) : rows.length === 0 ? (
+        <p className="py-8 text-center text-sm text-[#7d8c83]">Belum ada refund.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((r) => (
+            <div key={r.id} className="rounded-2xl border border-[#d8e4db] bg-white p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#153c2e]">{r.posisi ?? `Lowongan #${r.gigId}`}</p>
+                  <p className="text-xs text-[#7d8c83]">{r.employerName ?? "—"} · {r.employerEmail ?? "—"}</p>
+                  <p className="mt-1 text-xs text-[#4d775e]">{r.source === "auto_unused" ? "Otomatis" : "Keputusan admin"} · {new Date(r.createdAt).toLocaleDateString("id-ID")}</p>
+                  {r.reason && <p className="mt-1 text-xs text-[#7d8c83]">{r.reason}</p>}
+                  {r.status === "paid" && <p className="mt-1 text-xs text-emerald-700">Dibayar {r.paidAt ? new Date(r.paidAt).toLocaleDateString("id-ID") : ""} · {r.paidNote}</p>}
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black text-[#153c2e]">Rp {r.amount.toLocaleString("id-ID")}</p>
+                  {r.status === "pending" ? (
+                    <button
+                      type="button"
+                      disabled={busyId === r.id}
+                      onClick={() => void markPaid(r)}
+                      className="mt-1 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                    >
+                      {busyId === r.id ? "…" : "Tandai sudah ditransfer"}
+                    </button>
+                  ) : (
+                    <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800">Sudah dikembalikan</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LogsTab() {
   const [logs, setLogs] = useState<AdminLogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3002,6 +3110,7 @@ function CommandCenter({
     { id: "revenue", label: "Analitik Pendapatan", icon: <LineChartIcon className="w-4 h-4" /> },
     { id: "escrow", label: "Pengawasan Escrow", icon: <Wallet className="w-4 h-4" /> },
     { id: "manual_finance", label: "Pembayaran Manual", icon: <Banknote className="w-4 h-4" /> },
+    { id: "refunds", label: "Refund Dana", icon: <Wallet className="w-4 h-4" /> },
     { id: "jobs", label: "Manajemen Job", icon: <Briefcase className="w-4 h-4" /> },
     { id: "resolution", label: "Pusat Resolusi", icon: <Gavel className="w-4 h-4" /> },
     { id: "onsite", label: "Monitoring Proyek Fisik", icon: <HardHat className="w-4 h-4" /> },
@@ -3109,6 +3218,7 @@ function CommandCenter({
         {tab === "revenue" && <RevenueTab />}
         {tab === "escrow" && <EscrowTab trainingPassed={trainingPassed} requireAcademy={requireAcademy} />}
         {tab === "manual_finance" && <ManualFinanceAdminTab />}
+        {tab === "refunds" && <RefundsTab />}
         {tab === "jobs" && <JobsTab />}
         {tab === "resolution" && <ResolutionTab />}
         {tab === "onsite" && <OnsiteTab />}

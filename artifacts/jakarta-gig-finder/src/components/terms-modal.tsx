@@ -12,7 +12,7 @@ interface Clause {
 const EMPLOYER_CLAUSES: Clause[] = [
   {
     title: "Data pemberi kerja",
-    body: "Isi informasi pemberi kerja dan lowongan secara akurat. Data yang diminta bergantung pada kategori akun. Tinjau permintaan data dengan cermat; kebijakan privasi final belum tersedia.",
+    body: "Isi informasi pemberi kerja dan lowongan secara akurat. Data yang diminta bergantung pada kategori akun. Tinjau permintaan data dengan cermat dan baca Kebijakan Privasi di halaman /privasi.",
   },
   {
     title: "Pembayaran dan aktivasi lowongan",
@@ -109,8 +109,8 @@ export default function TermsModal({ onClose }: TermsModalProps) {
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
           <p className="text-[11px] text-gray-500 leading-relaxed text-justify">
             Ini adalah ringkasan operasional, bukan perjanjian final atau nasihat hukum. Syarat dan
-            Ketentuan serta Kebijakan Privasi final harus ditinjau dan disahkan sebelum pendaftaran
-            publik dibuka.
+            Ketentuan final harus ditinjau dan disahkan sebelum pendaftaran publik dibuka. Kebijakan
+            Privasi tersedia di halaman /privasi.
           </p>
 
           <div>
@@ -152,9 +152,9 @@ export default function TermsModal({ onClose }: TermsModalProps) {
                 BPJS Ketenagakerjaan, asuransi, atau perlindungan sosial.
               </p>
               <p className="text-[11px] text-amber-950 leading-relaxed text-justify">
-                Kebijakan Privasi yang menjelaskan data yang dikumpulkan, penggunaannya, penyimpanan,
-                dan penghapusannya belum difinalkan. Jangan membuka pendaftaran publik sebelum
-                kebijakan tersebut dan proses pembayaran ditinjau oleh pihak yang berwenang.
+                Kebijakan Privasi (halaman /privasi) menjelaskan data yang dikumpulkan, penggunaannya,
+                penyimpanan, dan penghapusannya. Sebelum pendaftaran publik dibuka, kebijakan tersebut
+                dan proses pembayaran perlu ditinjau oleh pihak yang berwenang.
               </p>
             </div>
           </div>

@@ -25,10 +25,12 @@ import realtimeRouter from "./realtime";
 import favoritesRouter from "./favorites";
 import receiptsRouter from "./receipts";
 import passwordResetRouter from "./password-reset";
+import cronRouter from "./cron";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(cronRouter);
 router.use(authRouter);
 router.use(gigsRouter);
 router.use(attendanceRouter);

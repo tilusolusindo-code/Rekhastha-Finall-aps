@@ -1,0 +1,74 @@
+name: Backup database
+
+# Cadangan harian database Supabase (skema public) -> dienkripsi dengan age -> disimpan
+# sebagai artifact GitHub selama 30 hari. Hanya pemilik kunci privat age yang bisa membukanya.
+#
+# Secrets yang dibutuhkan (Settings -> Secrets and variables -> Actions):
+#   BACKUP_DATABASE_URL     URL koneksi Postgres (Supabase: Session pooler atau Direct, BUKAN Transaction pooler)
+#   BACKUP_AGE_PUBLIC_KEY   Kunci publik age (diawali "age1...")
+
+on:
+  schedule:
+    - cron: "30 19 * * *"   # tiap hari 02:30 WIB
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Pasang klien Postgres 17 dan age
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 age
+
+      - name: Periksa secrets
+        env:
+          DB_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          AGE_KEY: ${{ secrets.BACKUP_AGE_PUBLIC_KEY }}
+        run: |
+          [ -n "$DB_URL" ] || { echo "::error::Secret BACKUP_DATABASE_URL belum diisi"; exit 1; }
+          case "$AGE_KEY" in age1*) ;; *) echo "::error::BACKUP_AGE_PUBLIC_KEY harus diawali age1"; exit 1;; esac
+
+      - name: Dump database
+        env:
+          DB_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          STAMP=$(date -u +%Y%m%d-%H%M%S)
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          # Format custom (-Fc): terkompresi dan bisa dipulihkan selektif dengan pg_restore.
+          pg_dump "$DB_URL" --format=custom --schema=public --no-owner --no-privileges --file="rekhastha-$STAMP.dump"
+
+      - name: Verifikasi dump valid dan tidak kosong
+        run: |
+          set -euo pipefail
+          SIZE=$(stat -c%s "rekhastha-$STAMP.dump")
+          [ "$SIZE" -gt 10240 ] || { echo "::error::Dump terlalu kecil ($SIZE byte); kemungkinan gagal"; exit 1; }
+          TABLES=$(pg_restore --list "rekhastha-$STAMP.dump" | grep -c " TABLE DATA ")
+          echo "Ukuran dump: $SIZE byte, tabel berisi data: $TABLES"
+          [ "$TABLES" -ge 5 ] || { echo "::error::Terlalu sedikit tabel ($TABLES); dump mencurigakan"; exit 1; }
+          pg_restore --list "rekhastha-$STAMP.dump" | grep -q " TABLE DATA public users " || { echo "::error::Tabel users tidak ada di dump"; exit 1; }
+
+      - name: Enkripsi dengan age
+        env:
+          AGE_KEY: ${{ secrets.BACKUP_AGE_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          age -r "$AGE_KEY" -o "rekhastha-$STAMP.dump.age" "rekhastha-$STAMP.dump"
+          rm -f "rekhastha-$STAMP.dump"
+          ls -l
+
+      - name: Simpan cadangan terenkripsi (30 hari)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rekhastha-backup-${{ env.STAMP }}
+          path: rekhastha-${{ env.STAMP }}.dump.age
+          retention-days: 30
+          if-no-files-found: error

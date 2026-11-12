@@ -328,7 +328,10 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
         <button type="button" onClick={() => setShowTerms(true)} className="rk-auth-link-btn">
           syarat penggunaan (draf)
         </button>.{" "}
-        Kebijakan privasi final sedang disiapkan.
+        Baca juga{" "}
+        <a href={`${import.meta.env.BASE_URL}privasi`} target="_blank" rel="noopener noreferrer" className="rk-auth-link-btn">
+          kebijakan privasi
+        </a>.
       </p>
 
       {showRoleModal && <RoleSelectModal onSelect={handleRoleSelected} isGoogle={pendingGoogle} />}

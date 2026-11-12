@@ -67,6 +67,9 @@ await writeFile(
   JSON.stringify(
     {
       version: 3,
+      // Tiap hari 03:00 WIB: kembalikan escrow lowongan yang berakhir tanpa pekerja.
+      // Vercel mengirim "Authorization: Bearer <CRON_SECRET>" otomatis bila CRON_SECRET diisi.
+      crons: [{ path: "/api/cron/refund-expired", schedule: "0 20 * * *" }],
       routes: [
         { src: "^/api/?$", dest: "/api" },
         { src: "^/api/(.*)$", dest: "/api?__path=$1" },

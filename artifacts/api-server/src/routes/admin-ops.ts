@@ -1,11 +1,12 @@
 import { Router, type IRouter, type Request } from "express";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db, gigsTable, dailyPayoutsTable, adminLogsTable, radarScrapeAlertsTable, applicationsTable, walletEntriesTable, manualPaymentsTable } from "@workspace/db";
+import { db, escrowRefundsTable, usersTable, gigsTable, dailyPayoutsTable, adminLogsTable, radarScrapeAlertsTable, applicationsTable, walletEntriesTable, manualPaymentsTable } from "@workspace/db";
 import { ADMIN_COOKIE, isAdminSession, adminSessionId } from "../lib/admin";
 import { broadcastGig } from "../lib/realtime";
 import { forcePayoutGig } from "../lib/admin-finance";
 import { creditedWagesForJob } from "../lib/wage-ledger";
+import { recordRefund } from "../lib/escrow-refunds";
 
 const router: IRouter = Router();
 
@@ -99,6 +100,7 @@ router.post("/admin/refund", async (req, res): Promise<void> => {
       targetId: String(gig.id),
       reason: parsed.data.reason,
     });
+    await recordRefund(tx, gig, "admin", parsed.data.reason);
     return { gig: updated };
   });
 
@@ -237,6 +239,7 @@ router.post("/admin/jobs/:id/refund", async (req, res): Promise<void> => {
       .where(eq(gigsTable.id, jobId))
       .returning();
     await tx.insert(adminLogsTable).values({ adminId, action: "REFUND_JOB", targetId: String(jobId), reason: parsed.data.reason });
+    await recordRefund(tx, gig, "admin", parsed.data.reason);
     return { gig: updated };
   });
 
@@ -247,6 +250,62 @@ router.post("/admin/jobs/:id/refund", async (req, res): Promise<void> => {
   }
   broadcastGig(result.gig);
   req.log.info({ jobId, adminId }, "Admin issued escrow refund for job");
+  res.json({ ok: true });
+});
+
+/** GET /admin/refunds — daftar pengembalian dana (belum dibayar lebih dulu). */
+router.get("/admin/refunds", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req))) {
+    res.status(401).json({ error: "Sesi admin tidak valid." });
+    return;
+  }
+  const rows = await db
+    .select({
+      id: escrowRefundsTable.id,
+      gigId: escrowRefundsTable.gigId,
+      employerId: escrowRefundsTable.employerId,
+      employerName: usersTable.name,
+      employerEmail: usersTable.email,
+      posisi: gigsTable.posisi,
+      amount: escrowRefundsTable.amount,
+      source: escrowRefundsTable.source,
+      reason: escrowRefundsTable.reason,
+      status: escrowRefundsTable.status,
+      createdAt: escrowRefundsTable.createdAt,
+      paidAt: escrowRefundsTable.paidAt,
+      paidNote: escrowRefundsTable.paidNote,
+    })
+    .from(escrowRefundsTable)
+    .leftJoin(usersTable, eq(usersTable.id, escrowRefundsTable.employerId))
+    .leftJoin(gigsTable, eq(gigsTable.id, escrowRefundsTable.gigId))
+    .orderBy(desc(escrowRefundsTable.status), desc(escrowRefundsTable.createdAt))
+    .limit(200);
+  res.json({ refunds: rows });
+});
+
+/** POST /admin/refunds/:id/paid — tandai refund sudah ditransfer ke pemberi kerja. */
+router.post("/admin/refunds/:id/paid", async (req, res): Promise<void> => {
+  const adminId = await getAdminId(req);
+  if (!adminId) {
+    res.status(401).json({ error: "Sesi admin tidak valid." });
+    return;
+  }
+  const id = Number(req.params["id"]);
+  const parsed = z.object({ note: z.string().trim().min(3, "Catatan (mis. referensi transfer) wajib diisi.").max(300) }).safeParse(req.body);
+  if (!Number.isSafeInteger(id) || id <= 0 || !parsed.success) {
+    res.status(400).json({ error: parsed.success ? "ID tidak valid." : parsed.error.issues[0]?.message ?? "Permintaan tidak valid." });
+    return;
+  }
+  const [updated] = await db
+    .update(escrowRefundsTable)
+    .set({ status: "paid", paidAt: new Date(), paidNote: parsed.data.note })
+    .where(and(eq(escrowRefundsTable.id, id), eq(escrowRefundsTable.status, "pending")))
+    .returning();
+  if (!updated) {
+    res.status(409).json({ error: "Refund tidak ditemukan atau sudah ditandai dibayar." });
+    return;
+  }
+  await db.insert(adminLogsTable).values({ adminId, action: "REFUND_PAID", targetId: String(updated.gigId), reason: parsed.data.note });
   res.json({ ok: true });
 });
 

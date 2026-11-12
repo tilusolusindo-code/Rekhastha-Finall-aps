@@ -36,6 +36,8 @@ interface HiringModePanelProps {
   onDispute: (jobId: number) => void;
   onStatusChange: (notifId: number, status: ApplicationStatus) => void;
   onCancelJob?: (jobId: number, deductFee: boolean) => void;
+  /** Dipanggil setelah lowongan yang belum dibayar berhasil dibatalkan di server. */
+  onUnpaidCancelled?: (jobId: number) => void;
 }
 
 // Named standby Mitra pins shown on the Butuh Cepat broadcast radar
@@ -119,8 +121,26 @@ function jobPhase(job: CustomJob, locked: boolean, apps: Array<{ status: string 
 
 export default function HiringModePanel({
   currentUser, customJobs, notifications,
-  onJobPosted, onOpenPayments, onJobPaid, onOpenBisnis, onOpenAttendanceQr, onLockEscrow, onDispute, onStatusChange, onCancelJob,
+  onJobPosted, onOpenPayments, onJobPaid, onOpenBisnis, onOpenAttendanceQr, onLockEscrow, onDispute, onStatusChange, onCancelJob, onUnpaidCancelled,
 }: HiringModePanelProps) {
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [cancelError, setCancelError] = useState("");
+
+  async function cancelUnpaid(job: CustomJob) {
+    if (!window.confirm(`Batalkan lowongan "${job.posisi}"? Lowongan yang belum dibayar akan dihapus dari daftar.`)) return;
+    setCancelError("");
+    setCancellingId(job.id);
+    try {
+      const res = await fetch(`/api/gigs/${job.id}/cancel-unpaid`, { method: "POST", credentials: "include" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Gagal membatalkan lowongan.");
+      onUnpaidCancelled?.(job.id);
+    } catch (e) {
+      setCancelError(e instanceof Error ? e.message : "Gagal membatalkan lowongan.");
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   // Tagihan lowongan yang sedang dibayar lewat Midtrans Snap (null = modal tertutup).
   const [showAllUnpaid, setShowAllUnpaid] = useState(false);
@@ -502,15 +522,28 @@ export default function HiringModePanel({
                 <p className="truncate text-xs font-bold text-gray-800">{job.posisi}</p>
                 <p className="text-[11px] text-gray-500 tabular-nums">{formatRp((job.escrowAmount ?? 0) + (job.adminFeeAmount ?? 0))}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => startMidtransPayment(job)}
-                className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white active:scale-95"
-              >
-                Bayar
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={cancellingId === job.id}
+                  onClick={() => void cancelUnpaid(job)}
+                  className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-600 active:scale-95 disabled:opacity-50"
+                  data-testid={`button-cancel-unpaid-${job.id}`}
+                >
+                  {cancellingId === job.id ? "…" : "Batalkan"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startMidtransPayment(job)}
+                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white active:scale-95"
+                >
+                  Bayar
+                </button>
+              </div>
             </div>
           ))}
+          {cancelError && <p role="alert" className="text-[11px] font-semibold text-red-600">{cancelError}</p>}
+          <p className="text-[10px] text-amber-700">Lowongan yang tidak dibayar dalam 24 jam ditutup otomatis.</p>
           {unpaidJobs.length > 3 && (
             <button
               type="button"

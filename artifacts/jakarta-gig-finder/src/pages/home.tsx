@@ -2294,6 +2294,7 @@ export default function Home() {
                   onDispute={handleJobDispute}
                   onStatusChange={handleStatusChange}
                   onCancelJob={handleCancelJob}
+                  onUnpaidCancelled={(id) => setCustomJobs((prev) => prev.filter((j) => j.id !== id))}
                 />
               )
 

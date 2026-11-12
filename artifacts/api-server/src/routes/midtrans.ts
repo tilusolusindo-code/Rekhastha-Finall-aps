@@ -392,6 +392,11 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
         }
         // Sudah dikonfirmasi (oleh notifikasi sebelumnya atau oleh admin).
         if (gig.paymentStatus === "confirmed") return { kind: "duplicate" as const };
+        if (gig.paymentStatus === "cancelled") {
+          // Tautan Snap lama dibayar setelah lowongan dibatalkan/kedaluwarsa. Uang sudah masuk,
+          // jadi lowongan tetap diaktifkan agar dana pemberi kerja tidak menggantung.
+          logger.warn({ orderId, gigId }, "[midtrans] Pembayaran masuk untuk lowongan yang sudah dibatalkan; lowongan diaktifkan kembali");
+        }
 
         const instant = gig.hiringMode === "cepat";
         const [funded] = await tx

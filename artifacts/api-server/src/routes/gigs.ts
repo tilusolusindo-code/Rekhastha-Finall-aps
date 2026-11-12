@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   applicationsTable,
@@ -12,6 +12,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { broadcastGig } from "../lib/realtime";
+import { cancelUnpaidGig, expireStaleUnpaidGigs } from "../lib/unpaid-gigs";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
   calculateTotalWorkerPayout,
@@ -110,17 +111,47 @@ router.get("/gigs/fee-quote", async (req, res): Promise<void> => {
 
 router.get("/gigs", async (req, res): Promise<void> => {
   const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  // Tutup lowongan milik pemberi kerja ini yang belum dibayar lebih dari 24 jam.
+  if (user?.role === "perusahaan") await expireStaleUnpaidGigs(user.id);
   const rows = await db
     .select({ gig: gigsTable, employerAvatarUrl: usersTable.avatarUrl })
     .from(gigsTable)
     .leftJoin(usersTable, eq(gigsTable.employerId, usersTable.id))
     .where(
       user?.role === "perusahaan"
-        ? or(eq(gigsTable.paymentStatus, "confirmed"), eq(gigsTable.employerId, user.id))
+        ? or(
+            eq(gigsTable.paymentStatus, "confirmed"),
+            and(eq(gigsTable.employerId, user.id), ne(gigsTable.paymentStatus, "cancelled")),
+          )
         : eq(gigsTable.paymentStatus, "confirmed"),
     )
     .orderBy(desc(gigsTable.postedAt));
   res.json(rows.map(({ gig, employerAvatarUrl }) => ({ ...gig, employerAvatarUrl: employerAvatarUrl ?? null })));
+});
+
+/** Batalkan lowongan yang belum dibayar (hanya pemiliknya). */
+router.post("/gigs/:id/cancel-unpaid", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req.cookies?.[SESSION_COOKIE]);
+  if (!user || user.role !== "perusahaan") {
+    res.status(401).json({ error: "Tidak terautentikasi." });
+    return;
+  }
+  const gigId = Number(req.params["id"]);
+  if (!Number.isSafeInteger(gigId) || gigId < 1) {
+    res.status(400).json({ error: "ID lowongan tidak valid." });
+    return;
+  }
+  const result = await cancelUnpaidGig(gigId, user.id);
+  if (result === "not_found") {
+    res.status(404).json({ error: "Lowongan tidak ditemukan." });
+    return;
+  }
+  if (result === "not_unpaid") {
+    res.status(409).json({ error: "Hanya lowongan yang belum dibayar yang bisa dibatalkan." });
+    return;
+  }
+  req.log.info({ gigId, employerId: user.id }, "Unpaid gig cancelled by employer");
+  res.json({ ok: true, id: gigId });
 });
 
 router.post("/gigs", async (req, res): Promise<void> => {

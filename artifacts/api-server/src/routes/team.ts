@@ -67,7 +67,7 @@ router.post("/team/invite", async (req, res): Promise<void> => {
 
   const parsed = InviteSchema.safeParse(req.body);
   if (!parsed.success) {
-    const msg = parsed.error.errors[0]?.message ?? "Email atau role tidak valid.";
+    const msg = parsed.error.issues[0]?.message ?? "Email atau role tidak valid.";
     res.status(400).json({ error: msg });
     return;
   }

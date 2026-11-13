@@ -24,7 +24,6 @@ import { RekhasthaLogo } from "@/components/rekhastha-logo";
 import EscrowProjectsPanel from "@/components/escrow-projects-panel";
 import ManualPaymentsPanel from "@/components/manual-payments-panel";
 import BisnisPage from "@/components/bisnis-page";
-import { TeamMemberBisnisView, fetchMemberships, TEAM_CHANGED_EVENT, OPEN_TEAM_EVENT, type Membership } from "@/components/team-membership-banner";
 import CompanyRadarStats from "@/components/company-radar-stats";
 import {
   subscribeToServer,
@@ -68,7 +67,7 @@ import {
   MapPin, Clock, Banknote, Search, X, ShieldCheck, UserCircle,
   Map as MapIcon, Briefcase, TrendingUp, XCircle, MessageSquare,
   BarChart2, Home as HomeIcon, User, Users, Lock, CheckCircle2, AlertTriangle,
-  CalendarDays, QrCode, CircleHelp, ChevronLeft, ChevronRight,
+  CalendarDays, QrCode, CircleHelp, ChevronLeft, ChevronRight, List, FileText, Zap,
 } from "lucide-react";
 
 // Device-unique, monotonic id base so gigs posted from two different physical
@@ -93,15 +92,7 @@ let nextNotifId = 1;
 
 type JobStatus = "applied" | "accepted" | "clocked_in" | "completed" | null;
 type CompanyView = "jobs" | "analytics" | "radar";
-/**
- * Sisi pekerja: lamaran "diterima" yang pekerjaannya sudah selesai (scan masuk + pulang lengkap,
- * ditandai server lewat workCompletedAt) dianggap SELESAI dan tidak lagi aktif. Di server status tetap
- * "diterima" sampai pemberi kerja menyetujui upah, supaya pencairan upah tidak terblokir.
- */
-const withWorkerStatus = (row: ApplicationEvent): ApplicationEvent =>
-  row.status === "diterima" && row.workCompletedAt ? { ...row, status: "selesai" } : row;
-
-type AppTab = "home" | "chat" | "proyek" | "bisnis" | "tim" | "profile";
+type AppTab = "home" | "chat" | "proyek" | "bisnis" | "profile";
 
 // A gig is "instant" (Broadcast Instan) only when it is a cepat posting. Regular
 // (lama) jobs — even once their escrow is locked and they go live — stay in the
@@ -151,22 +142,6 @@ export default function Home() {
     return search.has("google_code") || search.has("google_error") ? "masuk" : "landing";
   });
   const [activeTab, setActiveTab] = useState<AppTab>("home");
-  // Anggota tim (akun pekerja yang diundang HR/Supervisor): menu "Tim" muncul hanya bila ada keanggotaan aktif.
-  const [memberships, setMemberships] = useState<Membership[]>([]);
-  const refreshMemberships = useCallback(() => {
-    if (!currentUser || currentUser.role === "perusahaan") { setMemberships([]); return; }
-    void fetchMemberships().then(setMemberships);
-  }, [currentUser?.id, currentUser?.role]);
-  useEffect(() => { refreshMemberships(); }, [refreshMemberships]);
-  useEffect(() => {
-    const onChanged = () => refreshMemberships();
-    const onOpen = () => setActiveTab("tim");
-    window.addEventListener(TEAM_CHANGED_EVENT, onChanged);
-    window.addEventListener(OPEN_TEAM_EVENT, onOpen);
-    return () => { window.removeEventListener(TEAM_CHANGED_EVENT, onChanged); window.removeEventListener(OPEN_TEAM_EVENT, onOpen); };
-  }, [refreshMemberships]);
-  // Keluar dari tim saat sedang di tab Tim → kembali ke beranda.
-  useEffect(() => { if (activeTab === "tim" && memberships.length === 0) setActiveTab("home"); }, [activeTab, memberships.length]);
   // Panduan tertulis (tombol "Panduan") dan tur interaktif (otomatis sekali per akun).
   const [guideOpen, setGuideOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -181,40 +156,6 @@ export default function Home() {
     if (!currentUser || hasSeenTour(currentUser.id)) return;
     const t = setTimeout(() => setTourOpen(true), 1200);
     return () => clearTimeout(t);
-  }, [currentUser?.id]);
-  // Tautan undangan tim dari email (?join_team=<token>): simpan dulu supaya tetap jalan
-  // setelah login/daftar, lalu bergabung begitu akun pekerja sudah masuk.
-  const [teamJoinMsg, setTeamJoinMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  useEffect(() => {
-    try {
-      const url = new URL(window.location.href);
-      const t = url.searchParams.get("join_team");
-      if (t) {
-        sessionStorage.setItem("rekhastha_join_team", t);
-        url.searchParams.delete("join_team");
-        window.history.replaceState({}, "", url.toString());
-      }
-    } catch { /* abaikan */ }
-  }, []);
-  useEffect(() => {
-    if (!currentUser) return;
-    let token: string | null = null;
-    try { token = sessionStorage.getItem("rekhastha_join_team"); } catch { /* abaikan */ }
-    if (!token) return;
-    try { sessionStorage.removeItem("rekhastha_join_team"); } catch { /* abaikan */ }
-    fetch("/api/team/join", {
-      method: "POST", credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    })
-      .then(async r => {
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(d.error ?? "Undangan tidak dapat dipakai.");
-        setTeamJoinMsg({ ok: true, text: "Anda sekarang anggota tim. Buka menu Tim untuk mulai bekerja." });
-        window.dispatchEvent(new Event(TEAM_CHANGED_EVENT));
-      })
-      .catch(e => setTeamJoinMsg({ ok: false, text: (e as Error).message }))
-      .finally(() => setTimeout(() => setTeamJoinMsg(null), 8000));
   }, [currentUser?.id]);
   const [mode, setMode] = useState<"perusahaan" | "pekerja">("perusahaan");
   const [companyView, setCompanyView] = useState<CompanyView>("jobs");
@@ -520,10 +461,6 @@ export default function Home() {
         applicationAnswers: e.applicationAnswers,
         supportingInfo: e.supportingInfo,
         uploadedFiles: e.uploadedFiles,
-        shortlistedAt: e.shortlistedAt,
-        clientDecision: e.clientDecision,
-        clientNote: e.clientNote,
-        workCompletedAt: e.workCompletedAt,
       };
       setNotifications((p) => [notif, ...p]);
       setApplicantToast(notif);
@@ -616,10 +553,6 @@ export default function Home() {
               applicationAnswers: row.applicationAnswers,
               supportingInfo: row.supportingInfo,
               uploadedFiles: row.uploadedFiles,
-              shortlistedAt: row.shortlistedAt,
-              clientDecision: row.clientDecision,
-              clientNote: row.clientNote,
-              workCompletedAt: row.workCompletedAt,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -670,7 +603,7 @@ export default function Home() {
         if (!response.ok) throw new Error("Riwayat lamaran tidak dapat dimuat.");
         const payload: unknown = await response.json();
         if (!Array.isArray(payload)) throw new Error("Format riwayat lamaran tidak valid.");
-        const rows = (payload as ApplicationEvent[]).map(withWorkerStatus);
+        const rows = payload as ApplicationEvent[];
         if (cancelled) return;
 
         setMyApplicationRows((previous) => {
@@ -711,10 +644,6 @@ export default function Home() {
                   applicationAnswers: latest.applicationAnswers,
                   supportingInfo: latest.supportingInfo,
                   uploadedFiles: latest.uploadedFiles,
-                  shortlistedAt: latest.shortlistedAt,
-                  clientDecision: latest.clientDecision,
-                  clientNote: latest.clientNote,
-                  workCompletedAt: latest.workCompletedAt,
                 }
               : item;
           });
@@ -742,10 +671,6 @@ export default function Home() {
               applicationAnswers: row.applicationAnswers,
               supportingInfo: row.supportingInfo,
               uploadedFiles: row.uploadedFiles,
-              shortlistedAt: row.shortlistedAt,
-              clientDecision: row.clientDecision,
-              clientNote: row.clientNote,
-              workCompletedAt: row.workCompletedAt,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -1240,10 +1165,7 @@ export default function Home() {
       ]);
     }
 
-    // Utamakan lamaran yang masih berjalan; lamaran yang sudah selesai hanya jadi cadangan.
-    const row =
-      myApplicationRows.find((item) => item.status !== "ditolak" && item.status !== "selesai") ??
-      myApplicationRows.find((item) => item.status !== "ditolak");
+    const row = myApplicationRows.find((item) => item.status !== "ditolak");
     if (!row) return;
     const job = allJobs.find((item) => item.id === row.jobId);
     if (!job) return;
@@ -1661,9 +1583,6 @@ export default function Home() {
     setGraceDeadline(null);
     setGraceJob(null);
     setContractClosed(false);
-    // Server menandai pekerjaan selesai saat hari kerja terakhir lengkap; muat ulang lamaran sekarang
-    // (bukan menunggu polling 15 detik) agar kartu "aktif" langsung berubah jadi selesai.
-    window.setTimeout(() => window.dispatchEvent(new Event("focus")), 800);
     setDisputeJob(activeJob); // snapshot job so auto-release survives closing the card
     setDisputeDeadline(now.getTime() + DISPUTE_WINDOW_MS); // start 24h employer validation window
     if (activeJob) {
@@ -1782,7 +1701,6 @@ export default function Home() {
   const isProfileTab = activeTab === "profile";
   const isProyekTab = activeTab === "proyek";
   const isBisnisTab = activeTab === "bisnis";
-  const isTimTab = activeTab === "tim" && memberships.length > 0;
 
   return (
     <div className="mobile-app-shell flex flex-col h-[100dvh] w-full bg-gray-50 relative overflow-hidden">
@@ -1797,12 +1715,6 @@ export default function Home() {
           onDecline={() => handleStatusChange(applicantToast.id, "ditolak")}
           onDismiss={() => setApplicantToast(null)}
         />
-      )}
-
-      {teamJoinMsg && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl shadow-xl text-white text-sm font-bold max-w-xs w-[90vw] ${teamJoinMsg.ok ? "bg-emerald-600" : "bg-red-500"}`}>
-          {teamJoinMsg.text}
-        </div>
       )}
 
       {/* ── DOKU Payment result toast ─────────────────────── */}
@@ -1948,9 +1860,6 @@ export default function Home() {
             <SidebarBtn icon={<Briefcase className="w-5 h-5" />} label="Proyek" collapsed={sidebarCollapsed} active={activeTab === "proyek"} onClick={() => setActiveTab("proyek")} />
             {currentUser.role === "perusahaan" && (
               <SidebarBtn icon={<Banknote className="w-5 h-5" />} label="Rekhastha Bisnis" tour="nav-bisnis" collapsed={sidebarCollapsed} active={activeTab === "bisnis"} onClick={() => setActiveTab("bisnis")} />
-            )}
-            {memberships.length > 0 && (
-              <SidebarBtn icon={<Users className="w-5 h-5" />} label="Tim" collapsed={sidebarCollapsed} active={activeTab === "tim"} onClick={() => setActiveTab("tim")} />
             )}
           </nav>
 
@@ -2146,6 +2055,7 @@ export default function Home() {
               escrowEvents={escrowEvents}
               onLogout={handleLogout}
               onDispute={handleJobDispute}
+              onAdminResolve={handleAdminResolve}
               onJobUpdate={(updated) =>
                 setCustomJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)))
               }
@@ -2166,10 +2076,8 @@ export default function Home() {
         <BisnisPage currentUser={currentUser} onOpenPayments={() => setShowManualPayments(true)} />
       )}
 
-      {isTimTab && <TeamMemberBisnisView memberships={memberships} />}
-
       {/* ── HOME TAB CONTENT (hidden when profile/proyek tab active) */}
-      {!isProfileTab && !isProyekTab && !isBisnisTab && !isTimTab && (
+      {!isProfileTab && !isProyekTab && !isBisnisTab && (
         <>
           {/* ── HEADER ─────────────────────────────────── */}
           <header className="z-10 bg-white border-b border-gray-100 shadow-sm flex flex-col shrink-0">
@@ -2218,7 +2126,7 @@ export default function Home() {
             {mode === "pekerja" && (
               <div className="px-4 pb-3 space-y-2">
                 {/* ── Status Radar Mencari Kerja (On/Off toggle) ── */}
-                <div data-tour="radar-toggle" className={`flex items-center justify-between rounded-2xl px-3.5 py-2.5 border transition-colors ${radarOn ? "bg-primary/10 border-primary/30" : "bg-gray-100 border-gray-200"}`}>
+                <div data-tour="radar-toggle" className={`flex items-center justify-between rounded-2xl px-3.5 py-2 border transition-colors ${radarOn ? "bg-primary/10 border-primary/30" : "bg-gray-100 border-gray-200"}`}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
                       {radarOn && <span className="absolute inline-flex h-full w-full rounded-full bg-primary/50 animate-ping" />}
@@ -2239,43 +2147,54 @@ export default function Home() {
                     <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${radarOn ? "translate-x-5" : "translate-x-0"}`} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {verified ? (
-                      <button onClick={() => setShowEarnings(true)} className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Terverifikasi · Dashboard
-                      </button>
-                    ) : (
-                      <button data-testid="button-complete-profile" onClick={() => setShowOnboarding(true)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
-                        <UserCircle className="w-3.5 h-3.5" />
-                        {workerProfile ? "Lengkapi Profil" : "Daftar & Verifikasi"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${isSuspended ? "bg-red-100 text-red-600" : reputationPoints < 80 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
-                      {isSuspended ? "Suspended" : `Rep: ${reputationPoints}`}
-                    </span>
-                    <div data-tour="worker-tabs" className="flex bg-gray-100/80 p-1 rounded-[14px] relative">
-                      <div className="absolute inset-y-1 w-[calc(25%-2px)] bg-white rounded-[10px] shadow-sm transition-transform duration-300 ease-out" 
-                           style={{ 
-                             transform: workerView === "list" ? "translateX(2px)" 
-                                      : workerView === "map" ? "translateX(calc(100% + 2px))"
-                                      : workerView === "scheduled" ? "translateX(calc(200% + 2px))"
-                                      : "translateX(calc(300% + 2px))"
-                           }} />
-                      <button onClick={() => setWorkerView("list")} className={`flex-1 relative px-2 py-2 text-xs font-bold rounded-xl transition-colors ${workerView === "list" ? "text-primary" : "text-gray-500"}`}>Daftar</button>
-                      <button onClick={() => setWorkerView("map")} className={`flex-1 relative px-2 py-2 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 ${workerView === "map" ? "text-primary" : "text-gray-500"}`}>
-                        <MapIcon className="w-3.5 h-3.5" /> Radar
-                      </button>
-                      <button onClick={() => setWorkerView("scheduled")} className={`flex-1 relative px-2 py-2 text-xs font-bold rounded-xl transition-colors ${workerView === "scheduled" ? "text-primary" : "text-gray-500"}`}>📅 Jadwal</button>
-                      <button onClick={() => setWorkerView("applications")} className={`flex-1 relative px-2 py-2 text-xs font-bold rounded-xl transition-colors ${workerView === "applications" ? "text-primary" : "text-gray-500"}`}>
-                        📋 Lamar{notifications.filter(n => n.workerId === currentUser.id || n.applicantName === (workerProfile?.namaLengkap || currentUser.name)).length > 0 && <span className="ml-0.5 text-[8px]">({notifications.filter(n => n.workerId === currentUser.id || n.applicantName === (workerProfile?.namaLengkap || currentUser.name)).length})</span>}
-                      </button>
-                    </div>
-                  </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {verified ? (
+                    <button onClick={() => setShowEarnings(true)} className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Terverifikasi · Dashboard
+                    </button>
+                  ) : (
+                    <button data-testid="button-complete-profile" onClick={() => setShowOnboarding(true)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
+                      <UserCircle className="w-3.5 h-3.5" />
+                      {workerProfile ? "Lengkapi Profil" : "Daftar & Verifikasi"}
+                    </button>
+                  )}
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${isSuspended ? "bg-red-100 text-red-600" : reputationPoints < 80 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
+                    {isSuspended ? "Suspended" : `Rep: ${reputationPoints}`}
+                  </span>
                 </div>
+
+                {(() => {
+                  const lamarCount = notifications.filter(n => n.workerId === currentUser.id || n.applicantName === (workerProfile?.namaLengkap || currentUser.name)).length;
+                  const tabs: { key: typeof workerView; label: string; Icon: typeof List; badge?: number }[] = [
+                    { key: "list", label: "Daftar", Icon: List },
+                    { key: "map", label: "Radar", Icon: MapIcon },
+                    { key: "scheduled", label: "Jadwal", Icon: CalendarDays },
+                    { key: "applications", label: "Lamar", Icon: FileText, badge: lamarCount },
+                  ];
+                  return (
+                    <div data-tour="worker-tabs" role="tablist" aria-label="Tampilan pekerja" className="grid grid-cols-4 gap-0.5 rounded-[18px] bg-gray-100 p-1">
+                      {tabs.map(({ key, label, Icon, badge }) => {
+                        const active = workerView === key;
+                        return (
+                          <button key={key} type="button" role="tab" aria-selected={active} data-testid={`worker-tab-${key}`}
+                            onClick={() => setWorkerView(key)}
+                            className={`relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[14px] py-2 text-[12px] font-bold transition-colors ${active ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                            <span className="relative">
+                              <Icon className="h-[18px] w-[18px]" />
+                              {!!badge && badge > 0 && (
+                                <span className="absolute -right-3 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black text-white ring-2 ring-gray-100">
+                                  {badge > 9 ? "9+" : badge}
+                                </span>
+                              )}
+                            </span>
+                            <span className="truncate">{label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {activeJob && jobStatus === "accepted" && graceDeadline != null && (
                   <div className="rounded-xl px-3 py-2 border border-red-200 bg-red-50 flex items-center justify-between gap-2">
@@ -2516,12 +2435,12 @@ export default function Home() {
                 <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-2xl font-display font-bold text-gray-900">Pekerjaan Tersedia</h2>
+                      <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-gray-900">Pekerjaan tersedia</h2>
                       <p className="text-sm text-gray-500">{allJobs.length > 0 ? `${allJobs.length} lowongan aktif` : "Berdasarkan lokasi Anda"}</p>
                     </div>
-                    {workerProfile && (
-                      <button onClick={() => setShowEarnings(true)} className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
-                        <TrendingUp className="w-3.5 h-3.5" /> Dashboard
+                    {allJobs.length > 0 && (
+                      <button onClick={() => setWorkerView("map")} className="flex items-center gap-1.5 pb-0.5 text-[13px] font-bold text-primary">
+                        <MapIcon className="h-4 w-4" /> Peta
                       </button>
                     )}
                   </div>
@@ -2536,69 +2455,75 @@ export default function Home() {
                     </div>
                   )}
 
-                  {allJobs.length > 0 && (
-                    <button onClick={() => setWorkerView("map")} className="w-full flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold py-2.5 rounded-xl hover:bg-emerald-100 transition-colors">
-                      <MapIcon className="w-4 h-4" /> Lihat {allJobs.length} lowongan di Peta Radar
-                    </button>
-                  )}
 
                   {allJobs.map((job) => (
                     <div key={job.id} data-testid={`card-custom-job-${job.id}`}
-                      className={`bg-white p-4 rounded-xl border shadow-sm flex flex-col gap-3 ${job.flaggedSuspect ? "border-yellow-300 bg-yellow-50/50" : "border-emerald-100"}`}>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-gray-900 truncate">{job.posisi}</h3>
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            {job.isAgency ? <span className="text-[10px] font-black px-2 py-0.5 rounded bg-gradient-to-r from-blue-100 to-emerald-100 text-emerald-800">[AGENCY JOB]</span>
-                              : <span className="text-xs text-emerald-700 font-medium">Lowongan Kustom</span>}
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${job.hiringMode === "lama" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
-                              {job.hiringMode === "lama" ? "Reguler" : "Instan"}
-                            </span>
-                            {job.namaPerusahaan && <span className="text-[10px] text-gray-400">· {job.namaPerusahaan}</span>}
-                            {job.flaggedSuspect && <span className="text-[10px] font-bold text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">⚠️ Ditinjau</span>}
-                          </div>
+                      className={`flex flex-col gap-3 rounded-[22px] border p-4 shadow-sm ${job.flaggedSuspect ? "border-yellow-300 bg-yellow-50/50" : "border-gray-200 bg-white"}`}>
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-lg font-extrabold text-emerald-700">
+                          {(job.posisi || "?").trim().charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs font-semibold bg-emerald-100 text-emerald-800 px-2 py-1 rounded ml-2 shrink-0">Baru</span>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-[17px] font-extrabold leading-tight tracking-tight text-gray-900">{job.posisi}</h3>
+                          <p className="mt-0.5 truncate text-[13px] text-gray-500">
+                            {job.isAgency ? "Agensi" : (job.namaPerusahaan || "Lowongan kustom")}
+                          </p>
+                        </div>
+                        {job.hiringMode === "lama" ? (
+                          <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-[11px] font-extrabold text-blue-700">
+                            <CalendarDays className="h-3 w-3" /> Reguler
+                          </span>
+                        ) : (
+                          <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-orange-50 px-2.5 text-[11px] font-extrabold text-orange-700">
+                            <Zap className="h-3 w-3" /> Instan
+                          </span>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-2">{job.deskripsi}</p>
+                      {job.flaggedSuspect && <span className="self-start rounded bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold text-yellow-700">Ditinjau</span>}
+                      {job.deskripsi && <p className="line-clamp-2 text-sm text-gray-600">{job.deskripsi}</p>}
                       {job.hiringMode === "lama" && (job.jobDate || job.jamKerja || job.alamat) && (
-                        <div className="flex flex-col gap-1 bg-emerald-50/60 border border-emerald-100 rounded-lg px-2.5 py-2 text-[11px] text-gray-600">
+                        <div className="flex flex-col gap-1.5 rounded-xl bg-gray-50 px-3 py-2.5 text-[12px] font-medium text-gray-600">
                           {job.jobDate && (
                             <span className="flex items-center gap-1.5">
-                              <CalendarDays className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
                               Mulai {new Date(job.jobDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                             </span>
                           )}
                           {job.jamKerja && (
                             <span className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> {job.jamKerja}
+                              <Clock className="h-3.5 w-3.5 shrink-0 text-emerald-700" /> {job.jamKerja}
                             </span>
                           )}
                           {job.alamat && (
                             <span className="flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
                               <span className="line-clamp-1">{job.alamat}</span>
                             </span>
                           )}
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Banknote className="w-4 h-4 text-primary shrink-0" />
-                        <span className="font-semibold text-gray-900">
-                          Rp {job.nominal.toLocaleString("id-ID")} / {paymentUnits[job.pembayaran]}
-                        </span>
-                        {job.isAgency && <span className="text-[10px] text-blue-600 font-semibold">{job.kuota} orang</span>}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button disabled={isSuspended}
-                          className={`flex-1 font-semibold ${isSuspended ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-primary hover:bg-primary/90 text-white"}`}
-                          onClick={() => !isSuspended && setSelectedJob(job)}>
-                          {isSuspended ? "Ditangguhkan" : "Detail & Lamar"}
-                        </Button>
-                        {canOpenChatForJob(job.id) && <button onClick={() => handleOpenChatFromJob(job)}
-                          className="px-3 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors flex items-center justify-center">
-                          <MessageSquare className="w-4 h-4" />
-                        </button>}
+                      <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                        <div className="min-w-0">
+                          <p className="text-[20px] font-extrabold leading-none tracking-tight text-emerald-900 tabular-nums">
+                            Rp {job.nominal.toLocaleString("id-ID")}
+                          </p>
+                          <p className="mt-1 text-xs font-semibold text-gray-500">
+                            per {paymentUnits[job.pembayaran]}{job.isAgency ? ` · ${job.kuota} orang` : ""}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {canOpenChatForJob(job.id) && (
+                            <button onClick={() => handleOpenChatFromJob(job)} aria-label="Chat pemberi kerja"
+                              className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-primary transition-colors hover:bg-emerald-100">
+                              <MessageSquare className="h-[19px] w-[19px]" />
+                            </button>
+                          )}
+                          <Button disabled={isSuspended}
+                            className={`h-11 rounded-full px-6 text-[15px] font-extrabold ${isSuspended ? "cursor-not-allowed bg-gray-200 text-gray-400" : "bg-primary text-white hover:bg-primary/90"}`}
+                            onClick={() => !isSuspended && setSelectedJob(job)}>
+                            {isSuspended ? "Ditangguhkan" : "Lamar"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2668,14 +2593,6 @@ export default function Home() {
             tour="nav-bisnis"
             active={activeTab === "bisnis"}
             onClick={() => setActiveTab("bisnis")}
-          />
-        )}
-        {memberships.length > 0 && (
-          <NavBtn
-            icon={<Users className="w-5 h-5" />}
-            label="Tim"
-            active={activeTab === "tim"}
-            onClick={() => setActiveTab("tim")}
           />
         )}
         <NavBtn

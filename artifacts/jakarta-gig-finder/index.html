@@ -24,10 +24,37 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+      #boot{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#065F46 0%,#059669 55%,#10B981 100%);color:#fff;font-family:Poppins,Inter,system-ui,sans-serif}
+      #boot .boot-brand{display:flex;align-items:center;gap:12px}
+      #boot svg{width:48px;height:48px;flex:none}
+      #boot b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+      #boot small{display:block;margin-top:3px;font-size:11px;font-weight:500;opacity:.85}
+      #boot i{width:24px;height:24px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:boot-spin .8s linear infinite}
+      @keyframes boot-spin{to{transform:rotate(360deg)}}
+      .seo-fallback{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    </style>
   </head>
   <body>
     <div id="root">
-      <main>
+      <div id="boot" aria-hidden="true">
+        <div class="boot-brand">
+          <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="bg-em" x1="16" y1="4" x2="48" y2="60" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0B7A55"/><stop offset="0.55" stop-color="#059669"/><stop offset="1" stop-color="#045C41"/></linearGradient>
+              <linearGradient id="bg-gd" x1="20" y1="18" x2="44" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FDE9A8"/><stop offset="0.35" stop-color="#E7B84C"/><stop offset="0.7" stop-color="#B8860B"/><stop offset="1" stop-color="#8A6410"/></linearGradient>
+              <linearGradient id="bg-gs" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F5D580"/><stop offset="1" stop-color="#C9971F"/></linearGradient>
+            </defs>
+            <path d="M32 3.5 L54 11 V30 C54 45 44.5 55 32 60.5 C19.5 55 10 45 10 30 V11 Z" fill="url(#bg-em)" stroke="url(#bg-gs)" stroke-width="2.5"/>
+            <path d="M32 8 L49.5 13.9 V30 C49.5 42.4 41.8 50.8 32 55.6 C22.2 50.8 14.5 42.4 14.5 30 V13.9 Z" fill="none" stroke="url(#bg-gd)" stroke-width="1.1" opacity="0.85"/>
+            <path d="M18 44 C22 41 24 45 27 43 M46 44 C42 41 40 45 37 43" stroke="url(#bg-gd)" stroke-width="1.3" stroke-linecap="round" fill="none" opacity="0.8"/>
+            <text x="32" y="39.5" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="url(#bg-gd)" stroke="#7A560C" stroke-width="0.4">R</text>
+          </svg>
+          <div><b>Rekhastha</b><small>by Tilu Saudara Solusindo</small></div>
+        </div>
+        <i></i>
+      </div>
+      <main class="seo-fallback">
         <h1>Lowongan kerja harian di dekat Anda. Tenaga kerja harian untuk usaha Anda.</h1>
         <p>Rekhastha adalah aplikasi kerja harian di Indonesia. Pencari kerja melihat lowongan terdekat lengkap dengan upah, jam, dan lokasinya. Pemilik usaha memasang lowongan, mencatat kehadiran dengan QR dan GPS, lalu menghitung upah, semuanya dalam satu aplikasi.</p>
         <ul>

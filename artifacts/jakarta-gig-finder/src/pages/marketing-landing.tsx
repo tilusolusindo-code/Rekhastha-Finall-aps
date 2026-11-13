@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calculator, Check, ChevronDown, MapPin, Menu, QrCode, Users, X } from "lucide-react";
+import { Calculator, CalendarDays, Check, ChevronDown, MapPin, Menu, QrCode, Users, X, Zap } from "lucide-react";
 import { RekhasthaCrest } from "../components/rekhastha-logo";
 import "./marketing-landing.css";
 
@@ -262,23 +262,30 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
               <ProductStage />
             </div>
           </div>
-        </section>
 
-        <section className="rl-facts" aria-label="Ringkasan layanan">
-          <div className="rl-container rl-facts-grid">
-            <div>
-              <h2>Lowongan instan</h2>
-              <p>Butuh orang segera? Lowongan langsung diberitahukan ke pekerja di sekitar lokasi.</p>
-            </div>
-            <div>
-              <h2>Lowongan terjadwal</h2>
-              <p>Sudah tahu tanggal dan jamnya? Atur dari jauh-jauh hari.</p>
-            </div>
-            <div>
-              <h2>Seluruh Indonesia</h2>
-              <p>Pilih provinsi dan kota Anda, lalu lihat apa yang tersedia.</p>
-            </div>
-          </div>
+          <ul className="rl-container rl-facts" aria-label="Ringkasan layanan">
+            <li>
+              <span className="rl-fact-icon"><Zap size={20} aria-hidden="true" /></span>
+              <div>
+                <h2>Lowongan instan</h2>
+                <p>Butuh orang segera? Lowongan langsung diberitahukan ke pekerja di sekitar lokasi.</p>
+              </div>
+            </li>
+            <li>
+              <span className="rl-fact-icon"><CalendarDays size={20} aria-hidden="true" /></span>
+              <div>
+                <h2>Lowongan terjadwal</h2>
+                <p>Sudah tahu tanggal dan jamnya? Atur dari jauh-jauh hari.</p>
+              </div>
+            </li>
+            <li>
+              <span className="rl-fact-icon"><MapPin size={20} aria-hidden="true" /></span>
+              <div>
+                <h2>Seluruh Indonesia</h2>
+                <p>Pilih provinsi dan kota Anda, lalu lihat apa yang tersedia.</p>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <section className="rl-section" id="untuk-siapa" aria-labelledby="rl-who-title">
@@ -429,7 +436,6 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
             <a href="/lowongan-kerja-harian-jakarta/">Lowongan kerja harian Jakarta</a>
             <a href="/absensi-qr-gps/">Absensi QR dan GPS</a>
             <a href="/kalkulator-pph21/">Kalkulator PPh 21</a>
-            <a href="/privasi" data-testid="link-privacy">Kebijakan Privasi</a>
           </nav>
           <div className="rl-footer-nav">
             <h2>Akun</h2>

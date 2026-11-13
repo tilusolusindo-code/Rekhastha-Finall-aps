@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
 import { Users, Eye, Building2, Loader2, Check, X, LogOut, ExternalLink } from "lucide-react";
 import { ShortlistControls } from "./client-share";
 
@@ -129,7 +129,8 @@ export function TeamMembershipBanner() {
 
 interface WorkerApplication {
   id: number; jobId: number; jobTitle: string; workerName: string; status: string; createdAt: string;
-  cvLink?: string | null; portfolioLink?: string | null; supportingInfo?: string | null;
+  cvLink?: string | null; portfolioLink?: string | null;
+  supportingInfo?: { experience?: string; education?: string; skills?: string; availability?: string } | null;
   shortlistedAt?: string | null; clientDecision?: "setuju" | "tidak" | null; clientNote?: string | null;
   workerSkills: string[];
   workerStats: { ratingAvg: number | null; ratingCount: number; completedJobs: number };
@@ -180,10 +181,16 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0">{STATUS_LABEL[a.status] ?? a.status}</span>
           </div>
           <p className="text-[11px] text-gray-400 mt-1">
-            {a.workerStats.completedJobs} pekerjaan selesai{a.workerStats.ratingAvg != null ? ` · ★ ${a.workerStats.ratingAvg.toFixed(1)} (${a.workerStats.ratingCount})` : ""}
+            {a.workerStats?.completedJobs ?? 0} pekerjaan selesai{a.workerStats?.ratingAvg != null ? ` · ★ ${Number(a.workerStats.ratingAvg).toFixed(1)} (${a.workerStats.ratingCount})` : ""}
           </p>
-          {a.workerSkills.length > 0 && <p className="text-[11px] text-gray-500 mt-1 truncate">{a.workerSkills.slice(0, 5).join(" · ")}</p>}
-          {a.supportingInfo && <p className="text-xs text-gray-600 mt-2 line-clamp-3">{a.supportingInfo}</p>}
+          {Array.isArray(a.workerSkills) && a.workerSkills.length > 0 && <p className="text-[11px] text-gray-500 mt-1 truncate">{a.workerSkills.slice(0, 5).join(" · ")}</p>}
+          {a.supportingInfo && (a.supportingInfo.experience || a.supportingInfo.education || a.supportingInfo.availability) && (
+            <dl className="mt-2 space-y-1 text-xs text-gray-600">
+              {a.supportingInfo.experience && <div><dt className="inline font-bold text-gray-500">Pengalaman: </dt><dd className="inline break-words">{String(a.supportingInfo.experience)}</dd></div>}
+              {a.supportingInfo.education && <div><dt className="inline font-bold text-gray-500">Pendidikan: </dt><dd className="inline break-words">{String(a.supportingInfo.education)}</dd></div>}
+              {a.supportingInfo.availability && <div><dt className="inline font-bold text-gray-500">Ketersediaan: </dt><dd className="inline break-words">{String(a.supportingInfo.availability)}</dd></div>}
+            </dl>
+          )}
           <div className="flex gap-3 mt-2">
             {a.cvLink && <a href={a.cvLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">CV <ExternalLink className="w-3 h-3" /></a>}
             {a.portfolioLink && <a href={a.portfolioLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">Portofolio <ExternalLink className="w-3 h-3" /></a>}
@@ -222,10 +229,10 @@ function GigsPanel({ companyId }: { companyId: string }) {
         <div key={g.id} className="bg-white rounded-2xl border border-gray-100 p-4">
           <p className="text-sm font-bold text-gray-900">{g.posisi}</p>
           <p className="text-[11px] text-gray-500 mt-0.5">{[g.jobDate, g.jamKerja, g.alamat].filter(Boolean).join(" · ")}</p>
-          <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-wide">Pekerja ({g.workers.length}{g.kuota ? `/${g.kuota}` : ""})</p>
-          {g.workers.length === 0
+          <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-wide">Pekerja ({(g.workers ?? []).length}{g.kuota ? `/${g.kuota}` : ""})</p>
+          {(g.workers ?? []).length === 0
             ? <p className="text-xs text-gray-400 mt-1">Belum ada pekerja diterima.</p>
-            : <ul className="mt-1 space-y-0.5">{g.workers.map(w => <li key={w.applicationId} className="text-xs text-gray-700">• {w.workerName}</li>)}</ul>}
+            : <ul className="mt-1 space-y-0.5">{(g.workers ?? []).map(w => <li key={w.applicationId} className="text-xs text-gray-700">• {w.workerName}</li>)}</ul>}
         </div>
       ))}
     </div>
@@ -261,7 +268,7 @@ function AttendancePanel({ companyId }: { companyId: string }) {
 }
 
 /** Ruang kerja anggota tim — isi menyesuaikan hak peran. */
-export function TeamMemberBisnisView({ memberships }: { memberships: Membership[] }) {
+function TeamWorkspaceInner({ memberships }: { memberships: Membership[] }) {
   const [activeId, setActiveId] = useState(memberships[0]?.companyId ?? "");
   const m = memberships.find(x => x.companyId === activeId) ?? memberships[0];
   const [tab, setTab] = useState<"applications" | "gigs" | "attendance" | null>(null);
@@ -311,4 +318,25 @@ export function TeamMemberBisnisView({ memberships }: { memberships: Membership[
       </div>
     </div>
   );
+}
+
+class WorkspaceBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: unknown) { console.error("[tim] ruang kerja gagal ditampilkan", error); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+        <p className="text-base font-black text-gray-900">Ruang kerja tim gagal ditampilkan</p>
+        <p className="text-sm text-gray-500">Terjadi kesalahan saat memuat data. Coba muat ulang halaman.</p>
+        <button onClick={() => window.location.reload()} className="rounded-xl bg-violet-700 px-4 py-2 text-sm font-black text-white">Muat ulang</button>
+      </div>
+    );
+  }
+}
+
+/** Ruang kerja anggota tim — dibungkus pengaman agar error tampilan tidak membuat halaman blank. */
+export function TeamMemberBisnisView({ memberships }: { memberships: Membership[] }) {
+  return <WorkspaceBoundary><TeamWorkspaceInner memberships={memberships} /></WorkspaceBoundary>;
 }

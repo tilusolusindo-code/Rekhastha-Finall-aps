@@ -1,3 +1,4 @@
+import FavoriteWorkersSection from "@/components/favorite-workers-section";
 import { useState } from "react";
 import { ShieldCheck, LogOut, Building2, Lock, AlertTriangle, Gavel, CheckCircle, RefreshCcw, History, ExternalLink, FileCheck } from "lucide-react";
 import { AuthUser } from "@/types/auth";
@@ -6,6 +7,7 @@ import { RatingPayload } from "@/components/rating-modal";
 import { ApplicationNotification } from "@/types/notification";
 import EscrowTimeline from "@/components/escrow-timeline";
 import { EscrowEvent } from "@/types/escrow";
+import { ProfileAvatar, EditProfileButton } from "@/components/profile-edit";
 import { approveRemoteProof, rejectRemoteProof } from "@/lib/borongan-client";
 
 interface CompanyProfilePageProps {
@@ -16,17 +18,16 @@ interface CompanyProfilePageProps {
   onLogout: () => void;
   escrowEvents: EscrowEvent[];
   onDispute: (jobId: number) => void;
-  onAdminResolve: (jobId: number, winner: "worker" | "company") => void;
   onJobUpdate?: (job: CustomJob) => void;
+  onUserUpdated?: (user: AuthUser) => void;
 }
 
 type ProfileTab = "data" | "riwayat";
 
 export default function CompanyProfilePage({
-  currentUser, customJobs, ratings, notifications, escrowEvents, onLogout, onDispute, onAdminResolve, onJobUpdate,
+  currentUser, customJobs, ratings, notifications, escrowEvents, onLogout, onDispute, onJobUpdate, onUserUpdated,
 }: CompanyProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>("data");
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [busyJobId, setBusyJobId] = useState<number | null>(null);
   const [proofErrors, setProofErrors] = useState<Record<number, string>>({});
   const nibValid = (currentUser.nibPerusahaan?.length ?? 0) === 13;
@@ -75,15 +76,22 @@ export default function CompanyProfilePage({
       {/* ── Profile header ──────────────────────────────── */}
       <div
         className="px-5 pt-6 pb-5 flex flex-col items-center gap-3"
-        style={{ background: "linear-gradient(160deg, #064E3B 0%, #047857 60%, #10B981 100%)" }}
+        style={{ background: "linear-gradient(160deg, #1E3A5F 0%, #1D4ED8 60%, #3B82F6 100%)" }}
       >
-        <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg,#047857,#10B981)" }}>
-          <span className="text-2xl font-black text-white">{initials}</span>
-        </div>
+        <ProfileAvatar
+          user={currentUser}
+          size={80}
+          fallbackBg="linear-gradient(135deg,#2563EB,#7C3AED)"
+          onUserUpdated={onUserUpdated}
+        />
         <div className="text-center">
           <h2 className="text-xl font-black text-white">{currentUser.namaPerusahaan || currentUser.name}</h2>
           <p className="text-sm text-blue-100">{currentUser.email}</p>
+          {onUserUpdated && (
+            <div className="mt-2 flex justify-center">
+              <EditProfileButton user={currentUser} onUserUpdated={onUserUpdated} company />
+            </div>
+          )}
           <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
             {currentUser.linkedWithGoogle && (
               <span className="text-[10px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">🔗 Linked with Google</span>
@@ -112,7 +120,7 @@ export default function CompanyProfilePage({
         {(["data", "riwayat"] as ProfileTab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex-1 py-3 text-xs font-bold transition-all border-b-2 ${
-              tab === t ? "border-primary text-primary" : "border-transparent text-gray-500"
+              tab === t ? "border-blue-600 text-blue-700" : "border-transparent text-gray-500"
             }`}>
             {t === "data" ? "🏢 Bisnis" : "📋 Riwayat"}
           </button>
@@ -125,7 +133,7 @@ export default function CompanyProfilePage({
           {/* ── Escrow Float Card ────────────────────── */}
           {escrowFloat > 0 && (
             <div className="rounded-2xl overflow-hidden border border-blue-200"
-              style={{ background: "linear-gradient(135deg, #064E3B 0%, #047857 100%)" }}>
+              style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 100%)" }}>
               <div className="px-4 py-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Lock className="w-4 h-4 text-blue-200" />
@@ -156,11 +164,17 @@ export default function CompanyProfilePage({
             </div>
           )}
 
+          <FavoriteWorkersSection
+            jobs={customJobs
+              .filter((j) => j.escrowStatus === "locked")
+              .map((j) => ({ id: j.id, posisi: j.posisi }))}
+          />
+
           {/* ── Active Escrow Jobs ───────────────────── */}
           {lockedJobs.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-emerald-700" />
+                <Lock className="w-4 h-4 text-blue-600" />
                 <p className="text-sm font-bold text-gray-900">Lowongan Aktif (Escrow)</p>
               </div>
               <div className="divide-y divide-gray-50">
@@ -171,7 +185,10 @@ export default function CompanyProfilePage({
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{job.posisi}</p>
-                          <p className="text-xs text-gray-500">Escrow: {fmt(job.escrowAmount ?? 0)}</p>
+                          <p className="text-xs text-gray-500">
+                            Escrow: {fmt(job.escrowAmount ?? 0)} ·{" "}
+                            <a href={`/api/receipts/invoice/${job.id}`} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 underline">Invoice</a>
+                          </p>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${isDisputed ? "bg-red-100 text-red-700 animate-pulse" : "bg-emerald-100 text-emerald-700"}`}>
                           {isDisputed ? "🔴 DIBEKUKAN" : "🔒 DIKUNCI"}
@@ -245,7 +262,7 @@ export default function CompanyProfilePage({
                             className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 hover:bg-slate-100 transition-colors group"
                           >
                             <ExternalLink className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                            <span className="text-xs font-semibold text-emerald-700 group-hover:underline truncate">
+                            <span className="text-xs font-semibold text-blue-600 group-hover:underline truncate">
                               {safeHref}
                             </span>
                           </a>
@@ -306,7 +323,7 @@ export default function CompanyProfilePage({
           {/* Legal data */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-emerald-700" />
+              <Building2 className="w-4 h-4 text-blue-600" />
               <p className="text-sm font-bold text-gray-900">Profil Bisnis</p>
             </div>
             <div className="divide-y divide-gray-50">
@@ -324,8 +341,8 @@ export default function CompanyProfilePage({
           {/* Stats summary */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Lowongan Aktif", value: String(customJobs.length), color: "bg-emerald-50 text-emerald-800" },
-              { label: "Total Pelamar", value: String(notifications.length), color: "bg-emerald-50 text-emerald-800" },
+              { label: "Lowongan Aktif", value: String(customJobs.length), color: "bg-blue-50 text-blue-700" },
+              { label: "Total Pelamar", value: String(notifications.length), color: "bg-violet-50 text-violet-700" },
               { label: "Rating Rata-rata", value: ratings.filter(r => r.raterType === "company").length ? (ratings.filter(r => r.raterType === "company").reduce((s, r) => s + r.stars, 0) / ratings.filter(r => r.raterType === "company").length).toFixed(1) + " ★" : "—", color: "bg-amber-50 text-amber-700" },
             ].map((s) => (
               <div key={s.label} className={`${s.color} rounded-2xl p-3 text-center`}>
@@ -334,49 +351,6 @@ export default function CompanyProfilePage({
               </div>
             ))}
           </div>
-
-          {/* ── Admin Escrow Key Panel ───────────────── */}
-          <button onClick={() => setShowAdminPanel(p => !p)}
-            className="w-full flex items-center justify-center gap-2 bg-gray-900 text-amber-400 text-xs font-bold py-3 rounded-2xl hover:bg-gray-800 transition-colors border border-amber-900/30">
-            <Gavel className="w-3.5 h-3.5" /> 🔑 Admin Master Escrow Key {showAdminPanel ? "▲" : "▼"}
-          </button>
-
-          {showAdminPanel && (
-            <div className="bg-gray-900 rounded-2xl border border-amber-700/30 overflow-hidden">
-              <div className="px-4 py-3 border-b border-amber-700/20 flex items-center gap-2">
-                <Gavel className="w-4 h-4 text-amber-400" />
-                <p className="text-sm font-bold text-amber-400">Admin Escrow Command Center</p>
-              </div>
-              {disputedJobs.length === 0 ? (
-                <div className="px-4 py-6 text-center">
-                  <p className="text-sm text-gray-500">Tidak ada sengketa aktif</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-800">
-                  {disputedJobs.map(job => (
-                    <div key={job.id} className="px-4 py-4 space-y-3">
-                      <div>
-                        <p className="text-sm font-bold text-white">{job.posisi}</p>
-                        <p className="text-xs text-gray-400">Dana dibekukan: {fmt(job.escrowAmount ?? 0)}</p>
-                        <p className="text-[10px] text-red-400 mt-0.5">🔴 DANA DIBEKUKAN — INVESTIGASI ADMIN</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => onAdminResolve(job.id, "worker")}
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-emerald-500 transition-colors">
-                          <CheckCircle className="w-3.5 h-3.5" /> Menangkan Pekerja
-                        </button>
-                        <button onClick={() => onAdminResolve(job.id, "company")}
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white text-xs font-bold py-2.5 rounded-xl hover:bg-primary/90 transition-colors">
-                          <RefreshCcw className="w-3.5 h-3.5" /> Refund ke Perusahaan
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-gray-500 text-center">Menangkan pekerja → payout pekerja sesuai snapshot dilepas; biaya admin flat telah ditagihkan saat posting. Refund perusahaan mengikuti aturan biaya sengketa.</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           <button onClick={onLogout}
             className="w-full flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-500 text-sm font-semibold py-3 rounded-2xl hover:bg-red-100 transition-colors">
@@ -391,7 +365,7 @@ export default function CompanyProfilePage({
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <History className="w-5 h-5 text-emerald-700" />
+                <History className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm font-black text-gray-900">Audit Log Escrow Rekhastha</p>

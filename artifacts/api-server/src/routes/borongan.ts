@@ -324,7 +324,7 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
   // calling checkout without ever having QR-scanned in on site.
   const today = jakartaDateString();
   const [checkIn] = await db
-    .select({ id: attendanceTable.id })
+    .select({ id: attendanceTable.id, at: attendanceTable.at })
     .from(attendanceTable)
     .where(
       and(
@@ -340,6 +340,18 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
     res.status(403).json({
       error:
         "Kamu belum scan presensi masuk hari ini. Minta employer tampilkan QR masuk terlebih dahulu.",
+    });
+    return;
+  }
+
+  // Upah harian baru bisa diambil setelah minimal 4 jam sejak scan masuk, agar
+  // tidak bisa "masuk lalu langsung pulang" tanpa benar-benar bekerja.
+  const MIN_WORK_MS = 4 * 60 * 60 * 1000;
+  const workedMs = Date.now() - new Date(checkIn.at).getTime();
+  if (workedMs < MIN_WORK_MS) {
+    const sisaMenit = Math.ceil((MIN_WORK_MS - workedMs) / 60000);
+    res.status(403).json({
+      error: `Pulang baru bisa dicatat minimal 4 jam setelah scan masuk. Tunggu sekitar ${Math.floor(sisaMenit / 60)} jam ${sisaMenit % 60} menit lagi.`,
     });
     return;
   }

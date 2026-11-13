@@ -5,6 +5,10 @@ import { ShortlistControls } from "./client-share";
 
 export type TeamRole = "hr" | "supervisor";
 
+/** Event antar-komponen: keanggotaan berubah (terima/keluar) dan permintaan membuka tab Tim. */
+export const TEAM_CHANGED_EVENT = "rekhastha:team-changed";
+export const OPEN_TEAM_EVENT = "rekhastha:open-team";
+
 export interface Membership {
   companyId: string;
   companyName: string;
@@ -57,7 +61,10 @@ export function TeamMembershipBanner() {
 
   const act = async (key: string, fn: () => Promise<unknown>) => {
     setBusy(key); setError("");
-    try { await fn(); await load(); }
+    try {
+      await fn(); await load();
+      window.dispatchEvent(new Event(TEAM_CHANGED_EVENT));
+    }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
@@ -99,7 +106,11 @@ export function TeamMembershipBanner() {
               <p className={`text-xs font-black ${r.color} uppercase tracking-wide`}>Anggota Tim</p>
               <p className="text-sm font-bold text-gray-900 mt-0.5 truncate">{m.companyName}</p>
               <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/70 ${r.color}`}>{r.icon} {r.label}</span>
-              <p className="text-[10px] text-gray-500 mt-1">Aktif sejak {since} · buka menu <b>Bisnis</b> untuk bekerja</p>
+              <p className="text-[10px] text-gray-500 mt-1">Aktif sejak {since}</p>
+              <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_TEAM_EVENT))}
+                className={`mt-2 w-full rounded-xl bg-white/80 py-2 text-xs font-black ${r.color} hover:bg-white`}>
+                Buka ruang kerja tim
+              </button>
               <button disabled={busy !== null}
                 onClick={() => { if (confirm(`Keluar dari tim ${m.companyName}?`)) void act(`l${m.companyId}`, () => api(`/api/team/membership/${m.companyId}`, { method: "DELETE" })); }}
                 className="mt-2 text-[11px] font-bold text-gray-500 hover:text-red-600 flex items-center gap-1 disabled:opacity-50">
@@ -253,7 +264,7 @@ function AttendancePanel({ companyId }: { companyId: string }) {
 export function TeamMemberBisnisView({ memberships }: { memberships: Membership[] }) {
   const [activeId, setActiveId] = useState(memberships[0]?.companyId ?? "");
   const m = memberships.find(x => x.companyId === activeId) ?? memberships[0];
-  const [tab, setTab] = useState<"applications" | "gigs" | "attendance">("gigs");
+  const [tab, setTab] = useState<"applications" | "gigs" | "attendance" | null>(null);
   if (!m) return null;
   const r = ROLE_INFO[m.role] ?? ROLE_INFO.hr;
   const can = (p: string) => m.permissions.includes(p);
@@ -262,7 +273,7 @@ export function TeamMemberBisnisView({ memberships }: { memberships: Membership[
     can("gigs.view") && { key: "gigs" as const, label: "Lowongan" },
     can("attendance.view") && { key: "attendance" as const, label: "Presensi" },
   ].filter(Boolean) as { key: "applications" | "gigs" | "attendance"; label: string }[];
-  const current = tabs.some(t => t.key === tab) ? tab : tabs[0]?.key;
+  const current = tab && tabs.some(t => t.key === tab) ? tab : tabs[0]?.key;
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ background: "#F8FAFC" }}>

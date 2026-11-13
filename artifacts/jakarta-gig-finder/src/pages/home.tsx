@@ -24,6 +24,7 @@ import { RekhasthaLogo } from "@/components/rekhastha-logo";
 import EscrowProjectsPanel from "@/components/escrow-projects-panel";
 import ManualPaymentsPanel from "@/components/manual-payments-panel";
 import BisnisPage from "@/components/bisnis-page";
+import { TeamMemberBisnisView, fetchMemberships, TEAM_CHANGED_EVENT, OPEN_TEAM_EVENT, type Membership } from "@/components/team-membership-banner";
 import CompanyRadarStats from "@/components/company-radar-stats";
 import {
   subscribeToServer,
@@ -92,7 +93,7 @@ let nextNotifId = 1;
 
 type JobStatus = "applied" | "accepted" | "clocked_in" | "completed" | null;
 type CompanyView = "jobs" | "analytics" | "radar";
-type AppTab = "home" | "chat" | "proyek" | "bisnis" | "profile";
+type AppTab = "home" | "chat" | "proyek" | "bisnis" | "tim" | "profile";
 
 // A gig is "instant" (Broadcast Instan) only when it is a cepat posting. Regular
 // (lama) jobs — even once their escrow is locked and they go live — stay in the
@@ -142,6 +143,22 @@ export default function Home() {
     return search.has("google_code") || search.has("google_error") ? "masuk" : "landing";
   });
   const [activeTab, setActiveTab] = useState<AppTab>("home");
+  // Anggota tim (akun pekerja yang diundang HR/Supervisor): menu "Tim" muncul hanya bila ada keanggotaan aktif.
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const refreshMemberships = useCallback(() => {
+    if (!currentUser || currentUser.role === "perusahaan") { setMemberships([]); return; }
+    void fetchMemberships().then(setMemberships);
+  }, [currentUser?.id, currentUser?.role]);
+  useEffect(() => { refreshMemberships(); }, [refreshMemberships]);
+  useEffect(() => {
+    const onChanged = () => refreshMemberships();
+    const onOpen = () => setActiveTab("tim");
+    window.addEventListener(TEAM_CHANGED_EVENT, onChanged);
+    window.addEventListener(OPEN_TEAM_EVENT, onOpen);
+    return () => { window.removeEventListener(TEAM_CHANGED_EVENT, onChanged); window.removeEventListener(OPEN_TEAM_EVENT, onOpen); };
+  }, [refreshMemberships]);
+  // Keluar dari tim saat sedang di tab Tim → kembali ke beranda.
+  useEffect(() => { if (activeTab === "tim" && memberships.length === 0) setActiveTab("home"); }, [activeTab, memberships.length]);
   // Panduan tertulis (tombol "Panduan") dan tur interaktif (otomatis sekali per akun).
   const [guideOpen, setGuideOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
@@ -156,6 +173,40 @@ export default function Home() {
     if (!currentUser || hasSeenTour(currentUser.id)) return;
     const t = setTimeout(() => setTourOpen(true), 1200);
     return () => clearTimeout(t);
+  }, [currentUser?.id]);
+  // Tautan undangan tim dari email (?join_team=<token>): simpan dulu supaya tetap jalan
+  // setelah login/daftar, lalu bergabung begitu akun pekerja sudah masuk.
+  const [teamJoinMsg, setTeamJoinMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const t = url.searchParams.get("join_team");
+      if (t) {
+        sessionStorage.setItem("rekhastha_join_team", t);
+        url.searchParams.delete("join_team");
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch { /* abaikan */ }
+  }, []);
+  useEffect(() => {
+    if (!currentUser) return;
+    let token: string | null = null;
+    try { token = sessionStorage.getItem("rekhastha_join_team"); } catch { /* abaikan */ }
+    if (!token) return;
+    try { sessionStorage.removeItem("rekhastha_join_team"); } catch { /* abaikan */ }
+    fetch("/api/team/join", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+      .then(async r => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error ?? "Undangan tidak dapat dipakai.");
+        setTeamJoinMsg({ ok: true, text: "Anda sekarang anggota tim. Buka menu Tim untuk mulai bekerja." });
+        window.dispatchEvent(new Event(TEAM_CHANGED_EVENT));
+      })
+      .catch(e => setTeamJoinMsg({ ok: false, text: (e as Error).message }))
+      .finally(() => setTimeout(() => setTeamJoinMsg(null), 8000));
   }, [currentUser?.id]);
   const [mode, setMode] = useState<"perusahaan" | "pekerja">("perusahaan");
   const [companyView, setCompanyView] = useState<CompanyView>("jobs");
@@ -211,7 +262,6 @@ export default function Home() {
 
   // ── Escrow & Wallet ──────────────────────────────────────────────
   const [walletBalance, setWalletBalance] = useState(0);
-  const [walletHold, setWalletHold] = useState<{ held: number; nextReleaseAt: string | null; bankHoldUntil: string | null } | null>(null);
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [platformBalance, setPlatformBalance] = useState(0);
   const [escrowEvents, setEscrowEvents] = useState<EscrowEvent[]>([]);
@@ -226,10 +276,6 @@ export default function Home() {
       if (!response.ok) return;
       const data = (await response.json()) as {
         balance: number;
-        available?: number;
-        held?: number;
-        nextReleaseAt?: string | null;
-        bankHoldUntil?: string | null;
         entries: Array<{ id: number; amount: number; description: string; createdAt: string }>;
         payouts: Array<{ id: number; amount: number; status: string; createdAt: string; transferReference?: string | null }>;
       };
@@ -255,7 +301,6 @@ export default function Home() {
         note: payout.transferReference ? `Referensi transfer: ${payout.transferReference}` : undefined,
       }));
       setWalletBalance(data.balance);
-      setWalletHold({ held: data.held ?? 0, nextReleaseAt: data.nextReleaseAt ?? null, bankHoldUntil: data.bankHoldUntil ?? null });
       setWalletTransactions([...entries, ...payouts].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
       setTotalEarned(data.entries.reduce((sum, entry) => sum + entry.amount, 0));
     } catch {
@@ -467,6 +512,9 @@ export default function Home() {
         applicationAnswers: e.applicationAnswers,
         supportingInfo: e.supportingInfo,
         uploadedFiles: e.uploadedFiles,
+        shortlistedAt: e.shortlistedAt,
+        clientDecision: e.clientDecision,
+        clientNote: e.clientNote,
       };
       setNotifications((p) => [notif, ...p]);
       setApplicantToast(notif);
@@ -559,6 +607,9 @@ export default function Home() {
               applicationAnswers: row.applicationAnswers,
               supportingInfo: row.supportingInfo,
               uploadedFiles: row.uploadedFiles,
+              shortlistedAt: row.shortlistedAt,
+              clientDecision: row.clientDecision,
+              clientNote: row.clientNote,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -650,6 +701,9 @@ export default function Home() {
                   applicationAnswers: latest.applicationAnswers,
                   supportingInfo: latest.supportingInfo,
                   uploadedFiles: latest.uploadedFiles,
+                  shortlistedAt: latest.shortlistedAt,
+                  clientDecision: latest.clientDecision,
+                  clientNote: latest.clientNote,
                 }
               : item;
           });
@@ -677,6 +731,9 @@ export default function Home() {
               applicationAnswers: row.applicationAnswers,
               supportingInfo: row.supportingInfo,
               uploadedFiles: row.uploadedFiles,
+              shortlistedAt: row.shortlistedAt,
+              clientDecision: row.clientDecision,
+              clientNote: row.clientNote,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -1707,6 +1764,7 @@ export default function Home() {
   const isProfileTab = activeTab === "profile";
   const isProyekTab = activeTab === "proyek";
   const isBisnisTab = activeTab === "bisnis";
+  const isTimTab = activeTab === "tim" && memberships.length > 0;
 
   return (
     <div className="mobile-app-shell flex flex-col h-[100dvh] w-full bg-gray-50 relative overflow-hidden">
@@ -1721,6 +1779,12 @@ export default function Home() {
           onDecline={() => handleStatusChange(applicantToast.id, "ditolak")}
           onDismiss={() => setApplicantToast(null)}
         />
+      )}
+
+      {teamJoinMsg && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl shadow-xl text-white text-sm font-bold max-w-xs w-[90vw] ${teamJoinMsg.ok ? "bg-emerald-600" : "bg-red-500"}`}>
+          {teamJoinMsg.text}
+        </div>
       )}
 
       {/* ── DOKU Payment result toast ─────────────────────── */}
@@ -1866,6 +1930,9 @@ export default function Home() {
             <SidebarBtn icon={<Briefcase className="w-5 h-5" />} label="Proyek" collapsed={sidebarCollapsed} active={activeTab === "proyek"} onClick={() => setActiveTab("proyek")} />
             {currentUser.role === "perusahaan" && (
               <SidebarBtn icon={<Banknote className="w-5 h-5" />} label="Rekhastha Bisnis" tour="nav-bisnis" collapsed={sidebarCollapsed} active={activeTab === "bisnis"} onClick={() => setActiveTab("bisnis")} />
+            )}
+            {memberships.length > 0 && (
+              <SidebarBtn icon={<Users className="w-5 h-5" />} label="Tim" collapsed={sidebarCollapsed} active={activeTab === "tim"} onClick={() => setActiveTab("tim")} />
             )}
           </nav>
 
@@ -2043,7 +2110,6 @@ export default function Home() {
               clockedInAt={clockedInAt}
               clockedOutAt={clockedOutAt}
               walletBalance={walletBalance}
-              walletHold={walletHold}
               walletTransactions={walletTransactions}
               isWithdrawLocked={customJobs.some(j => j.escrowStatus === "disputed")}
               escrowEvents={escrowEvents}
@@ -2062,7 +2128,6 @@ export default function Home() {
               escrowEvents={escrowEvents}
               onLogout={handleLogout}
               onDispute={handleJobDispute}
-              onAdminResolve={handleAdminResolve}
               onJobUpdate={(updated) =>
                 setCustomJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)))
               }
@@ -2083,8 +2148,10 @@ export default function Home() {
         <BisnisPage currentUser={currentUser} onOpenPayments={() => setShowManualPayments(true)} />
       )}
 
+      {isTimTab && <TeamMemberBisnisView memberships={memberships} />}
+
       {/* ── HOME TAB CONTENT (hidden when profile/proyek tab active) */}
-      {!isProfileTab && !isProyekTab && !isBisnisTab && (
+      {!isProfileTab && !isProyekTab && !isBisnisTab && !isTimTab && (
         <>
           {/* ── HEADER ─────────────────────────────────── */}
           <header className="z-10 bg-white border-b border-gray-100 shadow-sm flex flex-col shrink-0">
@@ -2583,6 +2650,14 @@ export default function Home() {
             tour="nav-bisnis"
             active={activeTab === "bisnis"}
             onClick={() => setActiveTab("bisnis")}
+          />
+        )}
+        {memberships.length > 0 && (
+          <NavBtn
+            icon={<Users className="w-5 h-5" />}
+            label="Tim"
+            active={activeTab === "tim"}
+            onClick={() => setActiveTab("tim")}
           />
         )}
         <NavBtn

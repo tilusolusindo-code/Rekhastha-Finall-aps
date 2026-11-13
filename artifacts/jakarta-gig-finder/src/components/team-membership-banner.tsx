@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Users, Eye, Building2, Loader2, Check, X, LogOut, ExternalLink } from "lucide-react";
+import { ShortlistControls } from "./client-share";
 
 export type TeamRole = "hr" | "supervisor";
 
@@ -118,6 +119,7 @@ export function TeamMembershipBanner() {
 interface WorkerApplication {
   id: number; jobId: number; jobTitle: string; workerName: string; status: string; createdAt: string;
   cvLink?: string | null; portfolioLink?: string | null; supportingInfo?: string | null;
+  shortlistedAt?: string | null; clientDecision?: "setuju" | "tidak" | null; clientNote?: string | null;
   workerSkills: string[];
   workerStats: { ratingAvg: number | null; ratingCount: number; completedJobs: number };
 }
@@ -175,6 +177,12 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
             {a.cvLink && <a href={a.cvLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">CV <ExternalLink className="w-3 h-3" /></a>}
             {a.portfolioLink && <a href={a.portfolioLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">Portofolio <ExternalLink className="w-3 h-3" /></a>}
           </div>
+          {canDecide && (
+            <div className="mt-3">
+              <ShortlistControls applicationId={a.id} jobId={a.jobId} jobTitle={a.jobTitle} status={a.status}
+                shortlisted={!!a.shortlistedAt} clientDecision={a.clientDecision} clientNote={a.clientNote} />
+            </div>
+          )}
           {canDecide && (a.status === "baru" || a.status === "ditinjau") && (
             <div className="flex gap-2 mt-3">
               {a.status === "baru" && (

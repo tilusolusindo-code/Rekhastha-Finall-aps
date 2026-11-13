@@ -494,6 +494,9 @@ export default function Home() {
         applicationAnswers: e.applicationAnswers,
         supportingInfo: e.supportingInfo,
         uploadedFiles: e.uploadedFiles,
+        shortlistedAt: e.shortlistedAt,
+        clientDecision: e.clientDecision,
+        clientNote: e.clientNote,
       };
       setNotifications((p) => [notif, ...p]);
       setApplicantToast(notif);
@@ -586,6 +589,9 @@ export default function Home() {
               applicationAnswers: row.applicationAnswers,
               supportingInfo: row.supportingInfo,
               uploadedFiles: row.uploadedFiles,
+              shortlistedAt: row.shortlistedAt,
+              clientDecision: row.clientDecision,
+              clientNote: row.clientNote,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -677,6 +683,9 @@ export default function Home() {
                   applicationAnswers: latest.applicationAnswers,
                   supportingInfo: latest.supportingInfo,
                   uploadedFiles: latest.uploadedFiles,
+                  shortlistedAt: latest.shortlistedAt,
+                  clientDecision: latest.clientDecision,
+                  clientNote: latest.clientNote,
                 }
               : item;
           });
@@ -704,6 +713,9 @@ export default function Home() {
               applicationAnswers: row.applicationAnswers,
               supportingInfo: row.supportingInfo,
               uploadedFiles: row.uploadedFiles,
+              shortlistedAt: row.shortlistedAt,
+              clientDecision: row.clientDecision,
+              clientNote: row.clientNote,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -2094,7 +2106,6 @@ export default function Home() {
               escrowEvents={escrowEvents}
               onLogout={handleLogout}
               onDispute={handleJobDispute}
-              onAdminResolve={handleAdminResolve}
               onJobUpdate={(updated) =>
                 setCustomJobs((prev) => prev.map((j) => (j.id === updated.id ? updated : j)))
               }

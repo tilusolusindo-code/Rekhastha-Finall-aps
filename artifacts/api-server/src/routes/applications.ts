@@ -59,6 +59,7 @@ router.post("/applications/uploads/request-url", async (req, res): Promise<void>
     fileSize: z.number().int().positive().max(MAX_APPLICATION_FILE_SIZE),
     contentType: z.enum(applicationFileMimeTypes),
     kind: applicationFileKindSchema,
+    questionId: z.string().min(1).max(80).optional(),
   }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -85,6 +86,7 @@ router.post("/applications/uploads/request-url", async (req, res): Promise<void>
     .select({
       employerId: gigsTable.employerId,
       paymentStatus: gigsTable.paymentStatus,
+      applicationQuestions: gigsTable.applicationQuestions,
     })
     .from(gigsTable)
     .where(eq(gigsTable.id, parsed.data.jobId))
@@ -92,6 +94,27 @@ router.post("/applications/uploads/request-url", async (req, res): Promise<void>
   if (!gig || gig.paymentStatus !== "confirmed" || !gig.employerId) {
     res.status(404).json({ error: "Lowongan tidak tersedia." });
     return;
+  }
+  // Unggahan untuk syarat perekrut: pertanyaannya harus ada, bertipe foto/file, dan jenis berkas harus cocok.
+  if (parsed.data.questionId) {
+    const question = (gig.applicationQuestions ?? []).find((q) => q.id === parsed.data.questionId);
+    if (!question || (question.answerType !== "photo" && question.answerType !== "file")) {
+      res.status(400).json({ error: "Syarat unggahan tidak ditemukan pada lowongan ini." });
+      return;
+    }
+    if (parsed.data.kind !== question.answerType) {
+      res.status(400).json({ error: "Jenis berkas tidak sesuai dengan syarat yang diminta." });
+      return;
+    }
+    // Satu syarat = satu berkas; unggahan lama yang belum terpakai untuk syarat ini diganti.
+    await db
+      .delete(applicationUploadsTable)
+      .where(and(
+        eq(applicationUploadsTable.workerId, user.id),
+        eq(applicationUploadsTable.jobId, parsed.data.jobId),
+        eq(applicationUploadsTable.questionId, parsed.data.questionId),
+        isNull(applicationUploadsTable.applicationId),
+      ));
   }
   if (gig.employerId === user.id) {
     res.status(403).json({ error: "Anda tidak dapat melamar lowongan sendiri." });
@@ -110,6 +133,7 @@ router.post("/applications/uploads/request-url", async (req, res): Promise<void>
         contentType: parsed.data.contentType,
         fileSize: parsed.data.fileSize,
         kind: parsed.data.kind,
+        questionId: parsed.data.questionId ?? null,
       })
       .returning({ id: applicationUploadsTable.id });
 
@@ -326,9 +350,11 @@ function toApplicationAttachment(upload: {
   fileName: string;
   contentType: string;
   kind: string;
+  questionId?: string | null;
 }) {
   return {
     id: upload.id,
+    questionId: upload.questionId ?? null,
     fileName: upload.fileName,
     contentType: upload.contentType,
     kind: upload.kind,
@@ -345,6 +371,7 @@ export async function getApplicationAttachments(applicationIds: number[]) {
       fileName: applicationUploadsTable.fileName,
       contentType: applicationUploadsTable.contentType,
       kind: applicationUploadsTable.kind,
+      questionId: applicationUploadsTable.questionId,
     })
     .from(applicationUploadsTable)
     .where(and(
@@ -438,6 +465,12 @@ router.post("/applications", async (req, res): Promise<void> => {
     }
     for (const question of questions) {
       const answer = parsed.data.applicationAnswers[question.id] ?? "";
+      const isUploadQuestion = question.answerType === "photo" || question.answerType === "file";
+      if (isUploadQuestion) {
+        // Jawabannya berupa berkas, bukan teks.
+        if (answer.trim()) return { kind: "invalid_answers" as const };
+        continue;
+      }
       if (question.required && !answer.trim()) {
         return { kind: "required_answers" as const };
       }
@@ -463,7 +496,24 @@ router.post("/applications", async (req, res): Promise<void> => {
       return { kind: "invalid_uploads" as const };
     }
 
-    const uploadedKinds = new Set(uploadRows.map((upload) => upload.kind));
+    // Syarat foto/file dari perekrut: berkas harus menunjuk pertanyaan yang benar, maksimal satu per syarat,
+    // dan semua syarat wajib harus terpenuhi.
+    const uploadQuestions = questions.filter((q) => q.answerType === "photo" || q.answerType === "file");
+    const perQuestion = new Map<string, number>();
+    for (const upload of uploadRows) {
+      if (!upload.questionId) continue;
+      const q = uploadQuestions.find((x) => x.id === upload.questionId);
+      if (!q || q.answerType !== upload.kind) return { kind: "invalid_uploads" as const };
+      perQuestion.set(q.id, (perQuestion.get(q.id) ?? 0) + 1);
+    }
+    if ([...perQuestion.values()].some((n) => n > 1)) return { kind: "invalid_uploads" as const };
+    if (uploadQuestions.some((q) => q.required && !perQuestion.has(q.id))) {
+      return { kind: "required_documents" as const };
+    }
+
+    // Berkas tanpa questionId = dokumen generik (CV/portofolio/file/foto); yang bertaut ke pertanyaan
+    // tidak boleh dihitung memenuhi syarat dokumen generik.
+    const uploadedKinds = new Set(uploadRows.filter((upload) => !upload.questionId).map((upload) => upload.kind));
     const requestedDocuments = gig.requestedApplicationDocuments ?? [];
     const needsProfileDocuments =
       gig.hiringMode !== "cepat" ||

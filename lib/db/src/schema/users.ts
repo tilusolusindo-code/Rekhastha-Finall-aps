@@ -23,6 +23,8 @@ export const usersTable = pgTable("users", {
   role: text("role").notNull(),
   whatsapp: text("whatsapp"),
   linkedWithGoogle: boolean("linked_with_google").notNull().default(false),
+  /** false = baru daftar dengan password dan belum membuktikan kepemilikan email. */
+  emailVerified: boolean("email_verified").notNull().default(true),
   suspended: boolean("suspended").notNull().default(false),
   profile: jsonb("profile").notNull().default({}),
   /** Path to the KTP document photo uploaded during KYC onboarding. */

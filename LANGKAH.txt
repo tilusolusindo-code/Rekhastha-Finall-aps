@@ -1,9 +1,0 @@
-Perbaikan absensi QR Rekhastha
-==============================
-1. Salin isi ZIP ke root repo (timpa file yang sama). ZIP ini tidak bergantung pada ZIP alur uang; boleh dipasang lebih dulu atau belakangan.
-2. git add -A && git commit -m "Perkuat absensi QR" && git push
-3. Tidak ada env atau migrasi baru.
-Uji cepat setelah deploy:
-  - Pemberi kerja buka QR Presensi: QR berganti sendiri tiap 20 detik.
-  - Pilih "Khusus <nama pekerja>": pekerja lain yang memindai mendapat "QR ini dibuat khusus untuk pekerja lain."
-  - Pindai di luar jam kerja lowongan: ditolak dengan pesan jam dibuka/ditutup.

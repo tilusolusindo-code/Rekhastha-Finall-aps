@@ -13,6 +13,7 @@ export {
   escapeHtml,
   gmailConfigured,
   sendPasswordResetEmail,
+  sendEmailVerificationEmail,
   sendWelcomeEmail,
   sendApplicationStatusEmail,
   sendPayoutNotificationEmail,

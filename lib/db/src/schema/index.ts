@@ -38,6 +38,7 @@ export * from "./manual-finance";
 export * from "./favorites";
 export * from "./ephemeral";
 export * from "./password-reset-tokens";
+export * from "./email-verification-tokens";
 
 export * from "./company-team";
 export * from "./doku-payments";

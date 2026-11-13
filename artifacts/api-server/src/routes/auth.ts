@@ -18,9 +18,15 @@ import {
   createSession,
   deleteSession,
   getSessionUser,
+  revokeAllUserSessions,
   sessionCookieOptions,
   toAuthUser,
 } from "../lib/auth";
+import { mailerConfigured, sendEmailVerificationEmail } from "../lib/mailer";
+import {
+  claimEmailVerificationToken,
+  createEmailVerificationToken,
+} from "../lib/email-verification";
 import {
   lockoutRemaining,
   pruneAdminState,
@@ -208,32 +214,105 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   const normalizedEmail = email.trim().toLowerCase();
 
   const [existing] = await db
-    .select({ id: usersTable.id })
+    .select({ id: usersTable.id, emailVerified: usersTable.emailVerified })
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
-  if (existing) {
+  // Akun yang belum terverifikasi boleh didaftarkan ulang (menimpa data lama), agar
+  // orang lain tidak bisa "mengunci" email milik Anda dengan mendaftar lebih dulu.
+  if (existing && existing.emailVerified) {
     res.status(409).json({ error: "Email sudah terdaftar." });
     return;
   }
 
+  const needVerify = mailerConfigured();
   const passwordHash = await bcrypt.hash(password, 12);
-  const [user] = await db
-    .insert(usersTable)
-    .values({
-      id: `user-${randomUUID()}`,
-      email: normalizedEmail,
-      passwordHash,
-      name: name.trim(),
-      role,
-      whatsapp: whatsapp?.trim() || null,
-      linkedWithGoogle: linkedWithGoogle ?? false,
-      profile,
-    })
-    .returning();
+  let user;
+  if (existing) {
+    [user] = await db
+      .update(usersTable)
+      .set({
+        passwordHash,
+        name: name.trim(),
+        role,
+        whatsapp: whatsapp?.trim() || null,
+        profile,
+      })
+      .where(eq(usersTable.id, existing.id))
+      .returning();
+    await revokeAllUserSessions(existing.id);
+  } else {
+    [user] = await db
+      .insert(usersTable)
+      .values({
+        id: `user-${randomUUID()}`,
+        email: normalizedEmail,
+        passwordHash,
+        name: name.trim(),
+        role,
+        whatsapp: whatsapp?.trim() || null,
+        linkedWithGoogle: false,
+        emailVerified: !needVerify,
+        profile,
+      })
+      .returning();
+  }
+
+  if (needVerify) {
+    const vt = await createEmailVerificationToken(user.id);
+    if (vt) {
+      try {
+        await sendEmailVerificationEmail(user.email, user.name, vt);
+      } catch (error) {
+        req.log.error({ error }, "Gagal mengirim email verifikasi");
+      }
+    }
+    res.status(201).json({ needsVerification: true, email: user.email });
+    return;
+  }
 
   const token = await createSession(user.id, req.cookies?.[SESSION_COOKIE]);
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
   res.status(201).json(toAuthUser(user));
+});
+
+router.post("/auth/resend-verification", async (req, res): Promise<void> => {
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (email && mailerConfigured()) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    if (user && !user.emailVerified && !user.suspended) {
+      const vt = await createEmailVerificationToken(user.id);
+      if (vt) {
+        try {
+          await sendEmailVerificationEmail(user.email, user.name, vt);
+        } catch (error) {
+          req.log.error({ error }, "Gagal mengirim ulang email verifikasi");
+        }
+      }
+    }
+  }
+  // Respons selalu sama agar tidak membocorkan email yang terdaftar.
+  res.json({ ok: true });
+});
+
+router.post("/auth/verify-email", async (req, res): Promise<void> => {
+  const token = typeof req.body?.token === "string" ? req.body.token : "";
+  const userId = token ? await claimEmailVerificationToken(token) : null;
+  if (!userId) {
+    res.status(400).json({ error: "Tautan verifikasi tidak valid atau sudah kedaluwarsa." });
+    return;
+  }
+  const [user] = await db
+    .update(usersTable)
+    .set({ emailVerified: true })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  if (!user || user.suspended) {
+    res.status(400).json({ error: "Tautan verifikasi tidak valid atau sudah kedaluwarsa." });
+    return;
+  }
+  const session = await createSession(user.id, req.cookies?.[SESSION_COOKIE]);
+  res.cookie(SESSION_COOKIE, session, sessionCookieOptions());
+  res.json(toAuthUser(user));
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -278,6 +357,14 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   if (user.suspended) {
     res.status(403).json({
       error: "Akun Anda telah ditangguhkan oleh Admin Rekhastha. Hubungi dukungan.",
+    });
+    return;
+  }
+
+  if (!user.emailVerified) {
+    res.status(403).json({
+      error: "Email belum diverifikasi. Cek kotak masuk Anda untuk tautan verifikasi.",
+      code: "email_not_verified",
     });
     return;
   }
@@ -400,9 +487,21 @@ router.get("/auth/google/callback", async (req, res): Promise<void> => {
         return;
       }
       const oldProfile = (existing.profile ?? {}) as Record<string, unknown>;
+      const wasUnverified = !existing.emailVerified;
+      if (wasUnverified) {
+        // Pendaftar awal tak pernah membuktikan memiliki email ini; pemilik sebenarnya
+        // (lewat Google) mengambil alih: password lama diganti acak, sesi dicabut.
+        await revokeAllUserSessions(existing.id);
+      }
       await db
         .update(usersTable)
         .set({
+          ...(wasUnverified
+            ? {
+                emailVerified: true,
+                passwordHash: await bcrypt.hash(randomBytes(32).toString("hex"), 12),
+              }
+            : {}),
           linkedWithGoogle: true,
           profile: {
             ...oldProfile,
@@ -678,9 +777,18 @@ router.post("/auth/profile", async (req, res): Promise<void> => {
 
   const workerProfile = parsed.data;
   const existingProfile = (user.profile ?? {}) as Record<string, unknown>;
+  // Ganti rekening yang sudah pernah diisi = tahan penarikan 72 jam (lihat manual-finance.ts).
+  const norm = (v: unknown): string => (typeof v === "string" ? v.replace(/\s+/g, "").toLowerCase() : "");
+  const hadBank = Boolean(norm(existingProfile["nomorRekening"]));
+  const bankChanged =
+    hadBank &&
+    (norm(existingProfile["nomorRekening"]) !== norm(workerProfile.nomorRekening) ||
+      norm(existingProfile["namaBank"]) !== norm(workerProfile.namaBank) ||
+      norm(existingProfile["namaRekening"]) !== norm(workerProfile.namaRekening));
   const profile = {
     ...existingProfile,
     ...workerProfile,
+    bankChangedAt: bankChanged ? new Date().toISOString() : existingProfile["bankChangedAt"],
     namaKtp: workerProfile.namaLengkap,
     hasNpwp: !workerProfile.belumPunyaNpwp,
     workerProfile,

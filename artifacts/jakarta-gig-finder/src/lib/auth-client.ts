@@ -13,9 +13,11 @@ const API_BASE = "/api";
 
 export class AuthError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -34,6 +36,7 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
     throw new AuthError(
       (data as { error?: string }).error ?? "Terjadi kesalahan.",
       res.status,
+      (data as { code?: string }).code,
     );
   }
   return data as T;
@@ -43,8 +46,18 @@ export type RegisterPayload = Omit<AuthUser, "id" | "linkedWithGoogle"> & {
   password: string;
 };
 
-export function register(payload: RegisterPayload): Promise<AuthUser> {
-  return request<AuthUser>("/auth/register", payload);
+export type RegisterResult = AuthUser | { needsVerification: true; email: string };
+
+export function register(payload: RegisterPayload): Promise<RegisterResult> {
+  return request<RegisterResult>("/auth/register", payload);
+}
+
+export function resendVerification(email: string): Promise<{ ok: true }> {
+  return request<{ ok: true }>("/auth/resend-verification", { email });
+}
+
+export function verifyEmail(token: string): Promise<AuthUser> {
+  return request<AuthUser>("/auth/verify-email", { token });
 }
 
 export function login(email: string, password: string): Promise<AuthUser> {

@@ -20,6 +20,8 @@ interface WorkerProfilePageProps {
   clockedInAt: Date | null;
   clockedOutAt: Date | null;
   walletBalance: number;
+  /** Dana yang masih ditahan (24 jam) dan jeda penarikan setelah ganti rekening (72 jam). */
+  walletHold?: { held: number; nextReleaseAt: string | null; bankHoldUntil: string | null } | null;
   walletTransactions: WalletTransaction[];
   isWithdrawLocked: boolean;
   escrowEvents: EscrowEvent[];
@@ -38,7 +40,7 @@ function maskNpwp(npwp: string) { return npwp.length >= 4 ? "••••••"
 
 export default function WorkerProfilePage({
   currentUser, workerProfile, reputationPoints, ratings,
-  completedJobs, totalEarned, walletBalance, walletTransactions,
+  completedJobs, totalEarned, walletBalance, walletHold, walletTransactions,
   isWithdrawLocked, escrowEvents, workerJobIds, onLogout, onEditProfile, onWithdraw, onUserUpdated,
 }: WorkerProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>("data");
@@ -424,6 +426,25 @@ export default function WorkerProfilePage({
                 Rincian upah dan status transfer tercatat di Rekhastha. Pencairan diproses manual oleh admin.
               </p>
             </div>
+            {walletHold && (walletHold.held > 0 || walletHold.bankHoldUntil) && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-1" data-testid="wallet-hold-note">
+                {walletHold.held > 0 && (
+                  <p className="text-xs font-semibold text-amber-900 leading-snug">
+                    Rp {walletHold.held.toLocaleString("id-ID")} masih ditahan 24 jam demi keamanan
+                    {walletHold.nextReleaseAt
+                      ? `, bisa ditarik mulai ${new Date(walletHold.nextReleaseAt).toLocaleString("id-ID", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}.`
+                      : "."}
+                  </p>
+                )}
+                {walletHold.bankHoldUntil && (
+                  <p className="text-xs font-semibold text-amber-900 leading-snug">
+                    Rekening baru diganti. Penarikan dibuka lagi{" "}
+                    {new Date(walletHold.bankHoldUntil).toLocaleString("id-ID", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}{" "}
+                    (masa tunggu 72 jam).
+                  </p>
+                )}
+              </div>
+            )}
             <EscrowWalletPanel
               balance={walletBalance}
               transactions={walletTransactions}

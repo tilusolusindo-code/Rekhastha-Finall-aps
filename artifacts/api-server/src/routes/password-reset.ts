@@ -113,7 +113,7 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
 
   await db
     .update(usersTable)
-    .set({ passwordHash })
+    .set({ passwordHash, emailVerified: true })
     .where(eq(usersTable.id, userId));
 
   // Whoever held the old password (or a stolen cookie) is signed out everywhere.

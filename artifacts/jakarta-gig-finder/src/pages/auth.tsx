@@ -5,7 +5,7 @@ import { AuthUser, UserRole, EmployerCategory } from "@/types/auth";
 import RoleSelectModal from "@/components/role-select-modal";
 import TermsModal from "@/components/terms-modal";
 import { RekhasthaLogo } from "@/components/rekhastha-logo";
-import { AuthError, fetchGoogleAuthAvailability, login, loginWithGoogle, register, startGoogleLogin, type RegisterPayload } from "@/lib/auth-client";
+import { AuthError, fetchGoogleAuthAvailability, login, loginWithGoogle, register, resendVerification, verifyEmail, startGoogleLogin, type RegisterPayload } from "@/lib/auth-client";
 
 interface AuthPageProps {
   onComplete: (user: AuthUser) => void;
@@ -14,7 +14,7 @@ interface AuthPageProps {
 }
 
 type AuthTab = "masuk" | "daftar";
-type AuthMode = "main" | "forgot" | "reset" | "reset_done";
+type AuthMode = "main" | "forgot" | "reset" | "reset_done" | "verify_sent";
 
 async function requestPasswordReset(email: string): Promise<{ ok: boolean; message?: string; error?: string }> {
   const res = await fetch("/api/auth/forgot-password", {
@@ -50,6 +50,7 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [showNewPass, setShowNewPass] = useState(false);
   const [forgotMessage, setForgotMessage] = useState("");
+  const [verifyMessage, setVerifyMessage] = useState("");
 
   const [isEmployer, setIsEmployer] = useState(false);
   const [employerCategory, setEmployerCategory] = useState<EmployerCategory>("corporate");
@@ -71,7 +72,15 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
     const code = url.searchParams.get("google_code");
     const googleError = url.searchParams.get("google_error");
     const resetTokenParam = url.searchParams.get("reset_token");
+    const verifyTokenParam = url.searchParams.get("verify_email");
     if (resetTokenParam) { setResetToken(resetTokenParam); setMode("reset"); }
+    if (verifyTokenParam) {
+      setLoading(true);
+      void verifyEmail(verifyTokenParam)
+        .then((user) => onComplete(user))
+        .catch((e) => setError(e instanceof AuthError ? e.message : "Verifikasi email gagal."))
+        .finally(() => setLoading(false));
+    }
     if (code) { setGoogleCode(code); setPendingGoogle(true); setShowRoleModal(true); }
     if (googleError) {
       const errors: Record<string, string> = {
@@ -85,10 +94,11 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
       };
       setError(errors[googleError] ?? "Login Google gagal. Silakan coba lagi.");
     }
-    if (code || googleError || resetTokenParam) {
+    if (code || googleError || resetTokenParam || verifyTokenParam) {
       url.searchParams.delete("google_code");
       url.searchParams.delete("google_error");
       url.searchParams.delete("reset_token");
+      url.searchParams.delete("verify_email");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
   }, []);
@@ -108,7 +118,9 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
       const user = pendingGoogle
         ? googleCode ? await loginWithGoogle(googleCode, role) : null
         : pendingRegister ? await register({ ...pendingRegister, role }) : null;
-      if (user) { setShowRoleModal(false); onComplete(user); }
+      if (user && "needsVerification" in user) {
+        setShowRoleModal(false); setVerifyMessage(""); setMode("verify_sent");
+      } else if (user) { setShowRoleModal(false); onComplete(user); }
     } catch (e) { setShowRoleModal(false); setError(describeError(e, "Gagal membuat akun.")); }
     finally { setLoading(false); setPendingGoogle(false); setGoogleCode(null); setPendingRegister(null); }
   };
@@ -121,7 +133,10 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
     if (tab === "masuk") {
       setLoading(true);
       try { onComplete(await login(email, password)); }
-      catch (e) { setError(describeError(e, "Gagal masuk.")); }
+      catch (e) {
+        if (e instanceof AuthError && e.code === "email_not_verified") { setVerifyMessage(""); setMode("verify_sent"); }
+        else setError(describeError(e, "Gagal masuk."));
+      }
       finally { setLoading(false); }
       return;
     }
@@ -163,6 +178,28 @@ export default function AuthPage({ onComplete, onBack, initialTab }: AuthPagePro
     } catch { setError("Gagal mereset kata sandi. Coba lagi."); }
     finally { setLoading(false); }
   };
+
+  // ── Verifikasi email ───────────────────────────────────
+  if (mode === "verify_sent") return (
+    <Shell subtitle="Verifikasi email">
+      <div className="rk-auth-icon-wrap"><Mail className="rk-auth-icon" /></div>
+      <h2 className="rk-auth-title">Cek email Anda</h2>
+      <p className="rk-auth-desc">
+        Kami mengirim tautan verifikasi ke <b>{email}</b>. Buka tautan itu untuk mengaktifkan akun (berlaku 24 jam). Periksa juga folder spam.
+      </p>
+      {verifyMessage && <p className="rk-auth-desc">{verifyMessage}</p>}
+      <div className="rk-auth-success">
+        <button type="button" className="rk-auth-link-btn" onClick={async () => {
+          try { await resendVerification(email); setVerifyMessage("Jika email terdaftar, tautan baru telah dikirim."); }
+          catch { setVerifyMessage("Gagal mengirim ulang. Coba lagi sebentar."); }
+        }}>Kirim ulang email verifikasi</button>
+        <button type="button" className="rk-auth-link-btn"
+          onClick={() => { setMode("main"); setTab("masuk"); setPassword(""); setError(null); }}>
+          Kembali ke halaman masuk →
+        </button>
+      </div>
+    </Shell>
+  );
 
   // ── Forgot ─────────────────────────────────────────────
   if (mode === "forgot") return (

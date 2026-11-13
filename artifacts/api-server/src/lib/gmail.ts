@@ -270,6 +270,36 @@ export async function sendPasswordResetEmail(
   });
 }
 
+export async function sendEmailVerificationEmail(
+  to: string,
+  name: string,
+  token: string,
+): Promise<boolean> {
+  const base = appBaseUrl();
+  if (!base) {
+    logger.error("APP_BASE_URL not configured — cannot build verification link");
+    return false;
+  }
+  const link = `${base}/?verify_email=${encodeURIComponent(token)}`;
+  const safeName = escapeHtml(name || "Pengguna");
+
+  return sendEmail({
+    to,
+    subject: "Verifikasi email akun Rekhastha",
+    html:
+      `<div style="font-family:sans-serif;max-width:480px;margin:auto">` +
+      `<h2 style="color:#059669">Rekhastha</h2>` +
+      `<p>Halo ${safeName},</p>` +
+      `<p>Terima kasih sudah mendaftar. Klik tombol berikut untuk memverifikasi email Anda (berlaku 24 jam):</p>` +
+      `<a href="${link}" style="display:inline-block;padding:12px 24px;background:#059669;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">Verifikasi Email</a>` +
+      `<p style="margin-top:24px;color:#6b7280;font-size:13px">Jika Anda tidak mendaftar di Rekhastha, abaikan email ini.</p>` +
+      `</div>`,
+    text:
+      `Halo ${name || "Pengguna"},\n\nBuka tautan ini untuk memverifikasi email Anda (berlaku 24 jam):\n${link}\n\n` +
+      `Jika Anda tidak mendaftar di Rekhastha, abaikan email ini.\n\n— Tim Rekhastha`,
+  });
+}
+
 export async function sendWelcomeEmail(to: string, name: string): Promise<boolean> {
   const base = appBaseUrl() ?? "https://rekhastha.my.id";
   const safeName = escapeHtml(name || "Pengguna");
@@ -339,12 +369,13 @@ export async function sendPayoutNotificationEmail(params: {
 export async function sendTeamInvitationEmail(params: {
   to: string;
   companyName: string;
-  role: "hr" | "supervisor";
+  role: "hr" | "supervisor" | "finance";
   link: string;
 }): Promise<boolean> {
   const roleLabel: Record<string, string> = {
     hr: "HR / Rekrutmen",
     supervisor: "Supervisor Lapangan",
+    finance: "Keuangan",
   };
   const { to, companyName, role, link } = params;
   const label = roleLabel[role] ?? role;
@@ -352,7 +383,7 @@ export async function sendTeamInvitationEmail(params: {
     ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c] ?? c);
   return sendEmail({
     to,
-    subject: `${companyName} mengundang Anda bergabung ke tim Rekhastha`,
+    subject: `${esc(companyName)} mengundang Anda bergabung ke tim Rekhastha`,
     html:
       `<div style="font-family:sans-serif;max-width:480px;margin:auto">` +
       `<h2 style="color:#059669">Rekhastha</h2>` +

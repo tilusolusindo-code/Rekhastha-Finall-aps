@@ -34,6 +34,48 @@ function getAdminId(req: Request): Promise<string | null> {
   return adminSessionId(req.cookies?.[ADMIN_COOKIE]);
 }
 
+/** Upah baru bisa ditarik setelah masa tahan ini (perlindungan dari chargeback/sengketa). */
+export const WAGE_HOLD_MS = 24 * 60 * 60 * 1000;
+/** Setelah rekening bank diganti, penarikan ditahan selama ini (perlindungan dari pembajakan akun). */
+export const BANK_CHANGE_HOLD_MS = 72 * 60 * 60 * 1000;
+
+function bankHoldUntil(profile: Record<string, unknown>): Date | null {
+  const raw = profile["bankChangedAt"];
+  if (typeof raw !== "string") return null;
+  const changedAt = new Date(raw);
+  if (Number.isNaN(changedAt.getTime())) return null;
+  const until = new Date(changedAt.getTime() + BANK_CHANGE_HOLD_MS);
+  return until.getTime() > Date.now() ? until : null;
+}
+
+const formatWib = (d: Date): string =>
+  d.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + " WIB";
+
+/**
+ * Pisahkan saldo menjadi "tersedia" (kredit berumur >= 24 jam) dan "ditahan".
+ * Penyesuaian bernilai negatif langsung memotong saldo tersedia.
+ */
+function splitWallet(
+  entries: { amount: number; createdAt: Date }[],
+  payouts: { amount: number; status: string }[],
+  now = Date.now(),
+) {
+  const total = entries.reduce((sum, e) => sum + e.amount, 0);
+  const reserved = payouts
+    .filter((p) => p.status === "pending" || p.status === "paid")
+    .reduce((sum, p) => sum + p.amount, 0);
+  const matured = entries
+    .filter((e) => e.amount < 0 || now - new Date(e.createdAt).getTime() >= WAGE_HOLD_MS)
+    .reduce((sum, e) => sum + e.amount, 0);
+  const available = Math.max(0, matured - reserved);
+  const held = Math.max(0, total - reserved - available);
+  const pendingTimes = entries
+    .filter((e) => e.amount > 0 && now - new Date(e.createdAt).getTime() < WAGE_HOLD_MS)
+    .map((e) => new Date(e.createdAt).getTime() + WAGE_HOLD_MS);
+  const nextReleaseAt = pendingTimes.length ? new Date(Math.min(...pendingTimes)) : null;
+  return { total: Math.max(0, total - reserved), available, held, nextReleaseAt };
+}
+
 function summarizeWallet(
   entries: { amount: number }[],
   payouts: { amount: number; status: string }[],
@@ -151,8 +193,14 @@ router.get("/wallet/mine", async (req, res): Promise<void> => {
       .where(eq(manualPayoutsTable.workerId, user.id))
       .orderBy(desc(manualPayoutsTable.createdAt)),
   ]);
+  const split = splitWallet(entries, payouts);
+  const profile = (user.profile ?? {}) as Record<string, unknown>;
   res.json({
     balance: summarizeWallet(entries, payouts),
+    available: split.available,
+    held: split.held,
+    nextReleaseAt: split.nextReleaseAt,
+    bankHoldUntil: bankHoldUntil(profile),
     entries,
     payouts: payouts.map(({ accountNumber: _accountNumber, ...payout }) => payout),
   });
@@ -181,8 +229,15 @@ router.post("/wallet/withdrawals", async (req, res): Promise<void> => {
       return { error: "Lengkapi nama bank, nama pemilik, dan nomor rekening pada profil sebelum meminta pencairan." };
     }
 
+    const holdUntil = bankHoldUntil(profile);
+    if (holdUntil) {
+      return {
+        error: `Rekening bank baru diganti. Demi keamanan, penarikan dibuka lagi mulai ${formatWib(holdUntil)} (masa tunggu 72 jam).`,
+      };
+    }
+
     const entries = await tx
-      .select({ amount: walletEntriesTable.amount })
+      .select({ amount: walletEntriesTable.amount, createdAt: walletEntriesTable.createdAt })
       .from(walletEntriesTable)
       .where(eq(walletEntriesTable.workerId, user.id));
     const payouts = await tx
@@ -192,8 +247,16 @@ router.post("/wallet/withdrawals", async (req, res): Promise<void> => {
     if (payouts.some((payout) => payout.status === "pending")) {
       return { error: "Masih ada pencairan yang menunggu transfer admin." };
     }
-    const amount = summarizeWallet(entries, payouts);
-    if (amount <= 0) return { error: "Saldo tersedia belum mencukupi untuk dicairkan." };
+    const split = splitWallet(entries, payouts);
+    const amount = split.available;
+    if (amount <= 0) {
+      return {
+        error:
+          split.held > 0 && split.nextReleaseAt
+            ? `Upah Anda masih dalam masa tahan 24 jam. Dana pertama bisa ditarik mulai ${formatWib(split.nextReleaseAt)}.`
+            : "Saldo tersedia belum mencukupi untuk dicairkan.",
+      };
+    }
 
     const [payout] = await tx
       .insert(manualPayoutsTable)
@@ -206,7 +269,7 @@ router.post("/wallet/withdrawals", async (req, res): Promise<void> => {
         status: "pending",
       })
       .returning();
-    return { payout, balance: 0 };
+    return { payout, balance: Math.max(0, split.total - amount) };
   });
 
   if ("error" in result) {

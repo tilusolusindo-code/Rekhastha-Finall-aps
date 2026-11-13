@@ -429,6 +429,7 @@ export default function MarketingLanding(props: { onLogin: () => void; onRegiste
             <a href="/lowongan-kerja-harian-jakarta/">Lowongan kerja harian Jakarta</a>
             <a href="/absensi-qr-gps/">Absensi QR dan GPS</a>
             <a href="/kalkulator-pph21/">Kalkulator PPh 21</a>
+            <a href="/privasi" data-testid="link-privacy">Kebijakan Privasi</a>
           </nav>
           <div className="rl-footer-nav">
             <h2>Akun</h2>

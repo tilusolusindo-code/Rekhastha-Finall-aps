@@ -262,12 +262,13 @@ export function EditProfileButton({ user, onUserUpdated, company = false }: Edit
 }
 
 
-type NotifKey = "applicant" | "status" | "payment" | "payout" | "invite";
+type NotifKey = "applicant" | "status" | "payment" | "payout" | "invite" | "reminder";
 
 const WORKER_TOGGLES: Array<[NotifKey, string]> = [
   ["status", "Lamaran diterima atau ditolak"],
   ["payout", "Upah masuk ke dompet"],
   ["invite", "Ajakan bekerja dari pemberi kerja"],
+  ["reminder", "Pengingat jadwal kerja (H-1)"],
 ];
 const COMPANY_TOGGLES: Array<[NotifKey, string]> = [
   ["applicant", "Pelamar baru"],

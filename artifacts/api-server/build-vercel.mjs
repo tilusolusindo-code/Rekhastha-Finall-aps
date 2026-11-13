@@ -69,7 +69,11 @@ await writeFile(
       version: 3,
       // Tiap hari 03:00 WIB: kembalikan escrow lowongan yang berakhir tanpa pekerja.
       // Vercel mengirim "Authorization: Bearer <CRON_SECRET>" otomatis bila CRON_SECRET diisi.
-      crons: [{ path: "/api/cron/refund-expired", schedule: "0 20 * * *" }],
+      // Tiap hari 17:00 WIB: email pengingat H-1 untuk pekerja yang dijadwalkan besok.
+      crons: [
+        { path: "/api/cron/refund-expired", schedule: "0 20 * * *" },
+        { path: "/api/cron/shift-reminders", schedule: "0 10 * * *" },
+      ],
       routes: [
         { src: "^/api/?$", dest: "/api" },
         { src: "^/api/(.*)$", dest: "/api?__path=$1" },

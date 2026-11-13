@@ -9,7 +9,7 @@ import { logger } from "./logger";
  * Jenis notifikasi email dan kunci pengaturannya di users.notification_prefs.
  * Kunci yang tidak ada dianggap AKTIF; pengguna bisa mematikan per jenis.
  */
-export const NOTIFICATION_KINDS = ["applicant", "status", "payment", "payout", "invite"] as const;
+export const NOTIFICATION_KINDS = ["applicant", "status", "payment", "payout", "invite", "reminder"] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export type NotificationPrefs = Partial<Record<NotificationKind, boolean>>;
 
@@ -28,7 +28,8 @@ export type NotifyEvent =
   | { kind: "status"; status: "diterima" | "ditolak"; jobTitle: string }
   | { kind: "payment"; title: string; detail: string }
   | { kind: "payout"; jobTitle: string; amount: number }
-  | { kind: "invite"; employerName: string; jobTitle: string };
+  | { kind: "invite"; employerName: string; jobTitle: string }
+  | { kind: "reminder"; jobTitle: string; dateLabel: string; jamKerja: string | null; alamat: string | null };
 
 const rupiah = (n: number): string =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
@@ -79,6 +80,20 @@ function compose(name: string, event: NotifyEvent, base: string): { subject: str
         html: layout(name, `<p>Upah untuk pekerjaan <strong>${e(event.jobTitle)}</strong> sebesar <strong style="color:#059669">${rupiah(event.amount)}</strong> sudah masuk ke dompet Anda.</p>`, { label: "Lihat dompet", href: base }),
         text: `Upah untuk "${event.jobTitle}" sebesar ${rupiah(event.amount)} sudah masuk ke dompet Anda. Buka: ${base}`,
       };
+    case "reminder": {
+      const details = [event.jamKerja ? `Jam: ${event.jamKerja}` : "", event.alamat ? `Lokasi: ${event.alamat}` : ""].filter(Boolean);
+      return {
+        subject: `Pengingat: besok Anda bekerja — ${event.jobTitle}`,
+        html: layout(
+          name,
+          `<p>Pengingat: besok (<strong>${e(event.dateLabel)}</strong>) Anda dijadwalkan bekerja di <strong>${e(event.jobTitle)}</strong>.</p>` +
+            (details.length ? `<p>${details.map((d) => e(d)).join("<br>")}</p>` : "") +
+            `<p>Siapkan diri dan lakukan presensi saat tiba di lokasi.</p>`,
+          { label: "Buka Rekhastha", href: base },
+        ),
+        text: `Pengingat: besok (${event.dateLabel}) Anda bekerja di "${event.jobTitle}".${details.length ? `\n${details.join("\n")}` : ""}\nBuka: ${base}`,
+      };
+    }
     case "invite":
       return {
         subject: `${event.employerName} mengajak Anda bekerja lagi — ${event.jobTitle}`,

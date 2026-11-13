@@ -218,7 +218,7 @@ export async function submitDocuments(files: {
 
 /** Simpan pilihan jenis email notifikasi (hanya kunci yang dikirim yang berubah). */
 export function updateNotificationPrefs(
-  prefs: Partial<Record<"applicant" | "status" | "payment" | "payout" | "invite", boolean>>,
+  prefs: Partial<Record<"applicant" | "status" | "payment" | "payout" | "invite" | "reminder", boolean>>,
 ): Promise<AuthUser> {
   return sendJson<AuthUser>("/auth/notification-prefs", "PATCH", prefs);
 }

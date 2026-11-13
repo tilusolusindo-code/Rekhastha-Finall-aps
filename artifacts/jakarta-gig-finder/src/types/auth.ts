@@ -14,7 +14,7 @@ export interface AuthUser {
   googleAvatar?: string;
   avatarUrl?: string;
   /** Preferensi email notifikasi; kunci yang tidak ada dianggap aktif. */
-  notificationPrefs?: Partial<Record<"applicant" | "status" | "payment" | "payout" | "invite", boolean>>;
+  notificationPrefs?: Partial<Record<"applicant" | "status" | "payment" | "payout" | "invite" | "reminder", boolean>>;
   // Company extra
   namaPerusahaan?: string;
   nibPerusahaan?: string;

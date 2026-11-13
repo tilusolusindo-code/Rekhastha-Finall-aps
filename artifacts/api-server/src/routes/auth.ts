@@ -35,6 +35,12 @@ import {
   UploadRejectedError,
 } from "../lib/upload";
 
+let dummyHashPromise: Promise<string> | null = null;
+function getDummyHash(): Promise<string> {
+  dummyHashPromise ??= bcrypt.hash("rekhastha-timing-dummy", 12);
+  return dummyHashPromise;
+}
+
 const router: IRouter = Router();
 
 async function requireWorkerUpload(
@@ -258,7 +264,10 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     .from(usersTable)
     .where(eq(usersTable.email, normalizedEmail));
 
-  if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
+  // Selalu jalankan bcrypt (hash cadangan bila email tak dikenal) agar waktu respons
+  // tidak membocorkan email mana yang terdaftar.
+  const passwordOk = await bcrypt.compare(parsed.data.password, user?.passwordHash ?? (await getDummyHash()));
+  if (!user || !passwordOk) {
     await recordFailedAttempt(throttleKey);
     await recordFailedAttempt(accountKey, ACCOUNT_MAX_ATTEMPTS);
     recordSecurityEvent(req, "login_failed", "info", "Email atau password salah.");

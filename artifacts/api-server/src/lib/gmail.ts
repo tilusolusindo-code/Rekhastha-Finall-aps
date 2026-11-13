@@ -110,10 +110,12 @@ function buildRawMessage(params: {
   text: string;
 }): string {
   const boundary = `rekhastha_${Date.now().toString(36)}`;
+  // Nilai header tidak boleh memuat CR/LF: nama pengguna/judul lowongan bisa diisi penyerang.
+  const header = (v: string): string => v.replace(/[\r\n\u0000]+/g, " ").trim();
   const message = [
-    `From: ${params.from}`,
-    `To: ${params.to}`,
-    `Subject: ${params.subject}`,
+    `From: ${header(params.from)}`,
+    `To: ${header(params.to)}`,
+    `Subject: ${header(params.subject)}`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
     ``,

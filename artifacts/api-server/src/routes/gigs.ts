@@ -126,7 +126,16 @@ router.get("/gigs", async (req, res): Promise<void> => {
         : eq(gigsTable.paymentStatus, "confirmed"),
     )
     .orderBy(desc(gigsTable.postedAt));
-  res.json(rows.map(({ gig, employerAvatarUrl }) => ({ ...gig, employerAvatarUrl: employerAvatarUrl ?? null })));
+  res.json(
+    rows.map(({ gig, employerAvatarUrl }) => {
+      const out: Record<string, unknown> = { ...gig, employerAvatarUrl: employerAvatarUrl ?? null };
+      if (!user) {
+        // Pengunjung tanpa login hanya perlu data etalase; rincian dana & bukti kerja disembunyikan.
+        for (const k of ["escrowAmount", "adminFeeAmount", "proofUrl", "proofStatus", "proofSubmittedBy"]) delete out[k];
+      }
+      return out;
+    }),
+  );
 });
 
 /** Batalkan lowongan yang belum dibayar (hanya pemiliknya). */

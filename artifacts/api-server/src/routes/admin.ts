@@ -51,9 +51,9 @@ import { forcePayoutGig } from "../lib/admin-finance";
 const router: IRouter = Router();
 
 function clientIp(req: Request): string {
-  const fwd = req.headers["x-forwarded-for"];
-  if (typeof fwd === "string" && fwd) return fwd.split(",")[0].trim();
-  return req.ip ?? "unknown";
+  // req.ip sudah dinormalisasi oleh "trust proxy"; header X-Forwarded-For mentah
+  // bisa dipalsukan penyerang untuk menghindari penguncian login admin.
+  return req.ip ?? req.socket.remoteAddress ?? "unknown";
 }
 
 function requireAdmin(req: Request): Promise<boolean> {

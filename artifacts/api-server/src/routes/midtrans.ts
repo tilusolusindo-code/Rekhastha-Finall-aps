@@ -368,8 +368,9 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
       }
 
       const companyId = String(row.company_id);
-      const expiredAt = new Date();
-      expiredAt.setDate(expiredAt.getDate() + Number(row.duration_days));
+      const durationDays = Number(row.duration_days);
+      // Tanggal berakhir yang sebenarnya dihitung database (menumpuk di sisa langganan).
+      let expiredAt = new Date();
 
       // Atomik & idempoten: hanya satu notifikasi yang boleh "mengklaim" order ini.
       const activated = await db.transaction(async (tx) => {
@@ -380,11 +381,15 @@ router.post("/payments/midtrans/notification", async (req, res): Promise<void> =
           RETURNING id
         `);
         if (!claimed.rows[0]) return false;
-        await tx.execute(sql`
+        const updated = await tx.execute(sql`
           UPDATE users
-          SET expired_at = ${expiredAt.toISOString()}, is_premium = true
+          SET expired_at = GREATEST(COALESCE(expired_at, now()), now()) + make_interval(days => ${durationDays}),
+              is_premium = true
           WHERE id = ${companyId}
+          RETURNING expired_at
         `);
+        const newExpiry = updated.rows[0]?.["expired_at"];
+        if (newExpiry) expiredAt = new Date(String(newExpiry));
         return true;
       });
 

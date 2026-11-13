@@ -205,12 +205,22 @@ router.post("/borongan/remote/approve", async (req, res): Promise<void> => {
   }
   const result = await db.transaction(async (tx) => {
     const [locked] = await tx
-      .select({ id: gigsTable.id, proofStatus: gigsTable.proofStatus, totalWorkerPayout: gigsTable.totalWorkerPayout })
+      .select({
+        id: gigsTable.id,
+        proofStatus: gigsTable.proofStatus,
+        totalWorkerPayout: gigsTable.totalWorkerPayout,
+        escrowStatus: gigsTable.escrowStatus,
+        paymentStatus: gigsTable.paymentStatus,
+      })
       .from(gigsTable)
       .where(eq(gigsTable.id, parsed.data.jobId))
       .for("update")
       .limit(1);
     if (!locked || locked.proofStatus !== "submitted") return { error: "not_pending" as const };
+    // Cek ulang SETELAH mengunci baris: refund/sengketa bisa terjadi sejak pengecekan awal.
+    if (locked.paymentStatus !== "confirmed" || !escrowAllowsPayout(locked.escrowStatus)) {
+      return { error: "not_pending" as const };
+    }
     const alreadyCredited = await creditedWagesForJob(tx, parsed.data.jobId);
     if (alreadyCredited + amount > (locked.totalWorkerPayout ?? 0)) {
       return { error: "budget_exceeded" as const };
@@ -353,6 +363,10 @@ router.post("/borongan/onsite/checkout", async (req, res): Promise<void> => {
 
     if (gig.paymentStatus !== "confirmed") {
       return { status: 409 as const, error: "Pembayaran proyek belum dikonfirmasi admin." };
+    }
+    // Dana yang sudah dikembalikan / sedang disengketakan tidak boleh dibayarkan ke pekerja.
+    if (!escrowAllowsPayout(gig.escrowStatus)) {
+      return { status: 409 as const, error: "Dana proyek ini tidak dapat dicairkan (dikembalikan atau sedang sengketa)." };
     }
     const totalDays = gig.jumlahHari ?? 1;
     const workerCount = Math.max(1, gig.kuota ?? 1);

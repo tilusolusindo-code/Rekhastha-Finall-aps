@@ -18,7 +18,7 @@ function rateLimit(maxPerMin: number): RequestHandler {
     // req.ip dinormalisasi oleh "trust proxy" (1 hop Vercel); header X-Forwarded-For
     // mentah bisa dipalsukan penyerang untuk menghindari limit.
     const ip = req.ip || req.socket.remoteAddress || "unknown";
-    const key = `${req.path}:${ip}`;
+    const key = `${req.baseUrl}${req.path}:${ip}`;
     const now = Date.now();
     const bucket = rateBuckets.get(key);
     if (!bucket || now > bucket.reset) {

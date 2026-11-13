@@ -2358,46 +2358,34 @@ export default function Home() {
                       { enableHighAccuracy: true, timeout: 6000 },
                     );
                   }}
-                  className="absolute bottom-6 right-4 z-[10] w-12 h-12 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
+                  className="absolute bottom-6 right-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-xl transition-all hover:bg-primary/90 active:scale-95"
                   style={{ boxShadow: "0 4px 16px rgba(6,95,70,0.5)" }}
                 >
                   <MapPin className="w-5 h-5" />
                 </button>
                 {!radarOn && (
-                  <div className="absolute inset-0 z-[5] bg-gray-900/45 backdrop-grayscale flex items-start justify-center pt-16 pointer-events-none">
-                    <span className="bg-gray-900/85 text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                      ⚪ Radar Mati — panggilan instan dinonaktifkan
+                  <div className="absolute inset-0 z-[5] flex items-start justify-center bg-gray-900/40 pt-16 pointer-events-none">
+                    <span className="flex items-center gap-1.5 rounded-full bg-gray-900/90 px-3.5 py-1.5 text-[12px] font-bold text-white">
+                      Radar mati — panggilan instan dinonaktifkan
                     </span>
                   </div>
                 )}
-                <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-2 shadow border border-gray-100 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
-                      {radarOn && <span className="absolute inline-flex h-full w-full rounded-full bg-primary/50 animate-ping" />}
-                      <span className={`relative w-3 h-3 rounded-full border-2 border-white shadow-sm ${radarOn ? "bg-primary" : "bg-gray-400"}`} />
-                    </span>
-                    <span className="text-[10px] font-medium text-gray-600">Lokasi Saya{radarOn ? "" : " (Radar Mati)"}</span>
-                  </div>
-                  {radarOn && instantGigs.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm shrink-0 flex items-center justify-center text-white text-[8px]">⚡</span>
-                      <span className="text-[10px] font-medium text-gray-600">{instantGigs.length} Broadcast Live</span>
-                    </div>
-                  )}
-                  {mapPurpleJobs.length > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <span className="w-3.5 h-3.5 rounded-[3px] bg-emerald-700 border-2 border-white shadow-sm shrink-0 flex items-center justify-center text-white text-[8px] font-black">+</span>
-                      <span className="text-[10px] font-medium text-gray-600">{mapPurpleJobs.length} Lowongan</span>
-                    </div>
-                  ) : (!radarOn || instantGigs.length === 0) ? <p className="text-[10px] text-gray-400">Belum ada lowongan</p> : null}
+                <div className="absolute top-3 left-3 right-16 z-10 flex items-center gap-2 overflow-hidden rounded-full bg-white/95 py-2 pl-3 pr-3.5 shadow-md backdrop-blur-sm max-w-fit">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center">
+                    {radarOn && <span className="absolute inline-flex h-full w-full rounded-full bg-primary/50 animate-ping" />}
+                    <span className={`relative h-2.5 w-2.5 rounded-full ${radarOn ? "bg-primary" : "bg-gray-400"}`} />
+                  </span>
+                  <span className="truncate text-[12.5px] font-bold text-emerald-900">
+                    {mapPurpleJobs.length + (radarOn ? instantGigs.length : 0)} lowongan dalam 5 km
+                  </span>
                 </div>
                 {selectedJob && (
-                  <div className="absolute bottom-4 left-4 right-4 z-10 bg-white rounded-xl shadow-lg border border-gray-100 p-3 flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-bold text-gray-900 truncate">{selectedJob.posisi}</p>
-                      <p className="text-[10px] text-emerald-700 font-medium">Klik pin untuk detail</p>
+                  <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-extrabold text-gray-900">{selectedJob.posisi}</p>
+                      <p className="text-[11px] font-semibold text-emerald-700">Ketuk untuk detail dan lamar</p>
                     </div>
-                    <button onClick={() => setSelectedJob(null)} className="text-gray-400 p-1"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setSelectedJob(null)} aria-label="Tutup" className="shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>
                   </div>
                 )}
                 <JobSheet job={selectedJob} onClose={() => setSelectedJob(null)} workerProfile={workerProfile} currentUser={currentUser}

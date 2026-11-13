@@ -113,19 +113,17 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <CalendarClock className="w-5 h-5 text-primary" /> Cari Kerja Terjadwal
-            </h2>
+            <h2 className="text-[26px] font-extrabold leading-tight tracking-tight text-gray-900">Lowongan terjadwal</h2>
             <p className="text-sm text-gray-500">
               {filtered.length} dari {jobs.length} lowongan reguler
             </p>
           </div>
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`relative flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border transition-colors shrink-0 ${
+            className={`relative flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-bold transition-colors ${
               showFilters || activeFilterCount > 0
-                ? "bg-primary/10 border-primary/30 text-primary"
-                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                ? "border-emerald-900 bg-emerald-900 text-white"
+                : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -293,86 +291,86 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
               <div
                 key={job.id}
                 data-testid={`card-scheduled-job-${job.id}`}
-                className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm flex flex-col gap-3"
+                className="flex flex-col gap-3 rounded-[22px] border border-gray-200 bg-white p-4 shadow-sm"
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{job.posisi}</h3>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                      <Building2 className="w-3 h-3 shrink-0 text-primary" />
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-lg font-extrabold text-emerald-700">
+                    {(job.posisi || "?").trim().charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-[17px] font-extrabold leading-tight tracking-tight text-gray-900">{job.posisi}</h3>
+                    <p className="mt-0.5 flex items-center gap-1 truncate text-[13px] text-gray-500">
+                      <Building2 className="h-3 w-3 shrink-0" />
                       <span className="truncate">{job.namaPerusahaan || "Rekhastha by Tilu Saudara Solusindo"}</span>
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 ml-2 shrink-0 flex-wrap justify-end">
-                    {job.jobCategory && (
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        job.jobCategory === "profesional" ? "bg-purple-100 text-purple-700" :
-                        job.jobCategory === "terampil" ? "bg-blue-100 text-blue-700" :
-                        "bg-gray-100 text-gray-600"
-                      }`}>
-                        {CATEGORY_LABELS[job.jobCategory]}
-                      </span>
-                    )}
-                    <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                      📅 Terjadwal
-                    </span>
-                  </div>
+                  <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-[11px] font-extrabold text-blue-700">
+                    <CalendarDays className="h-3 w-3" /> Terjadwal
+                  </span>
                 </div>
 
-                {job.deskripsi && <p className="text-sm text-gray-600 line-clamp-2">{job.deskripsi}</p>}
+                {job.jobCategory && (
+                  <span className={`self-start rounded-full px-2.5 py-0.5 text-[10.5px] font-extrabold ${
+                    job.jobCategory === "profesional" ? "bg-purple-50 text-purple-700" :
+                    job.jobCategory === "terampil" ? "bg-blue-50 text-blue-700" :
+                    "bg-gray-100 text-gray-600"
+                  }`}>
+                    {CATEGORY_LABELS[job.jobCategory]}
+                  </span>
+                )}
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Banknote className="w-4 h-4 text-primary shrink-0" />
-                    <span className="font-black text-gray-900">
-                      Rp {job.nominal.toLocaleString("id-ID")} / {paymentUnits[job.pembayaran]}
-                    </span>
-                  </div>
-                  {km !== null && (
-                    <div className="flex items-center gap-1 text-[11px] text-gray-400 font-semibold">
-                      <MapPin className="w-3 h-3" /> {km} km
-                    </div>
-                  )}
-                </div>
+                {job.deskripsi && <p className="line-clamp-2 text-sm text-gray-600">{job.deskripsi}</p>}
 
                 {(job.jobDate || job.jamKerja || job.alamat) && (
-                  <div className="flex flex-col gap-1.5 bg-emerald-50/60 border border-emerald-100 rounded-lg px-2.5 py-2 text-[11px] text-gray-600">
+                  <div className="flex flex-col gap-1.5 rounded-xl bg-gray-50 px-3 py-2.5 text-[12px] font-medium text-gray-600">
                     {job.jobDate && (
                       <span className="flex items-center gap-1.5">
-                        <CalendarDays className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
                         {new Date(job.jobDate).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                       </span>
                     )}
                     {job.jamKerja && (
                       <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> {job.jamKerja}
+                        <Clock className="h-3.5 w-3.5 shrink-0 text-emerald-700" /> {job.jamKerja}
                       </span>
                     )}
                     {job.alamat && (
                       <span className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
                         <span className="line-clamp-1">{job.alamat}</span>
                       </span>
                     )}
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Button
-                    disabled={suspended}
-                    className={`flex-1 font-semibold ${suspended ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-primary hover:bg-primary/90 text-white"}`}
-                    onClick={() => !suspended && onSelect(job)}
-                  >
-                    {suspended ? "Ditangguhkan" : "Detail & Lamar"}
-                  </Button>
-                  {canChat?.(job) && (
-                    <button
-                      onClick={() => onChat(job)}
-                      className="px-3 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors flex items-center justify-center"
+                <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                  <div className="min-w-0">
+                    <p className="text-[20px] font-extrabold leading-none tracking-tight text-emerald-900 tabular-nums">
+                      Rp {job.nominal.toLocaleString("id-ID")}
+                    </p>
+                    <p className="mt-1 flex items-center gap-2 text-xs font-semibold text-gray-500">
+                      per {paymentUnits[job.pembayaran]}
+                      {km !== null && <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" />{km} km</span>}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {canChat?.(job) && (
+                      <button
+                        onClick={() => onChat(job)}
+                        aria-label="Chat pemberi kerja"
+                        className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-primary transition-colors hover:bg-emerald-100"
+                      >
+                        <MessageSquare className="h-[19px] w-[19px]" />
+                      </button>
+                    )}
+                    <Button
+                      disabled={suspended}
+                      className={`h-11 rounded-full px-6 text-[15px] font-extrabold ${suspended ? "cursor-not-allowed bg-gray-200 text-gray-400" : "bg-primary text-white hover:bg-primary/90"}`}
+                      onClick={() => !suspended && onSelect(job)}
                     >
-                      <MessageSquare className="w-4 h-4" />
-                    </button>
-                  )}
+                      {suspended ? "Ditangguhkan" : "Lamar"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             );

@@ -68,7 +68,7 @@ const createUserIcon = (active = true) =>
 const createJobIcon = () =>
   L.divIcon({
     className: "",
-    html: `<div style="width:28px;height:28px;border-radius:6px;background:#7C3AED;border:3px solid white;box-shadow:0 2px 10px rgba(124,58,237,0.5);display:flex;align-items:center;justify-content:center;color:white;font-size:15px;font-weight:900;line-height:1">+</div>`,
+    html: `<div style="width:28px;height:28px;border-radius:6px;background:#047857;border:3px solid white;box-shadow:0 2px 10px rgba(4,120,87,0.5);display:flex;align-items:center;justify-content:center;color:white;font-size:15px;font-weight:900;line-height:1">+</div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });
@@ -160,7 +160,7 @@ export default function WorkerMap({
             icon={createJobIcon()}
             eventHandlers={{ click: () => onJobClick(job) }}
           >
-            <Tooltip direction="top" offset={[0, -14]} className="!bg-violet-700 !text-white !text-[10px] !font-semibold !border-0 !rounded-lg !shadow-lg">
+            <Tooltip direction="top" offset={[0, -14]} className="!bg-emerald-800 !text-white !text-[10px] !font-semibold !border-0 !rounded-lg !shadow-lg">
               {job.posisi}
             </Tooltip>
           </Marker>

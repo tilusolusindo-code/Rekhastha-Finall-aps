@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
-import { Users, Eye, Building2, Loader2, Check, X, LogOut, ExternalLink } from "lucide-react";
+import { Users, Eye, Building2, Loader2, Check, X, LogOut, ExternalLink, Mail, ChevronRight, ShieldCheck } from "lucide-react";
 import { ShortlistControls } from "./client-share";
 
 export type TeamRole = "hr" | "supervisor";
@@ -24,9 +24,21 @@ interface TeamInvitation {
   expires_at: string;
 }
 
-const ROLE_INFO: Record<TeamRole, { label: string; icon: ReactElement; color: string; bg: string; desc: string }> = {
-  hr:         { label: "HR / Rekrutmen",      icon: <Users className="w-4 h-4" />, color: "text-violet-700", bg: "bg-violet-100", desc: "Tinjau, terima, dan tolak pelamar" },
-  supervisor: { label: "Supervisor Lapangan", icon: <Eye className="w-4 h-4" />,   color: "text-blue-700",   bg: "bg-blue-100",   desc: "Pantau pekerja dan presensi harian" },
+const ROLE_INFO: Record<TeamRole, {
+  label: string; icon: ReactElement; color: string; bg: string; desc: string; can: string[]; cannot: string[];
+}> = {
+  hr: {
+    label: "HR / Rekrutmen", icon: <Users className="w-4 h-4" />, color: "text-violet-700", bg: "bg-violet-100",
+    desc: "Tinjau, terima, dan tolak pelamar",
+    can: ["Melihat lamaran dan profil pelamar", "Meninjau, menerima, dan menolak pelamar", "Membuat shortlist dan membagikannya ke klien", "Melihat daftar lowongan"],
+    cannot: ["Rekening, NIK, dan NPWP pelamar", "Presensi, pembayaran, dan keuangan"],
+  },
+  supervisor: {
+    label: "Supervisor Lapangan", icon: <Eye className="w-4 h-4" />, color: "text-blue-700", bg: "bg-blue-100",
+    desc: "Pantau pekerja dan presensi harian",
+    can: ["Melihat lowongan dan pekerja yang diterima", "Memantau presensi masuk dan pulang per hari"],
+    cannot: ["Lamaran dan data pelamar", "Pembayaran, keuangan, dan pengaturan tim"],
+  },
 };
 
 async function api<T = Record<string, unknown>>(path: string, init?: RequestInit): Promise<T> {
@@ -72,25 +84,54 @@ export function TeamMembershipBanner() {
   if (memberships.length === 0 && invitations.length === 0) return null;
 
   return (
-    <div className="mx-4 mt-4 space-y-3">
+    // Kartu melayang di bawah header hijau profil, senada dengan kartu lain di aplikasi.
+    <div className="relative z-10 -mt-3 space-y-3 px-4 pb-1">
       {invitations.map(inv => {
         const r = ROLE_INFO[inv.role] ?? ROLE_INFO.hr;
+        const expires = new Date(inv.expires_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
         return (
-          <div key={inv.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-xs font-black text-amber-700 uppercase tracking-wide">Undangan Tim</p>
-            <p className="text-sm font-bold text-gray-900 mt-0.5">{inv.company_name} mengundang Anda sebagai {r.label}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{r.desc}. Anda tidak akan melihat data keuangan perusahaan.</p>
-            <div className="flex gap-2 mt-3">
-              <button disabled={busy !== null} onClick={() => act(`a${inv.id}`, () => api(`/api/team/invitations/${inv.id}/accept`, { method: "POST" }))}
-                className="flex-1 bg-violet-700 text-white text-xs font-black py-2 rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50">
-                {busy === `a${inv.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Terima
-              </button>
-              <button disabled={busy !== null} onClick={() => act(`d${inv.id}`, () => api(`/api/team/invitations/${inv.id}/decline`, { method: "POST" }))}
-                className="flex-1 bg-white border border-gray-200 text-gray-600 text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50">
-                <X className="w-3.5 h-3.5" /> Tolak
-              </button>
+          <section key={inv.id} className="overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-[0_10px_28px_-10px_rgba(217,119,6,0.35)]">
+            <div className="h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300" />
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-amber-600">Undangan tim</p>
+                  <p className="text-sm font-black leading-snug text-gray-900">{inv.company_name} mengundang Anda</p>
+                  <span className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${r.bg} ${r.color}`}>{r.icon} {r.label}</span>
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-2 rounded-xl bg-gray-50 p-3 text-[11px] leading-snug">
+                <div>
+                  <p className="mb-1 font-black text-emerald-700">Yang bisa Anda lakukan</p>
+                  <ul className="space-y-0.5 text-gray-700">
+                    {r.can.map(t => <li key={t} className="flex gap-1.5"><Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />{t}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <p className="mb-1 font-black text-gray-500">Tidak dapat diakses</p>
+                  <ul className="space-y-0.5 text-gray-500">
+                    {r.cannot.map(t => <li key={t} className="flex gap-1.5"><X className="mt-0.5 h-3 w-3 shrink-0 text-gray-400" />{t}</li>)}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <button disabled={busy !== null} onClick={() => act(`a${inv.id}`, () => api(`/api/team/invitations/${inv.id}/accept`, { method: "POST" }))}
+                  className="flex flex-[1.4] items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-xs font-black text-white shadow-sm active:scale-[0.98] disabled:opacity-50">
+                  {busy === `a${inv.id}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Terima undangan
+                </button>
+                <button disabled={busy !== null} onClick={() => act(`d${inv.id}`, () => api(`/api/team/invitations/${inv.id}/decline`, { method: "POST" }))}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-bold text-gray-600 active:scale-[0.98] disabled:opacity-50">
+                  Tolak
+                </button>
+              </div>
+              <p className="mt-2 text-center text-[10px] text-gray-400">Berlaku sampai {expires}</p>
             </div>
-          </div>
+          </section>
         );
       })}
 
@@ -98,29 +139,37 @@ export function TeamMembershipBanner() {
         const r = ROLE_INFO[m.role] ?? ROLE_INFO.hr;
         const since = new Date(m.acceptedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
         return (
-          <div key={m.companyId} className={`rounded-2xl border ${r.bg} p-4 flex items-start gap-3`}>
-            <div className={`w-10 h-10 rounded-xl bg-white/60 flex items-center justify-center shrink-0 ${r.color}`}>
-              <Building2 className="w-5 h-5" />
+          <section key={m.companyId} className="overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-[0_10px_28px_-10px_rgba(109,40,217,0.35)]">
+            <div className="flex items-center gap-3 p-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-sm">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-wider text-violet-600">Anggota tim</p>
+                <p className="truncate text-sm font-black text-gray-900">{m.companyName}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-gray-500">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${r.bg} ${r.color}`}>{r.icon} {r.label}</span>
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-xs font-black ${r.color} uppercase tracking-wide`}>Anggota Tim</p>
-              <p className="text-sm font-bold text-gray-900 mt-0.5 truncate">{m.companyName}</p>
-              <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/70 ${r.color}`}>{r.icon} {r.label}</span>
-              <p className="text-[10px] text-gray-500 mt-1">Aktif sejak {since}</p>
+            <div className="flex items-center gap-1.5 border-t border-gray-100 bg-gray-50/80 px-4 py-2 text-[10px] text-gray-500">
+              <ShieldCheck className="h-3 w-3 text-emerald-600" /> Aktif sejak {since} · {r.desc}
+            </div>
+            <div className="flex items-center gap-2 px-4 py-3">
               <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_TEAM_EVENT))}
-                className={`mt-2 w-full rounded-xl bg-white/80 py-2 text-xs font-black ${r.color} hover:bg-white`}>
-                Buka ruang kerja tim
+                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-violet-600 py-2.5 text-xs font-black text-white shadow-sm active:scale-[0.98]">
+                Buka ruang kerja <ChevronRight className="h-3.5 w-3.5" />
               </button>
               <button disabled={busy !== null}
                 onClick={() => { if (confirm(`Keluar dari tim ${m.companyName}?`)) void act(`l${m.companyId}`, () => api(`/api/team/membership/${m.companyId}`, { method: "DELETE" })); }}
-                className="mt-2 text-[11px] font-bold text-gray-500 hover:text-red-600 flex items-center gap-1 disabled:opacity-50">
-                <LogOut className="w-3 h-3" /> Keluar dari tim
+                className="flex items-center gap-1 rounded-xl px-3 py-2.5 text-[11px] font-bold text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50">
+                <LogOut className="h-3 w-3" /> Keluar
               </button>
             </div>
-          </div>
+          </section>
         );
       })}
-      {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+      {error && <p className="px-1 text-xs font-semibold text-red-600">{error}</p>}
     </div>
   );
 }

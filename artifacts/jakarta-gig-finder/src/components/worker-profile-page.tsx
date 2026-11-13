@@ -20,8 +20,6 @@ interface WorkerProfilePageProps {
   clockedInAt: Date | null;
   clockedOutAt: Date | null;
   walletBalance: number;
-  /** Dana yang masih ditahan (24 jam) dan jeda penarikan setelah ganti rekening (72 jam). */
-  walletHold?: { held: number; nextReleaseAt: string | null; bankHoldUntil: string | null } | null;
   walletTransactions: WalletTransaction[];
   isWithdrawLocked: boolean;
   escrowEvents: EscrowEvent[];
@@ -40,7 +38,7 @@ function maskNpwp(npwp: string) { return npwp.length >= 4 ? "••••••"
 
 export default function WorkerProfilePage({
   currentUser, workerProfile, reputationPoints, ratings,
-  completedJobs, totalEarned, walletBalance, walletHold, walletTransactions,
+  completedJobs, totalEarned, walletBalance, walletTransactions,
   isWithdrawLocked, escrowEvents, workerJobIds, onLogout, onEditProfile, onWithdraw, onUserUpdated,
 }: WorkerProfilePageProps) {
   const [tab, setTab] = useState<ProfileTab>("data");
@@ -107,8 +105,6 @@ export default function WorkerProfilePage({
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50">
-      {/* ── Banner anggota tim (muncul kalau user adalah anggota tim) ── */}
-      <TeamMembershipBanner />
       {/* ── Profile header ──────────────────────────────── */}
       <div
         className="px-5 pt-6 pb-5 flex flex-col items-center gap-3"
@@ -155,8 +151,11 @@ export default function WorkerProfilePage({
         </div>
       </div>
 
+      {/* ── Undangan / keanggotaan tim (kartu melayang di bawah header) ── */}
+      <TeamMembershipBanner />
+
       {/* ── Tab bar ─────────────────────────────────────── */}
-      <div className="flex bg-white border-b border-gray-100 px-3 gap-0.5">
+      <div className="flex bg-white border-b border-gray-100 px-3 gap-0.5 mt-3">
         {(["data", "analitik", "wallet"] as ProfileTab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex-1 py-3 text-xs font-bold transition-all border-b-2 flex items-center justify-center gap-1 ${tab === t ? "border-emerald-600 text-emerald-700" : "border-transparent text-gray-500"}`}>
@@ -426,25 +425,6 @@ export default function WorkerProfilePage({
                 Rincian upah dan status transfer tercatat di Rekhastha. Pencairan diproses manual oleh admin.
               </p>
             </div>
-            {walletHold && (walletHold.held > 0 || walletHold.bankHoldUntil) && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-1" data-testid="wallet-hold-note">
-                {walletHold.held > 0 && (
-                  <p className="text-xs font-semibold text-amber-900 leading-snug">
-                    Rp {walletHold.held.toLocaleString("id-ID")} masih ditahan 24 jam demi keamanan
-                    {walletHold.nextReleaseAt
-                      ? `, bisa ditarik mulai ${new Date(walletHold.nextReleaseAt).toLocaleString("id-ID", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}.`
-                      : "."}
-                  </p>
-                )}
-                {walletHold.bankHoldUntil && (
-                  <p className="text-xs font-semibold text-amber-900 leading-snug">
-                    Rekening baru diganti. Penarikan dibuka lagi{" "}
-                    {new Date(walletHold.bankHoldUntil).toLocaleString("id-ID", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}{" "}
-                    (masa tunggu 72 jam).
-                  </p>
-                )}
-              </div>
-            )}
             <EscrowWalletPanel
               balance={walletBalance}
               transactions={walletTransactions}

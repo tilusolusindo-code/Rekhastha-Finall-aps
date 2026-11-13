@@ -361,7 +361,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
-  if (!user.emailVerified) {
+  // Hanya memblokir bila pengiriman email aktif; kalau tidak, pengguna tak punya cara memverifikasi.
+  if (!user.emailVerified && mailerConfigured()) {
     res.status(403).json({
       error: "Email belum diverifikasi. Cek kotak masuk Anda untuk tautan verifikasi.",
       code: "email_not_verified",

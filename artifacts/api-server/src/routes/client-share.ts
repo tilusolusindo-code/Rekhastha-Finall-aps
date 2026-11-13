@@ -274,7 +274,10 @@ router.post("/public/client-view/:token/decision", async (req, res): Promise<voi
     })
     .where(eq(applicationsTable.id, target.id));
 
-  if (parsed.data.decision && parsed.data.decision !== target.clientDecision) {
+  // Notifikasi dibatasi 1 per lamaran per 10 menit agar pemegang tautan tak bisa membanjiri perusahaan.
+  const recentlyNotified =
+    target.clientDecidedAt != null && Date.now() - new Date(target.clientDecidedAt).getTime() < 10 * 60_000;
+  if (parsed.data.decision && parsed.data.decision !== target.clientDecision && !recentlyNotified) {
     await db.insert(notificationsTable).values({
       userId: link.companyId,
       message: `Klien menilai ${clientDisplayName(targetRow.accountName ?? target.workerName)} untuk ${target.jobTitle || "lowongan Anda"}: ${parsed.data.decision === "setuju" ? "Setuju" : "Tidak"}`,

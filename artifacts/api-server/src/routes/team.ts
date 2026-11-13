@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { db, usersTable, notificationsTable } from "@workspace/db";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
@@ -16,6 +16,9 @@ const MAX_TEAM_SLOTS = 10;
 /** Batas undangan baru per perusahaan per 24 jam (mencegah kiriman email massal). */
 const MAX_INVITES_PER_DAY = 20;
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Token undangan hanya disimpan sebagai hash; token asli cuma ada di tautan email. */
+const hashInviteToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
 type SessionUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>;
 
@@ -172,18 +175,19 @@ router.post("/team/invite", async (req, res): Promise<void> => {
     }
 
     const token = randomUUID();
+    const tokenHash = hashInviteToken(token);
     const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
     // Undangan tertunda untuk email yang sama diperbarui (peran/token/kedaluwarsa), bukan digandakan.
     const refreshed = await db.execute(sql`
       UPDATE team_invitations
-      SET role = ${role}::team_role, token = ${token}, expires_at = ${expiresAt.toISOString()}, created_at = now()
+      SET role = ${role}::team_role, token = ${tokenHash}, expires_at = ${expiresAt.toISOString()}, created_at = now()
       WHERE company_id = ${user.id} AND email = ${email} AND accepted_at IS NULL
       RETURNING id
     `);
     if (refreshed.rows.length === 0) {
       await db.execute(sql`
         INSERT INTO team_invitations (company_id, email, role, token, expires_at)
-        VALUES (${user.id}, ${email}, ${role}::team_role, ${token}, ${expiresAt.toISOString()})
+        VALUES (${user.id}, ${email}, ${role}::team_role, ${tokenHash}, ${expiresAt.toISOString()})
       `);
     }
 
@@ -291,7 +295,7 @@ router.post("/team/join", async (req, res): Promise<void> => {
   try {
     const found = await db.execute<{ id: number; company_id: string; email: string; role: string }>(sql`
       SELECT id, company_id, email, role::text AS role FROM team_invitations
-      WHERE token = ${parsed.data.token} AND accepted_at IS NULL AND expires_at > now()
+      WHERE token IN (${hashInviteToken(parsed.data.token)}, ${parsed.data.token}) AND accepted_at IS NULL AND expires_at > now()
       LIMIT 1
     `);
     const inv = found.rows[0];

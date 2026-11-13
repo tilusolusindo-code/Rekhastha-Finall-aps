@@ -74,13 +74,25 @@ router.post("/team/invite", async (req, res): Promise<void> => {
 
   const { email, role } = parsed.data;
 
+  // Fitur tim hanya untuk perusahaan dengan paket Bisnis yang masih aktif.
+  if (!(await requireBusinessPlan(user.id))) {
+    res.status(403).json({ error: "Fitur tim memerlukan paket Rekhastha Bisnis yang aktif." });
+    return;
+  }
+
   try {
     // Cek apakah user dengan email ini sudah terdaftar
     const [targetUser] = await db
-      .select({ id: usersTable.id, name: usersTable.name })
+      .select({ id: usersTable.id, name: usersTable.name, role: usersTable.role })
       .from(usersTable)
       .where(eq(usersTable.email, email.toLowerCase()))
       .limit(1);
+
+    // Akun pekerja tidak boleh ditambahkan diam-diam sebagai anggota tim perusahaan.
+    if (targetUser && targetUser.role !== "perusahaan") {
+      res.status(409).json({ error: "Email ini terdaftar sebagai akun pekerja. Gunakan email akun perusahaan." });
+      return;
+    }
 
     // Jika user sudah terdaftar, langsung tambah ke tim
     if (targetUser) {

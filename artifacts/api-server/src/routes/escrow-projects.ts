@@ -7,6 +7,7 @@ import {
   escrowMilestonesTable,
   manualPaymentSettingsTable,
   manualPaymentsTable,
+  usersTable,
   walletEntriesTable,
 } from "@workspace/db";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
@@ -24,11 +25,32 @@ const createProjectBody = z.object({
     .array(
       z.object({
         title: z.string().min(1),
-        percentage: z.number().positive(),
+        percentage: z.number().positive().max(100),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(20),
 });
+
+/**
+ * Bagi totalAmount ke milestone secara proporsional dengan metode "largest remainder"
+ * sehingga jumlah semua milestone PERSIS sama dengan totalAmount (tanpa pembulatan liar).
+ */
+function allocateMilestoneAmounts(total: number, percentages: number[]): number[] {
+  const sumPct = percentages.reduce((a, b) => a + b, 0);
+  const raw = percentages.map((p) => (total * p) / sumPct);
+  const floors = raw.map((r) => Math.floor(r));
+  let remainder = total - floors.reduce((a, b) => a + b, 0);
+  const order = raw
+    .map((r, i) => ({ i, frac: r - Math.floor(r) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (const { i } of order) {
+    if (remainder <= 0) break;
+    floors[i]! += 1;
+    remainder -= 1;
+  }
+  return floors;
+}
 
 /** Employer creates a Proyek with its Milestone breakdown (percentages must sum to 100). */
 router.post("/escrow-projects", async (req, res): Promise<void> => {
@@ -48,12 +70,29 @@ router.post("/escrow-projects", async (req, res): Promise<void> => {
   }
 
   const totalPct = parsed.data.milestones.reduce((sum, m) => sum + m.percentage, 0);
-  if (Math.abs(totalPct - 100) > 0.01) {
+  if (Math.abs(totalPct - 100) > 0.001) {
     res.status(400).json({
       error: `Total persentase milestone harus 100% (saat ini ${totalPct}%).`,
     });
     return;
   }
+
+  if (parsed.data.workerId) {
+    const [worker] = await db
+      .select({ role: usersTable.role })
+      .from(usersTable)
+      .where(eq(usersTable.id, parsed.data.workerId))
+      .limit(1);
+    if (!worker || worker.role !== "pekerja") {
+      res.status(400).json({ error: "Pekerja yang ditugaskan tidak ditemukan." });
+      return;
+    }
+  }
+
+  const amounts = allocateMilestoneAmounts(
+    parsed.data.totalAmount,
+    parsed.data.milestones.map((m) => m.percentage),
+  );
 
   const project = await db.transaction(async (tx) => {
     const [row] = await tx
@@ -76,7 +115,7 @@ router.post("/escrow-projects", async (req, res): Promise<void> => {
           projectId: row.id,
           title: m.title,
           percentage: m.percentage,
-          amount: Math.round((parsed.data.totalAmount * m.percentage) / 100),
+          amount: amounts[index]!,
           sortOrder: index,
         })),
       )
@@ -244,6 +283,15 @@ router.post(
       res.status(409).json({ error: "Proyek belum memiliki worker yang ditugaskan." });
       return;
     }
+    const [assignedWorker] = await db
+      .select({ role: usersTable.role, verificationStatus: usersTable.verificationStatus })
+      .from(usersTable)
+      .where(eq(usersTable.id, project.workerId))
+      .limit(1);
+    if (!assignedWorker || assignedWorker.role !== "pekerja" || assignedWorker.verificationStatus !== "verified") {
+      res.status(409).json({ error: "Pekerja yang ditugaskan belum terverifikasi (KYC), dana belum bisa dicairkan." });
+      return;
+    }
 
     const [milestone] = await db
       .select()
@@ -277,6 +325,20 @@ router.post(
         .limit(1);
       if (!lockedMilestone || lockedMilestone.status !== "pending") {
         return { error: "Milestone sudah diproses." as const };
+      }
+      // Jaring pengaman: total milestone yang cair tidak boleh melebihi dana proyek.
+      const approvedRows = await tx
+        .select({ amount: escrowMilestonesTable.amount })
+        .from(escrowMilestonesTable)
+        .where(
+          and(
+            eq(escrowMilestonesTable.projectId, projectId),
+            eq(escrowMilestonesTable.status, "approved"),
+          ),
+        );
+      const alreadyApproved = approvedRows.reduce((sum, r) => sum + r.amount, 0);
+      if (alreadyApproved + lockedMilestone.amount > project.totalAmount) {
+        return { error: "Total milestone melebihi dana proyek." as const };
       }
       const [updatedMilestone] = await tx
         .update(escrowMilestonesTable)

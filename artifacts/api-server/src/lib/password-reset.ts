@@ -1,10 +1,15 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { db, passwordResetTokensTable, usersTable } from "@workspace/db";
 import { logger } from "./logger";
 
 const TOKEN_TTL_MS = 15 * 60 * 1000; // 15 menit
 const MAX_ACTIVE_TOKENS = 3; // max token aktif per user
+
+/** Di database hanya disimpan hash token; token asli hanya ada di email pengguna. */
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
 
 /**
  * Buat reset token baru untuk user berdasarkan email.
@@ -55,7 +60,7 @@ export async function createPasswordResetToken(
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
   await db.insert(passwordResetTokensTable).values({
-    token,
+    token: hashToken(token),
     userId: user.id,
     expiresAt,
   });
@@ -76,7 +81,7 @@ export async function verifyPasswordResetToken(
       usedAt: passwordResetTokensTable.usedAt,
     })
     .from(passwordResetTokensTable)
-    .where(eq(passwordResetTokensTable.token, token))
+    .where(eq(passwordResetTokensTable.token, hashToken(token)))
     .limit(1);
 
   if (!row) return null;
@@ -87,13 +92,27 @@ export async function verifyPasswordResetToken(
 }
 
 /**
- * Tandai token sebagai sudah dipakai (single-use).
+ * Klaim token secara atomik (sekali pakai): hanya SATU permintaan yang berhasil
+ * walaupun dua permintaan datang bersamaan. Mengembalikan userId bila berhasil.
+ * Token reset lain milik user yang sama ikut dihapus.
  */
-export async function consumePasswordResetToken(token: string): Promise<void> {
-  await db
+export async function claimPasswordResetToken(token: string): Promise<string | null> {
+  const [row] = await db
     .update(passwordResetTokensTable)
     .set({ usedAt: new Date() })
-    .where(eq(passwordResetTokensTable.token, token));
+    .where(
+      and(
+        eq(passwordResetTokensTable.token, hashToken(token)),
+        isNull(passwordResetTokensTable.usedAt),
+        gt(passwordResetTokensTable.expiresAt, sql`now()`),
+      ),
+    )
+    .returning({ userId: passwordResetTokensTable.userId });
+  if (!row) return null;
+  await db
+    .delete(passwordResetTokensTable)
+    .where(and(eq(passwordResetTokensTable.userId, row.userId), isNull(passwordResetTokensTable.usedAt)));
+  return row.userId;
 }
 
 /**

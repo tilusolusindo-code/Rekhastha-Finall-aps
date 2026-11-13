@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import {
   createPasswordResetToken,
   verifyPasswordResetToken,
-  consumePasswordResetToken,
+  claimPasswordResetToken,
   purgeExpiredResetTokens,
 } from "../lib/password-reset";
 import { kvGet, kvPut } from "../lib/ephemeral";
@@ -102,7 +102,8 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const userId = await verifyPasswordResetToken(parsed.data.token);
+  // Klaim atomik: dua permintaan bersamaan dengan token yang sama tidak bisa lolos keduanya.
+  const userId = await claimPasswordResetToken(parsed.data.token);
   if (!userId) {
     res.status(400).json({ error: "Link reset tidak valid atau sudah kedaluwarsa." });
     return;
@@ -115,7 +116,6 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     .set({ passwordHash })
     .where(eq(usersTable.id, userId));
 
-  await consumePasswordResetToken(parsed.data.token);
   // Whoever held the old password (or a stolen cookie) is signed out everywhere.
   await revokeAllUserSessions(userId);
 

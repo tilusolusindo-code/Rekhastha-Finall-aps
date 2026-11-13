@@ -73,6 +73,8 @@ export interface ApplicationEvent {
   shortlistedAt?: string | null;
   clientDecision?: "setuju" | "tidak" | null;
   clientNote?: string | null;
+  /** Diisi server saat semua hari kerja lengkap (scan masuk + pulang). */
+  workCompletedAt?: string | null;
   status: string;
   createdAt: string;
   /** "cepat" (Instant) | "lama" (Regular) — drives the notification copy. */

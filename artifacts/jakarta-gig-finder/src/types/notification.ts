@@ -54,6 +54,8 @@ export interface ApplicationNotification {
   shortlistedAt?: string | null;
   clientDecision?: "setuju" | "tidak" | null;
   clientNote?: string | null;
+  /** Pekerjaan selesai (presensi lengkap) tapi upah belum disetujui pemberi kerja. */
+  workCompletedAt?: string | null;
 }
 
 export function maskName(name: string): string {

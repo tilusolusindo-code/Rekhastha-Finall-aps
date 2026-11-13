@@ -93,6 +93,14 @@ let nextNotifId = 1;
 
 type JobStatus = "applied" | "accepted" | "clocked_in" | "completed" | null;
 type CompanyView = "jobs" | "analytics" | "radar";
+/**
+ * Sisi pekerja: lamaran "diterima" yang pekerjaannya sudah selesai (scan masuk + pulang lengkap,
+ * ditandai server lewat workCompletedAt) dianggap SELESAI dan tidak lagi aktif. Di server status tetap
+ * "diterima" sampai pemberi kerja menyetujui upah, supaya pencairan upah tidak terblokir.
+ */
+const withWorkerStatus = (row: ApplicationEvent): ApplicationEvent =>
+  row.status === "diterima" && row.workCompletedAt ? { ...row, status: "selesai" } : row;
+
 type AppTab = "home" | "chat" | "proyek" | "bisnis" | "tim" | "profile";
 
 // A gig is "instant" (Broadcast Instan) only when it is a cepat posting. Regular
@@ -515,6 +523,7 @@ export default function Home() {
         shortlistedAt: e.shortlistedAt,
         clientDecision: e.clientDecision,
         clientNote: e.clientNote,
+        workCompletedAt: e.workCompletedAt,
       };
       setNotifications((p) => [notif, ...p]);
       setApplicantToast(notif);
@@ -610,6 +619,7 @@ export default function Home() {
               shortlistedAt: row.shortlistedAt,
               clientDecision: row.clientDecision,
               clientNote: row.clientNote,
+              workCompletedAt: row.workCompletedAt,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -660,7 +670,7 @@ export default function Home() {
         if (!response.ok) throw new Error("Riwayat lamaran tidak dapat dimuat.");
         const payload: unknown = await response.json();
         if (!Array.isArray(payload)) throw new Error("Format riwayat lamaran tidak valid.");
-        const rows = payload as ApplicationEvent[];
+        const rows = (payload as ApplicationEvent[]).map(withWorkerStatus);
         if (cancelled) return;
 
         setMyApplicationRows((previous) => {
@@ -704,6 +714,7 @@ export default function Home() {
                   shortlistedAt: latest.shortlistedAt,
                   clientDecision: latest.clientDecision,
                   clientNote: latest.clientNote,
+                  workCompletedAt: latest.workCompletedAt,
                 }
               : item;
           });
@@ -734,6 +745,7 @@ export default function Home() {
               shortlistedAt: row.shortlistedAt,
               clientDecision: row.clientDecision,
               clientNote: row.clientNote,
+              workCompletedAt: row.workCompletedAt,
             }));
           return additions.length ? [...additions, ...updated] : updated;
         });
@@ -1228,7 +1240,10 @@ export default function Home() {
       ]);
     }
 
-    const row = myApplicationRows.find((item) => item.status !== "ditolak");
+    // Utamakan lamaran yang masih berjalan; lamaran yang sudah selesai hanya jadi cadangan.
+    const row =
+      myApplicationRows.find((item) => item.status !== "ditolak" && item.status !== "selesai") ??
+      myApplicationRows.find((item) => item.status !== "ditolak");
     if (!row) return;
     const job = allJobs.find((item) => item.id === row.jobId);
     if (!job) return;
@@ -1646,6 +1661,9 @@ export default function Home() {
     setGraceDeadline(null);
     setGraceJob(null);
     setContractClosed(false);
+    // Server menandai pekerjaan selesai saat hari kerja terakhir lengkap; muat ulang lamaran sekarang
+    // (bukan menunggu polling 15 detik) agar kartu "aktif" langsung berubah jadi selesai.
+    window.setTimeout(() => window.dispatchEvent(new Event("focus")), 800);
     setDisputeJob(activeJob); // snapshot job so auto-release survives closing the card
     setDisputeDeadline(now.getTime() + DISPUTE_WINDOW_MS); // start 24h employer validation window
     if (activeJob) {

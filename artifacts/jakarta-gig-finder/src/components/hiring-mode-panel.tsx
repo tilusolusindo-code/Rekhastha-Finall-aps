@@ -1221,6 +1221,10 @@ export default function HiringModePanel({
                               className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-lg hover:bg-amber-200 transition-colors shrink-0 disabled:opacity-60">
                               🔓 Buka {formatRp(SUBSCRIPTION_PRICE_MONTHLY)}/bln
                             </button>
+                          ) : notif.status === "diterima" && notif.workCompletedAt ? (
+                            <span className="text-[10px] font-bold text-blue-700 flex items-center gap-1 shrink-0" title="Pekerja sudah scan masuk dan pulang. Setujui upah untuk menutup pekerjaan.">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Kerja selesai · setujui upah
+                            </span>
                           ) : notif.status === "diterima" || notif.status === "selesai" ? (
                             <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1 shrink-0">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Diterima

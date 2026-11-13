@@ -14,6 +14,7 @@ import {
 import { escrowAllowsPayout } from "../lib/wage-ledger";
 import { notifyByEmail } from "../lib/notify";
 import { teamCan } from "../lib/team-access";
+import { markWorkCompletedIfDone } from "../lib/work-completion";
 import { getWorkerStats } from "../lib/worker-stats";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
@@ -714,6 +715,18 @@ router.get("/applications/mine", async (req, res): Promise<void> => {
     .leftJoin(gigsTable, eq(applicationsTable.jobId, gigsTable.id))
     .where(eq(applicationsTable.workerId, user.id))
     .orderBy(desc(applicationsTable.createdAt));
+  // Penyembuhan otomatis: lamaran "diterima" yang hari kerjanya sudah lengkap tapi belum bertanda selesai
+  // (mis. scan terjadi sebelum fitur ini ada, atau penandaan sempat gagal) ditandai sekarang.
+  for (const { application } of rows) {
+    if (application.status !== "diterima" || application.workCompletedAt) continue;
+    try {
+      if (await markWorkCompletedIfDone(application.jobId, application.workerId)) {
+        application.workCompletedAt = new Date();
+      }
+    } catch (err) {
+      req.log.warn({ err, applicationId: application.id }, "[applications] gagal menandai pekerjaan selesai");
+    }
+  }
   const attachments = await getApplicationAttachments(rows.map(({ application }) => application.id));
 
   res.setHeader("Cache-Control", "no-store");

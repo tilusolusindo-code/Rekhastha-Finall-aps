@@ -62,6 +62,11 @@ export const applicationsTable = pgTable("applications", {
     .default({}),
   /** "baru" (pending) | "ditinjau" | "diterima" | "ditolak" | "selesai" */
   status: text("status").notNull().default("baru"),
+  /**
+   * Diisi server saat semua hari kerja lengkap (scan masuk + pulang). Terpisah dari status "selesai"
+   * (= upah disetujui/dicairkan) supaya pencairan upah tidak terblokir.
+   */
+  workCompletedAt: timestamp("work_completed_at", { withTimezone: true }),
   /** Diisi saat HR/pemilik memasukkan pelamar ke shortlist untuk ditinjau klien agensi. */
   shortlistedAt: timestamp("shortlisted_at", { withTimezone: true }),
   /** Penilaian klien lewat tautan khusus: "setuju" | "tidak" (hanya saran; keputusan akhir di agensi). */

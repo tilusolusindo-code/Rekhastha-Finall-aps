@@ -14,6 +14,8 @@ import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import { requirePremium } from "../lib/premium";
 import { kvClaimFlag, kvDelete, kvGet, kvPut, kvReleaseFlag, kvShortenTtl } from "../lib/ephemeral";
 import { checkAttendanceWindow } from "../lib/attendance-window";
+import { markWorkCompletedIfDone } from "../lib/work-completion";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -401,7 +403,19 @@ router.post("/attendance/scan", async (req, res): Promise<void> => {
     .where(eq(gigsTable.id, rec.jobId))
     .limit(1);
   broadcastAttendance(row, { workerId: user.id, employerId: ownerGig?.employerId ?? null });
-  res.status(201).json(row);
+
+  // Scan pulang di hari kerja terakhir → pekerjaan otomatis ditandai selesai di server,
+  // sehingga lamaran tidak lagi "aktif" meski halaman dibuka lagi di hari berikutnya.
+  let workCompleted = false;
+  if (row.kind === "pulang") {
+    try {
+      workCompleted = await markWorkCompletedIfDone(rec.jobId, user.id);
+    } catch (err) {
+      // Presensi sudah tersimpan; penandaan akan dikejar pada pemuatan lamaran berikutnya.
+      logger.error({ err, jobId: rec.jobId }, "[attendance] gagal menandai pekerjaan selesai");
+    }
+  }
+  res.status(201).json({ ...row, workCompleted });
 });
 
 const statusQuery = z.object({

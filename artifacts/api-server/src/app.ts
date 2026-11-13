@@ -117,6 +117,7 @@ app.use("/api/auth/forgot-password", rateLimit(5));   // path sebenarnya (sebelu
 app.use("/api/auth/reset-password",  rateLimit(10));
 app.use("/api/doku/create",         rateLimit(10));  // maks 10 payment attempt/menit
 app.use("/api/team/invite",         rateLimit(20));
+app.use("/api/public/client-view",  rateLimit(60));  // tautan klien: cegah tebak-token & spam penilaian
 
 // Pembatas global (Postgres, dipakai bersama semua instance serverless).
 app.use("/api", globalRateLimit);

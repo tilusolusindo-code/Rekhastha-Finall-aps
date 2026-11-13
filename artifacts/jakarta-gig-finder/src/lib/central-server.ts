@@ -70,6 +70,9 @@ export interface ApplicationEvent {
   applicationAnswers?: Record<string, string>;
   supportingInfo?: ApplicationSupportingInfo;
   uploadedFiles?: ApplicationAttachment[];
+  shortlistedAt?: string | null;
+  clientDecision?: "setuju" | "tidak" | null;
+  clientNote?: string | null;
   status: string;
   createdAt: string;
   /** "cepat" (Instant) | "lama" (Regular) — drives the notification copy. */
@@ -465,15 +468,17 @@ async function fetchApplicationResource(
 
 export async function uploadApplicationFiles(
   jobId: number,
-  files: Array<{ file: File; kind: ApplicationUploadKind }>,
+  files: Array<{ file: File; kind: ApplicationUploadKind; questionId?: string }>,
   onProgress?: (completed: number, total: number) => void,
 ): Promise<ApplicationAttachment[]> {
   const uploadOne = async ({
     file,
     kind,
+    questionId,
   }: {
     file: File;
     kind: ApplicationUploadKind;
+    questionId?: string;
   }): Promise<ApplicationAttachment> => {
     const contentType = getUploadContentType(file);
     const request = await fetchApplicationResource(`${API_BASE}/applications/uploads/request-url`, {
@@ -486,6 +491,7 @@ export async function uploadApplicationFiles(
         fileSize: file.size,
         contentType,
         kind,
+        ...(questionId ? { questionId } : {}),
       }),
     }, 20_000);
     const requestBody = await request.json().catch(() => ({})) as {

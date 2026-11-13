@@ -6,13 +6,20 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import AdminPortal from "@/pages/admin";
 import PrivasiPage from "@/pages/privasi";
+import KlienPage, { getClientToken } from "@/pages/klien";
 
 const queryClient = new QueryClient();
+
+/** Halaman utama; bila ada ?klien=<token> tampilkan halaman klien agensi (tanpa login). */
+function HomeOrKlien() {
+  const token = getClientToken();
+  return token ? <KlienPage token={token} /> : <Home />;
+}
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={HomeOrKlien} />
       <Route path="/admin" component={AdminPortal} />
       <Route path="/privasi" component={PrivasiPage} />
       <Route component={NotFound} />

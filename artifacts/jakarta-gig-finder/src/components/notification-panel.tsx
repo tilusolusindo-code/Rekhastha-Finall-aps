@@ -1,4 +1,5 @@
 import { Bell, X, ShieldCheck, AlertCircle, CheckCircle, Clock, ChevronRight, Inbox, MessageSquare, FileText, FolderOpen } from "lucide-react";
+import { ShortlistControls } from "./client-share";
 import { ApplicationNotification, ApplicationStatus } from "@/types/notification";
 import { useEffect, useState } from "react";
 
@@ -244,11 +245,25 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                                     >
                                       <FileText className="h-3.5 w-3.5 shrink-0" />
                                       <span className="min-w-0 flex-1 truncate">{file.fileName}</span>
-                                      <span className="shrink-0 text-[9px] font-bold uppercase text-violet-500">{file.kind}</span>
+                                      <span className="max-w-[45%] shrink-0 truncate text-[9px] font-bold uppercase text-violet-500">
+                                        {(file.questionId && n.applicationQuestions?.find((q) => q.id === file.questionId)?.prompt) || file.kind}
+                                      </span>
                                     </a>
                                   ))}
                                 </div>
                               </section>
+                            )}
+
+                            {n.hiringMode !== "cepat" && n.serverId != null && (
+                              <ShortlistControls
+                                applicationId={n.serverId}
+                                jobId={n.jobId}
+                                jobTitle={n.jobTitle}
+                                status={n.status}
+                                shortlisted={!!n.shortlistedAt}
+                                clientDecision={n.clientDecision}
+                                clientNote={n.clientNote}
+                              />
                             )}
 
                             <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">

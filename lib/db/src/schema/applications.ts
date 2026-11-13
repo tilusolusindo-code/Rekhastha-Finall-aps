@@ -48,7 +48,7 @@ export const applicationsTable = pgTable("applications", {
   submittedPortfolioUrl: text("submitted_portfolio_url"),
   /** Immutable copy of the recruiter questions as they appeared at apply time. */
   applicationQuestions: jsonb("application_questions")
-    .$type<Array<{ id: string; prompt: string; required: boolean; answerType: "short" | "long" | "yes_no" }>>()
+    .$type<Array<{ id: string; prompt: string; required: boolean; answerType: "short" | "long" | "yes_no" | "photo" | "file" }>>()
     .notNull()
     .default([]),
   applicationAnswers: jsonb("application_answers")
@@ -62,6 +62,12 @@ export const applicationsTable = pgTable("applications", {
     .default({}),
   /** "baru" (pending) | "ditinjau" | "diterima" | "ditolak" | "selesai" */
   status: text("status").notNull().default("baru"),
+  /** Diisi saat HR/pemilik memasukkan pelamar ke shortlist untuk ditinjau klien agensi. */
+  shortlistedAt: timestamp("shortlisted_at", { withTimezone: true }),
+  /** Penilaian klien lewat tautan khusus: "setuju" | "tidak" (hanya saran; keputusan akhir di agensi). */
+  clientDecision: text("client_decision"),
+  clientNote: text("client_note"),
+  clientDecidedAt: timestamp("client_decided_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -90,6 +96,8 @@ export const applicationUploadsTable = pgTable("application_uploads", {
   contentType: text("content_type").notNull(),
   fileSize: integer("file_size").notNull(),
   kind: text("kind").notNull(),
+  /** ID pertanyaan perekrut yang dijawab dengan unggahan ini (null untuk CV/portofolio generik). */
+  questionId: text("question_id"),
   uploaded: boolean("uploaded").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -114,3 +122,15 @@ export const insertApplicationSchema = createInsertSchema(
 export type InsertApplication = z.infer<typeof insertApplicationSchema>;
 export type Application = typeof applicationsTable.$inferSelect;
 export type ApplicationUpload = typeof applicationUploadsTable.$inferSelect;
+
+/** Tautan khusus agar klien agensi bisa menilai shortlist tanpa akun. Hanya hash token yang disimpan. */
+export const clientShareLinksTable = pgTable("client_share_links", {
+  id: serial("id").primaryKey(),
+  companyId: text("company_id").notNull(),
+  jobId: bigint("job_id", { mode: "number" }).notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  label: text("label").notNull().default(""),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

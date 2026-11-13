@@ -89,6 +89,7 @@ const BLOCKS: Block[] = [
         <List
           items={[
             "Antar pengguna: saat melamar, pemberi kerja melihat data lamaran Anda. Foto profil, keterampilan, dan ringkasan reputasi dapat terlihat oleh pemberi kerja yang relevan. Dokumen identitas hanya dapat dilihat tim verifikasi kami.",
+            "Agensi dan kliennya: bila pemberi kerja berupa agensi, tim HR-nya dapat melihat lamaran Anda (tanpa rekening, NIK, dan NPWP). Agensi juga dapat memasukkan Anda ke shortlist dan membagikannya lewat tautan sementara kepada klien agensi. Klien hanya melihat nama depan dan inisial, foto profil, keterampilan, rating, serta jawaban teks lamaran Anda. Kontak, rekening, NIK, CV, dan berkas unggahan tidak ditampilkan kepada klien. Klien hanya dapat memberi penilaian setuju atau tidak.",
             "Penyedia layanan yang memproses data atas nama kami: Vercel (hosting aplikasi), Supabase (basis data dan penyimpanan berkas), Midtrans (pembayaran), Google (login Google dan pengiriman email), Resend (pengiriman email), OpenStreetMap dan layanan pencarian alamatnya (peta), serta GitHub (penyimpanan cadangan yang dienkripsi).",
             "Otoritas yang berwenang, bila diwajibkan oleh hukum atau perintah pengadilan.",
           ]}

@@ -373,6 +373,13 @@ export default function HiringModePanel({
       setPostingError("Maksimal 10 pertanyaan per lowongan.");
       return;
     }
+    if (
+      (questionType === "photo" || questionType === "file") &&
+      applicationQuestions.filter((q) => q.answerType === "photo" || q.answerType === "file").length >= 4
+    ) {
+      setPostingError("Maksimal 4 syarat foto/file per lowongan.");
+      return;
+    }
     setApplicationQuestions((questions) => [
       ...questions,
       {
@@ -874,7 +881,11 @@ export default function HiringModePanel({
                             addApplicationQuestion();
                           }
                         }}
-                        placeholder="Contoh: Berapa lama pengalaman Anda?"
+                        placeholder={
+                          questionType === "photo" ? "Contoh: Foto KTP, foto seragam, foto diri setengah badan"
+                          : questionType === "file" ? "Contoh: Surat lamaran, sertifikat, hasil tes (PDF/DOC)"
+                          : "Contoh: Berapa lama pengalaman Anda?"
+                        }
                         className={`${inputCls} min-w-0`}
                       />
                       <button
@@ -898,6 +909,8 @@ export default function HiringModePanel({
                         <option value="short">Jawaban singkat</option>
                         <option value="long">Jawaban panjang</option>
                         <option value="yes_no">Ya / Tidak</option>
+                        <option value="photo">Syarat foto (unggah)</option>
+                        <option value="file">Syarat file/dokumen (unggah)</option>
                       </select>
                       <label className="flex items-center gap-1.5 text-[11px] text-gray-600">
                         <input
@@ -905,7 +918,7 @@ export default function HiringModePanel({
                           checked={questionRequired}
                           onChange={(event) => setQuestionRequired(event.target.checked)}
                         />
-                        Wajib dijawab
+                        {questionType === "photo" || questionType === "file" ? "Wajib dilampirkan" : "Wajib dijawab"}
                       </label>
                     </div>
 
@@ -916,6 +929,11 @@ export default function HiringModePanel({
                             <span className="min-w-0 flex-1 text-[11px] text-gray-700">
                               {index + 1}. {question.prompt}
                               {question.required && <span className="ml-1 font-bold text-red-500">*</span>}
+                              {(question.answerType === "photo" || question.answerType === "file") && (
+                                <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
+                                  {question.answerType === "photo" ? "FOTO" : "FILE"}
+                                </span>
+                              )}
                             </span>
                             <button
                               type="button"
@@ -1434,7 +1452,6 @@ export default function HiringModePanel({
         jobTitle={snapJob.title}
         amount={snapJob.amount}
         breakdown={{ wage: snapJob.wage, fee: snapJob.fee }}
-        onUseManual={onOpenPayments ? () => { setSnapJob(null); onOpenPayments(); } : undefined}
         onSuccess={() => { const id = snapJob.id; setSnapJob(null); onJobPaid?.(id); }}
         onClose={() => setSnapJob(null)}
       />

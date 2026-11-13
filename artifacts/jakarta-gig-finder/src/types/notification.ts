@@ -7,6 +7,8 @@ export type ApplicationStatus = "baru" | "ditinjau" | "diterima" | "ditolak" | "
 
 export interface ApplicationAttachment {
   id: number;
+  /** ID pertanyaan perekrut yang dijawab dengan berkas ini (null = dokumen generik). */
+  questionId?: string | null;
   fileName: string;
   contentType: string;
   kind: string;
@@ -48,6 +50,10 @@ export interface ApplicationNotification {
   applicationAnswers?: Record<string, string>;
   supportingInfo?: ApplicationSupportingInfo;
   uploadedFiles?: ApplicationAttachment[];
+  /** Shortlist untuk klien agensi (hanya terlihat oleh pemberi kerja/HR). */
+  shortlistedAt?: string | null;
+  clientDecision?: "setuju" | "tidak" | null;
+  clientNote?: string | null;
 }
 
 export function maskName(name: string): string {

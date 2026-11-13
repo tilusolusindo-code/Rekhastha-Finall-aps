@@ -56,6 +56,8 @@ export default function JobSheet({
   const [newPortfolioFile, setNewPortfolioFile] = useState<File | null>(null);
   const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  // Berkas untuk syarat foto/file buatan perekrut, dikunci per ID pertanyaan.
+  const [questionFiles, setQuestionFiles] = useState<Record<string, File | null>>({});
   const [applicationAnswers, setApplicationAnswers] = useState<Record<string, string>>({});
   const [supportingInfo, setSupportingInfo] = useState<ApplicationSupportingInfo>({});
   const cvInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +76,7 @@ export default function JobSheet({
     setNewPortfolioFile(null);
     setDocumentFiles([]);
     setPhotoFiles([]);
+    setQuestionFiles({});
     setApplicationAnswers({});
     setSupportingInfo({});
   }, [job?.id]);
@@ -153,8 +156,14 @@ export default function JobSheet({
 
   const handleSubmitApplication = async () => {
     const questions = job.applicationQuestions ?? [];
-    if (questions.some((question) => question.required && !applicationAnswers[question.id]?.trim())) {
+    const isUploadQuestion = (question: { answerType: string }) => question.answerType === "photo" || question.answerType === "file";
+    if (questions.some((question) => !isUploadQuestion(question) && question.required && !applicationAnswers[question.id]?.trim())) {
       setDocsError("Jawab semua pertanyaan wajib sebelum mengirim lamaran.");
+      return;
+    }
+    const missingUpload = questions.find((question) => isUploadQuestion(question) && question.required && !questionFiles[question.id]);
+    if (missingUpload) {
+      setDocsError(`Lampirkan "${missingUpload.prompt}" sebelum mengirim lamaran.`);
       return;
     }
     const requested = job.requestedApplicationDocuments ?? [];
@@ -175,6 +184,12 @@ export default function JobSheet({
       ...(newPortfolioFile ? [{ file: newPortfolioFile, kind: "portfolio" as const }] : []),
       ...documentFiles.map((file) => ({ file, kind: "file" as const })),
       ...photoFiles.map((file) => ({ file, kind: "photo" as const })),
+      ...questions.flatMap((question) => {
+        const file = questionFiles[question.id];
+        return file && isUploadQuestion(question)
+          ? [{ file, kind: question.answerType as "photo" | "file", questionId: question.id }]
+          : [];
+      }),
     ];
     if (files.length > 8) {
       setDocsError("Maksimal 8 berkas per lamaran.");
@@ -448,7 +463,27 @@ export default function JobSheet({
                       {question.prompt}
                       {question.required && <span className="ml-1 text-red-500">*</span>}
                     </span>
-                    {question.answerType === "yes_no" ? (
+                    {question.answerType === "photo" || question.answerType === "file" ? (
+                      <span className="block">
+                        <input
+                          type="file"
+                          accept={question.answerType === "photo"
+                            ? "image/jpeg,image/png,image/webp"
+                            : ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+                          disabled={docsUploading}
+                          data-testid={`input-question-file-${question.id}`}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0] ?? null;
+                            setQuestionFiles((files) => ({ ...files, [question.id]: file }));
+                          }}
+                          className="block w-full text-xs text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-xs file:font-bold file:text-emerald-700"
+                        />
+                        <span className="mt-1 block text-[10px] text-gray-400">
+                          {question.answerType === "photo" ? "JPG/PNG/WEBP" : "PDF/DOC/DOCX"}, maksimal 10MB
+                          {questionFiles[question.id] ? ` · dipilih: ${questionFiles[question.id]!.name}` : ""}
+                        </span>
+                      </span>
+                    ) : question.answerType === "yes_no" ? (
                       <select
                         value={applicationAnswers[question.id] ?? ""}
                         onChange={(event) => setApplicationAnswers((answers) => ({ ...answers, [question.id]: event.target.value }))}
@@ -597,6 +632,10 @@ export default function JobSheet({
               {photoFiles.length > 0 && (
                 <p className="text-[10px] text-gray-500">{photoFiles.map((file) => file.name).join(", ")}</p>
               )}
+
+              <p className="text-[10px] leading-relaxed text-gray-400">
+                Jika pemberi kerja adalah agensi, profil terbatas Anda (nama depan, foto, keahlian, rating, dan jawaban teks) dapat diteruskan kepada klien agensi. Kontak, rekening, dan berkas Anda tidak ikut dibagikan.
+              </p>
 
               <button
                 data-testid="button-upload-new-docs"

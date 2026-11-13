@@ -7,7 +7,8 @@ export type TipeAkun = "perusahaan" | "agensi";
 
 export type HiringMode = "cepat" | "lama";
 
-export type ApplicationAnswerType = "short" | "long" | "yes_no";
+/** "photo" dan "file" = syarat unggahan (pelamar wajib/boleh melampirkan berkas untuk pertanyaan itu). */
+export type ApplicationAnswerType = "short" | "long" | "yes_no" | "photo" | "file";
 export type RequestedApplicationDocument = "cv" | "portfolio" | "file" | "photo";
 
 export interface JobApplicationQuestion {

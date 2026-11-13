@@ -54,7 +54,7 @@ export const gigsTable = pgTable("gigs", {
   jobCategory: text("job_category"),
   /** Recruiter-defined application questions shown to applicants per gig. */
   applicationQuestions: jsonb("application_questions")
-    .$type<Array<{ id: string; prompt: string; required: boolean; answerType: "short" | "long" | "yes_no" }>>()
+    .$type<Array<{ id: string; prompt: string; required: boolean; answerType: "short" | "long" | "yes_no" | "photo" | "file" }>>()
     .notNull()
     .default([]),
   /** Documents the recruiter wants applicants to include. */

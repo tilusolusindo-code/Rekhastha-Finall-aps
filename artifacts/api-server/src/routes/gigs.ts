@@ -56,8 +56,16 @@ const createGigBody = z.object({
     id: z.string().min(1).max(80),
     prompt: z.string().trim().min(2).max(240),
     required: z.boolean(),
-    answerType: z.enum(["short", "long", "yes_no"]),
-  })).max(10).optional(),
+    answerType: z.enum(["short", "long", "yes_no", "photo", "file"]),
+  })).max(10).superRefine((qs, ctx) => {
+    // Syarat unggahan dibatasi agar total berkas per lamaran tetap wajar (maks 8 berkas).
+    if (qs.filter((q) => q.answerType === "photo" || q.answerType === "file").length > 4) {
+      ctx.addIssue({ code: "custom", message: "Maksimal 4 syarat foto/file per lowongan." });
+    }
+    if (new Set(qs.map((q) => q.id)).size !== qs.length) {
+      ctx.addIssue({ code: "custom", message: "ID pertanyaan tidak boleh duplikat." });
+    }
+  }).optional(),
   requestedApplicationDocuments: z.array(z.enum(["cv", "portfolio", "file", "photo"]))
     .max(4)
     .optional(),

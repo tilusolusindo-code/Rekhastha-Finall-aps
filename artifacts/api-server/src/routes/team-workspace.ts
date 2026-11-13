@@ -74,6 +74,28 @@ router.get("/team/company/:companyId/gigs", async (req, res): Promise<void> => {
   });
 });
 
+/** Data diri yang aman dilihat HR: usia, jenis kelamin, tempat lahir, status verifikasi. Tanpa NIK/NPWP/rekening/WhatsApp. */
+function safeDataDiri(profile: unknown, verificationStatus: string | null) {
+  const p = (profile && typeof profile === "object" ? profile : {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, 80) : "");
+  let usia: number | null = null;
+  const dob = str(p["tanggalLahir"]);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+    const d = new Date(dob);
+    const now = new Date();
+    let age = now.getFullYear() - d.getFullYear();
+    if (now < new Date(now.getFullYear(), d.getMonth(), d.getDate())) age -= 1;
+    if (age >= 0 && age < 120) usia = age;
+  }
+  const g = str(p["jenisKelamin"]);
+  return {
+    usia,
+    jenisKelamin: g === "L" || g === "P" ? g : null,
+    tempatLahir: str(p["tempatLahir"]) || null,
+    terverifikasi: verificationStatus === "verified" || verificationStatus === "approved",
+  };
+}
+
 /** GET /api/team/company/:companyId/applications?jobId= — lamaran (tanpa data keuangan/identitas). */
 router.get("/team/company/:companyId/applications", async (req, res): Promise<void> => {
   const ctx = await authorize(req, res, "applications.view");
@@ -89,6 +111,9 @@ router.get("/team/company/:companyId/applications", async (req, res): Promise<vo
       application: applicationsTable,
       workerAvatarUrl: usersTable.avatarUrl,
       workerSkills: usersTable.skills,
+      accountName: usersTable.name,
+      workerProfile: usersTable.profile,
+      verificationStatus: usersTable.verificationStatus,
     })
     .from(applicationsTable)
     .leftJoin(usersTable, eq(applicationsTable.workerId, usersTable.id))
@@ -99,11 +124,12 @@ router.get("/team/company/:companyId/applications", async (req, res): Promise<vo
   const stats = await getWorkerStats(rows.map((r) => r.application.workerId));
 
   res.json(
-    rows.map(({ application: a, workerAvatarUrl, workerSkills }) => ({
+    rows.map(({ application: a, workerAvatarUrl, workerSkills, accountName, workerProfile, verificationStatus }) => ({
       id: a.id,
       jobId: a.jobId,
       jobTitle: a.jobTitle,
-      workerName: a.workerName,
+      workerName: accountName ?? a.workerName,
+      dataDiri: safeDataDiri(workerProfile, verificationStatus),
       status: a.status,
       createdAt: a.createdAt,
       shortlistedAt: a.shortlistedAt,

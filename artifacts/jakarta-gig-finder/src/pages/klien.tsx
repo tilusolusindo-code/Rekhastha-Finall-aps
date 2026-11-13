@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Briefcase, Check, Loader2, Star, ThumbsDown, ThumbsUp, User } from "lucide-react";
+import { Briefcase, Camera, Check, ClipboardList, Loader2, Star, ThumbsDown, ThumbsUp, User } from "lucide-react";
 
 interface Candidate {
   id: number;
@@ -9,11 +9,12 @@ interface Candidate {
   stats: { ratingAvg: number | null; ratingCount: number; completedJobs: number };
   experience: string;
   education: string;
-  answers: { prompt: string; answer: string }[];
+  answers: { prompt: string; type: string; required: boolean; answer: string; attached: boolean }[];
   decision: "setuju" | "tidak" | null;
   note: string;
 }
-interface ClientView { jobTitle: string; companyName: string; label: string; expiresAt: string; candidates: Candidate[] }
+interface ClientQuestion { prompt: string; type: string; required: boolean }
+interface ClientView { questions: ClientQuestion[]; jobTitle: string; companyName: string; label: string; expiresAt: string; candidates: Candidate[] }
 
 export function getClientToken(): string | null {
   try {
@@ -75,10 +76,18 @@ function CandidateCard({ c, token, onSaved }: { c: Candidate; token: string; onS
       )}
       {c.answers.length > 0 && (
         <div className="mt-3 space-y-2 rounded-xl bg-blue-50/60 p-3">
-          {c.answers.map((a) => (
-            <div key={a.prompt}>
-              <p className="text-[11px] font-bold text-blue-900">{a.prompt}</p>
-              <p className="whitespace-pre-wrap break-words text-xs text-gray-700">{a.answer}</p>
+          <p className="text-[10px] font-black uppercase tracking-wide text-blue-500">Jawaban pelamar</p>
+          {c.answers.map((a, i) => (
+            <div key={`${i}-${a.prompt}`}>
+              <p className="text-[11px] font-bold text-blue-900">{a.prompt}{a.required && <span className="text-red-500"> *</span>}</p>
+              {a.type === "photo" || a.type === "file" ? (
+                <p className={`flex items-center gap-1 text-xs font-semibold ${a.attached ? "text-emerald-700" : "text-gray-400"}`}>
+                  {a.type === "photo" ? <Camera className="h-3 w-3" /> : <ClipboardList className="h-3 w-3" />}
+                  {a.attached ? "Sudah dilampirkan (diperiksa agensi)" : "Belum dilampirkan"}
+                </p>
+              ) : (
+                <p className="whitespace-pre-wrap break-words text-xs text-gray-700">{a.answer || <span className="text-gray-400">Tidak dijawab</span>}</p>
+              )}
             </div>
           ))}
         </div>
@@ -154,6 +163,22 @@ export default function KlienPage({ token }: { token: string }) {
               <p className="mt-1">Tekan <b>Setuju</b> atau <b>Tidak</b> pada tiap kandidat. Penilaian Anda diteruskan ke agensi sebagai masukan; keputusan akhir ada pada agensi.
                 Demi privasi, kontak dan data pribadi kandidat tidak ditampilkan. Tautan berlaku sampai {new Date(view.expiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}.</p>
             </div>
+            {view.questions.length > 0 && (
+              <div className="rounded-2xl border border-blue-100 bg-white p-4">
+                <p className="flex items-center gap-1.5 text-xs font-black text-blue-900"><ClipboardList className="h-3.5 w-3.5" /> Data yang ditanyakan ke pelamar</p>
+                <ol className="mt-2 space-y-1.5 text-xs text-gray-700">
+                  {view.questions.map((q, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[9px] font-black text-blue-700">{i + 1}</span>
+                      <span className="min-w-0 flex-1 break-words">{q.prompt}{q.required && <span className="text-red-500"> *</span>}
+                        {(q.type === "photo" || q.type === "file") && <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-500">{q.type === "photo" ? "foto" : "berkas"}</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-2 text-[10px] text-gray-400">* wajib diisi. Foto/berkas diperiksa oleh agensi dan tidak dibagikan ke halaman ini.</p>
+              </div>
+            )}
             {view.candidates.length === 0
               ? <p className="py-10 text-center text-sm text-gray-400">Belum ada kandidat di shortlist.</p>
               : view.candidates.map((c) => <CandidateCard key={c.id} c={c} token={token} onSaved={load} />)}

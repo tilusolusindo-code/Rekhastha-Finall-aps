@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createHash, randomBytes } from "node:crypto";
 import { and, desc, eq, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import {
-  applicationsTable, clientShareLinksTable, db, gigsTable, notificationsTable, usersTable,
+  applicationsTable, applicationUploadsTable, clientShareLinksTable, db, gigsTable, notificationsTable, usersTable,
 } from "@workspace/db";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import { teamCan } from "../lib/team-access";
@@ -218,13 +218,23 @@ router.get("/public/client-view/:token", async (req, res): Promise<void> => {
     const companyName = ((company?.profile ?? {}) as Record<string, unknown>)["namaPerusahaan"];
     const rows = await shortlistedFor(link);
     const stats = await getWorkerStats(rows.map((r) => r.application.workerId));
+    const uploadRows = rows.length
+      ? await db
+          .select({ applicationId: applicationUploadsTable.applicationId, questionId: applicationUploadsTable.questionId })
+          .from(applicationUploadsTable)
+          .where(and(inArray(applicationUploadsTable.applicationId, rows.map((r) => r.application.id)), eq(applicationUploadsTable.uploaded, true)))
+      : [];
+    const attached = new Set(uploadRows.map((u) => `${u.applicationId}:${u.questionId}`));
+    // Daftar pertanyaan diambil dari lamaran pertama yang punya pertanyaan (semua pelamar lowongan sama melihat yang sama).
+    const questionSource = rows.map((r) => r.application.applicationQuestions ?? []).find((q) => q.length > 0) ?? [];
     res.json({
+      questions: questionSource.map((q) => ({ prompt: q.prompt, type: q.answerType, required: !!q.required })),
       jobTitle: gig?.posisi ?? "Lowongan",
       companyName: typeof companyName === "string" && companyName ? companyName : (company?.name ?? ""),
       label: link.label,
       expiresAt: link.expiresAt,
       candidates: rows.map(({ application: a, avatarUrl, skills, accountName }) => {
-        const questions = (a.applicationQuestions ?? []).filter((q) => q.answerType !== "photo" && q.answerType !== "file");
+        const questions = a.applicationQuestions ?? [];
         const info = a.supportingInfo ?? {};
         return {
           id: a.id,
@@ -234,9 +244,12 @@ router.get("/public/client-view/:token", async (req, res): Promise<void> => {
           stats: stats.get(a.workerId) ?? { ratingAvg: null, ratingCount: 0, completedJobs: 0 },
           experience: info["experience"] ?? "",
           education: info["education"] ?? "",
-          answers: questions
-            .map((q) => ({ prompt: q.prompt, answer: (a.applicationAnswers ?? {})[q.id] ?? "" }))
-            .filter((x) => x.answer),
+          // Pertanyaan foto/file hanya dilaporkan terpenuhi atau tidak — berkasnya tidak dibagikan ke klien.
+          answers: questions.map((q) =>
+            q.answerType === "photo" || q.answerType === "file"
+              ? { prompt: q.prompt, type: q.answerType, required: !!q.required, answer: "", attached: attached.has(`${a.id}:${q.id}`) }
+              : { prompt: q.prompt, type: q.answerType, required: !!q.required, answer: (a.applicationAnswers ?? {})[q.id] ?? "", attached: false },
+          ),
           decision: a.clientDecision,
           note: a.clientNote ?? "",
         };
@@ -274,10 +287,7 @@ router.post("/public/client-view/:token/decision", async (req, res): Promise<voi
     })
     .where(eq(applicationsTable.id, target.id));
 
-  // Notifikasi dibatasi 1 per lamaran per 10 menit agar pemegang tautan tak bisa membanjiri perusahaan.
-  const recentlyNotified =
-    target.clientDecidedAt != null && Date.now() - new Date(target.clientDecidedAt).getTime() < 10 * 60_000;
-  if (parsed.data.decision && parsed.data.decision !== target.clientDecision && !recentlyNotified) {
+  if (parsed.data.decision && parsed.data.decision !== target.clientDecision) {
     await db.insert(notificationsTable).values({
       userId: link.companyId,
       message: `Klien menilai ${clientDisplayName(targetRow.accountName ?? target.workerName)} untuk ${target.jobTitle || "lowongan Anda"}: ${parsed.data.decision === "setuju" ? "Setuju" : "Tidak"}`,

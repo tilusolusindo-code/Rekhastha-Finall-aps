@@ -241,12 +241,22 @@ describe("hak akses per peran", () => {
     await join(co, hr, "hr");
     await join(co, sup, "supervisor");
     const gigId = await fixtureGig(co);
+    await db.update(usersTable).set({
+      profile: { nik: "3171000000000001", npwp: "123456789012345", nomorRekening: "1234567890", whatsapp: "0812999", tanggalLahir: "1998-05-10", jenisKelamin: "P", tempatLahir: "Bandung" },
+    }).where(eq(usersTable.id, applicant.id));
     const appId = await fixtureApplication(gigId, co, applicant);
 
     const list = await as(hr).get(`/api/team/company/${co.id}/applications`).expect(200);
     expect(list.body).toHaveLength(1);
     const row = list.body[0];
-    expect(row.workerName).toBe("Pelamar Uji");
+    expect(row.workerName).toBe("Tim pekerja");
+    // HR melihat data diri ringkas, tetapi bukan identitas/keuangan.
+    expect(row.dataDiri.jenisKelamin).toBe("P");
+    expect(row.dataDiri.tempatLahir).toBe("Bandung");
+    expect(row.dataDiri.usia).toBeGreaterThanOrEqual(26);
+    expect(row.dataDiri.terverifikasi).toBe(true);
+    const dump = JSON.stringify(row);
+    for (const secret of ["3171000000000001", "123456789012345", "0812999", "1234567890", "1234567890"]) expect(dump).not.toContain(secret);
     for (const secret of ["bank", "rekening", "workerNikMasked", "workerNpwpMasked", "workerId", "employerId"]) {
       expect(row).not.toHaveProperty(secret);
     }

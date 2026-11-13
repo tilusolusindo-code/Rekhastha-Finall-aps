@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
-import { Users, Eye, Building2, Loader2, Check, X, LogOut, ExternalLink, Mail, ChevronRight, ShieldCheck } from "lucide-react";
+import { Users, Eye, Building2, Loader2, Check, X, LogOut, ExternalLink, Mail, ChevronRight, ShieldCheck, Search, ChevronDown, FileText } from "lucide-react";
+import { EMPTY_FILTERS, filterApplicants, isFiltersActive, requirementProgress, type ApplicantFilters, type SortKey } from "../lib/applicant-filters";
 import { ShortlistControls } from "./client-share";
 
 export type TeamRole = "hr" | "supervisor";
@@ -183,6 +184,10 @@ interface WorkerApplication {
   shortlistedAt?: string | null; clientDecision?: "setuju" | "tidak" | null; clientNote?: string | null;
   workerSkills: string[];
   workerStats: { ratingAvg: number | null; ratingCount: number; completedJobs: number };
+  dataDiri?: { usia: number | null; jenisKelamin: "L" | "P" | null; tempatLahir: string | null; terverifikasi: boolean } | null;
+  applicationQuestions?: { id: string; prompt: string; required: boolean; answerType: string }[] | null;
+  applicationAnswers?: Record<string, string> | null;
+  uploadedFiles?: { id: number; questionId?: string | null; fileName: string; kind: string; url: string }[] | null;
 }
 interface GigRow {
   id: number; posisi: string; jobDate?: string | null; jamKerja?: string | null; alamat?: string | null; kuota?: number | null;
@@ -198,10 +203,65 @@ function todayWIB() {
   return new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
 }
 
+function ApplicantDetail({ a }: { a: WorkerApplication }) {
+  const d = a.dataDiri;
+  const qs = a.applicationQuestions ?? [];
+  const files = a.uploadedFiles ?? [];
+  const info = a.supportingInfo ?? {};
+  const Field = ({ k, v }: { k: string; v: string }) => v ? <div><dt className="text-[10px] font-bold uppercase text-gray-400">{k}</dt><dd className="text-xs text-gray-700 break-words whitespace-pre-wrap">{v}</dd></div> : null;
+  return (
+    <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
+      <section>
+        <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-wide mb-1.5">Data diri</h4>
+        <dl className="grid grid-cols-2 gap-2">
+          <Field k="Nama" v={a.workerName} />
+          <Field k="Usia" v={d?.usia != null ? `${d.usia} tahun` : ""} />
+          <Field k="Jenis kelamin" v={d?.jenisKelamin === "L" ? "Laki-laki" : d?.jenisKelamin === "P" ? "Perempuan" : ""} />
+          <Field k="Tempat lahir" v={d?.tempatLahir ?? ""} />
+          <Field k="Akun" v={d ? (d.terverifikasi ? "Identitas terverifikasi" : "Belum terverifikasi") : ""} />
+          <Field k="Pengalaman" v={String(info.experience ?? "")} />
+          <Field k="Pendidikan" v={String(info.education ?? "")} />
+          <Field k="Ketersediaan" v={String(info.availability ?? "")} />
+        </dl>
+        <p className="mt-1.5 text-[10px] text-gray-400">NIK, rekening, NPWP, dan kontak pribadi tidak ditampilkan di ruang kerja tim.</p>
+      </section>
+      <section>
+        <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-wide mb-1.5">Pertanyaan &amp; jawaban</h4>
+        {qs.length === 0 ? <p className="text-xs text-gray-400">Lowongan ini tidak punya pertanyaan tambahan.</p> : (
+          <div className="space-y-2">
+            {qs.map(q => {
+              const f = files.find(x => x.questionId === q.id);
+              const isFile = q.answerType === "photo" || q.answerType === "file";
+              const ans = (a.applicationAnswers?.[q.id] ?? "").trim();
+              return (
+                <div key={q.id} className="rounded-xl bg-gray-50 px-3 py-2">
+                  <p className="text-[11px] font-bold text-gray-700">{q.prompt}{q.required && <span className="text-red-500"> *</span>}</p>
+                  {isFile
+                    ? (f ? <a href={f.url} target="_blank" rel="noopener noreferrer" className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-violet-700"><FileText className="w-3 h-3" />{f.fileName}</a>
+                         : <p className={`mt-0.5 text-xs font-semibold ${q.required ? "text-red-500" : "text-gray-400"}`}>Belum dilampirkan</p>)
+                    : <p className={`mt-0.5 text-xs break-words whitespace-pre-wrap ${ans ? "text-gray-700" : "text-gray-400"}`}>{ans || "Tidak dijawab"}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {files.filter(f => !f.questionId).length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {files.filter(f => !f.questionId).map(f => <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold text-violet-700"><FileText className="w-3 h-3" />{f.fileName}</a>)}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDecide: boolean }) {
   const [rows, setRows] = useState<WorkerApplication[] | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [filters, setFilters] = useState<ApplicantFilters>(EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
+  const [open, setOpen] = useState<Set<number>>(new Set());
 
   const load = useCallback(() => {
     api<WorkerApplication[]>(`/api/team/company/${companyId}/applications`).then(setRows).catch(e => { setError((e as Error).message); setRows([]); });
@@ -214,13 +274,72 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
+  const toggle = (id: number) => setOpen(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const set = <K extends keyof ApplicantFilters>(k: K, v: ApplicantFilters[K]) => setFilters(f => ({ ...f, [k]: v }));
 
   if (!rows) return <div className="py-10 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
+  const jobs = Array.from(new Map(rows.map(r => [r.jobId, r.jobTitle])).entries());
+  const shown = filterApplicants(rows, filters);
+  const active = isFiltersActive(filters);
+  const chip = (on: boolean) => `px-2.5 py-1 rounded-full text-[11px] font-bold border ${on ? "bg-violet-600 text-white border-violet-600" : "bg-white text-gray-600 border-gray-200"}`;
+  const sel = "px-2.5 py-2 border border-gray-200 rounded-xl text-xs bg-white";
+
   return (
     <div className="space-y-2">
+      <div className="bg-white rounded-2xl border border-gray-100 p-3 space-y-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input data-testid="input-ats-search" value={filters.search} onChange={e => set("search", e.target.value)} placeholder="Cari nama, keahlian, atau isi jawaban"
+              className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-xs bg-white" />
+          </div>
+          <button onClick={() => setShowFilters(v => !v)} className={`px-3 rounded-xl border text-xs font-bold flex items-center gap-1 ${showFilters || active ? "border-violet-300 text-violet-700 bg-violet-50" : "border-gray-200 text-gray-600"}`}>
+            Filter <ChevronDown className={`w-3 h-3 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {[["", "Semua"], ["baru", "Baru"], ["ditinjau", "Ditinjau"], ["diterima", "Diterima"], ["ditolak", "Ditolak"]].map(([v, l]) => (
+            <button key={v} onClick={() => set("status", v)} className={chip(filters.status === v)}>{l}</button>
+          ))}
+        </div>
+        {showFilters && (
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <select value={filters.jobId ?? ""} onChange={e => set("jobId", e.target.value ? Number(e.target.value) : null)} className={`${sel} col-span-2`}>
+              <option value="">Semua lowongan</option>
+              {jobs.map(([id, t]) => <option key={id} value={id}>{t}</option>)}
+            </select>
+            <select value={filters.shortlist} onChange={e => set("shortlist", e.target.value as ApplicantFilters["shortlist"])} className={sel}>
+              <option value="">Shortlist: semua</option><option value="ya">Sudah di shortlist</option><option value="belum">Belum di shortlist</option>
+            </select>
+            <select value={filters.klien} onChange={e => set("klien", e.target.value as ApplicantFilters["klien"])} className={sel}>
+              <option value="">Penilaian klien: semua</option><option value="setuju">Disetujui klien</option><option value="tidak">Ditolak klien</option><option value="belum">Menunggu klien</option>
+            </select>
+            <select value={filters.minRating} onChange={e => set("minRating", Number(e.target.value))} className={sel}>
+              <option value={0}>Rating: bebas</option><option value={3}>★ 3+</option><option value={4}>★ 4+</option><option value={4.5}>★ 4.5+</option>
+            </select>
+            <select value={filters.minJobs} onChange={e => set("minJobs", Number(e.target.value))} className={sel}>
+              <option value={0}>Pengalaman: bebas</option><option value={1}>1+ pekerjaan</option><option value={5}>5+ pekerjaan</option><option value={10}>10+ pekerjaan</option>
+            </select>
+            <label className="col-span-2 flex items-center gap-2 text-xs font-semibold text-gray-600">
+              <input type="checkbox" checked={filters.syaratLengkap} onChange={e => set("syaratLengkap", e.target.checked)} /> Hanya yang syarat wajibnya lengkap
+            </label>
+            <select value={filters.sort} onChange={e => set("sort", e.target.value as SortKey)} className={`${sel} col-span-2`}>
+              <option value="terbaru">Urutkan: terbaru</option><option value="rating">Urutkan: rating tertinggi</option><option value="pengalaman">Urutkan: pekerjaan terbanyak</option><option value="nama">Urutkan: nama A–Z</option>
+            </select>
+          </div>
+        )}
+        <div className="flex items-center justify-between text-[11px] text-gray-500">
+          <span data-testid="text-ats-count">{shown.length} dari {rows.length} pelamar</span>
+          {active && <button onClick={() => setFilters(f => ({ ...EMPTY_FILTERS, sort: f.sort }))} className="font-bold text-violet-700">Reset filter</button>}
+        </div>
+      </div>
       {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
       {rows.length === 0 && <p className="py-8 text-center text-sm text-gray-400">Belum ada lamaran.</p>}
-      {rows.map(a => (
+      {rows.length > 0 && shown.length === 0 && <p className="py-8 text-center text-sm text-gray-400">Tidak ada pelamar yang cocok dengan filter.</p>}
+      {shown.map(a => {
+        const prog = requirementProgress(a);
+        const isOpen = open.has(a.id);
+        return (
         <div key={a.id} className="bg-white rounded-2xl border border-gray-100 p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -231,20 +350,24 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
           </div>
           <p className="text-[11px] text-gray-400 mt-1">
             {a.workerStats?.completedJobs ?? 0} pekerjaan selesai{a.workerStats?.ratingAvg != null ? ` · ★ ${Number(a.workerStats.ratingAvg).toFixed(1)} (${a.workerStats.ratingCount})` : ""}
+            {a.dataDiri?.usia != null ? ` · ${a.dataDiri.usia} th` : ""}
           </p>
           {Array.isArray(a.workerSkills) && a.workerSkills.length > 0 && <p className="text-[11px] text-gray-500 mt-1 truncate">{a.workerSkills.slice(0, 5).join(" · ")}</p>}
-          {a.supportingInfo && (a.supportingInfo.experience || a.supportingInfo.education || a.supportingInfo.availability) && (
-            <dl className="mt-2 space-y-1 text-xs text-gray-600">
-              {a.supportingInfo.experience && <div><dt className="inline font-bold text-gray-500">Pengalaman: </dt><dd className="inline break-words">{String(a.supportingInfo.experience)}</dd></div>}
-              {a.supportingInfo.education && <div><dt className="inline font-bold text-gray-500">Pendidikan: </dt><dd className="inline break-words">{String(a.supportingInfo.education)}</dd></div>}
-              {a.supportingInfo.availability && <div><dt className="inline font-bold text-gray-500">Ketersediaan: </dt><dd className="inline break-words">{String(a.supportingInfo.availability)}</dd></div>}
-            </dl>
+          {prog.total > 0 && (
+            <p className={`mt-1.5 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${prog.done === prog.total ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+              Syarat wajib {prog.done}/{prog.total}
+            </p>
           )}
           <div className="flex gap-3 mt-2">
             {a.cvLink && <a href={a.cvLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">CV <ExternalLink className="w-3 h-3" /></a>}
             {a.portfolioLink && <a href={a.portfolioLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">Portofolio <ExternalLink className="w-3 h-3" /></a>}
           </div>
-          {canDecide && (
+          <button data-testid={`button-detail-${a.id}`} onClick={() => toggle(a.id)} className="mt-2 w-full py-2 rounded-xl bg-gray-50 text-xs font-bold text-gray-700 flex items-center justify-center gap-1">
+            {isOpen ? "Sembunyikan detail" : "Lihat data diri, pertanyaan & jawaban"} <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+          </button>
+          {isOpen && <ApplicantDetail a={a} />}
+          {canDecide && !isOpen && <p className="mt-3 text-[11px] text-gray-400">Tinjau data diri &amp; jawaban dulu sebelum memasukkan ke shortlist.</p>}
+          {canDecide && isOpen && (
             <div className="mt-3">
               <ShortlistControls applicationId={a.id} jobId={a.jobId} jobTitle={a.jobTitle} status={a.status}
                 shortlisted={!!a.shortlistedAt} clientDecision={a.clientDecision} clientNote={a.clientNote} />
@@ -260,7 +383,8 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

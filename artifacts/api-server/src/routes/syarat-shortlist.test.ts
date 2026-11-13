@@ -154,6 +154,26 @@ describe("syarat foto/file pada pertanyaan tambahan", () => {
     expect((await send({ "q-txt": "ok" })).status).toBe(201);
   });
 
+  it("klien melihat daftar pertanyaan & status lampiran, tetapi tidak berkasnya", async () => {
+    const co = await mk("perusahaan");
+    const worker = await mk("pekerja");
+    const jobId = await mkGig(co, questions);
+    const ktp = await uploadFor(worker, jobId, "q-ktp", "photo");
+    const app = await as(worker).post("/api/applications").send({ jobId, jobTitle: "x", workerName: "Budi", applicationAnswers: { "q-txt": "siap" }, uploadIds: [ktp.id] });
+    expect(app.status).toBe(201);
+    await as(co).post(`/api/applications/${app.body.id}/shortlist`).send({ shortlisted: true }).expect(200);
+    const link = await as(co).post("/api/client-links").send({ jobId, label: "K", days: 2 });
+    const view = await anon().get(`/api/public/client-view/${link.body.url.split("klien=")[1]}`).expect(200);
+    expect(view.body.questions.map((q: { type: string }) => q.type)).toEqual(questions.map((q) => q.answerType));
+    const ans = view.body.candidates[0].answers as Array<{ type: string; attached: boolean; answer: string }>;
+    const photo = ans.find((a) => a.type === "photo")!;
+    expect(photo.attached).toBe(true);
+    expect(photo.answer).toBe("");
+    const dump = JSON.stringify(view.body);
+    expect(dump).not.toContain("/api/applications/files");
+    expect(dump).not.toContain("fileName");
+  });
+
   it("syarat opsional boleh dilewati", async () => {
     const co = await mk("perusahaan");
     const worker = await mk("pekerja");
@@ -201,7 +221,8 @@ describe("shortlist untuk klien agensi", () => {
     expect(view.body.candidates).toHaveLength(1); // a2 belum shortlist
     const c = view.body.candidates[0];
     expect(c.displayName).toBe("Budi S.");
-    expect(c.answers).toEqual([{ prompt: "Pengalaman?", answer: "tiga tahun" }]);
+    expect(view.body.questions).toEqual([{ prompt: "Pengalaman?", type: "short", required: true }]);
+    expect(c.answers).toEqual([{ prompt: "Pengalaman?", type: "short", required: true, answer: "tiga tahun", attached: false }]);
     // Tidak ada data sensitif/identitas penuh.
     const dump = JSON.stringify(view.body);
     for (const secret of ["9999888877", "3171", "Santoso", "BCA", "rekening", "workerId", "employerId", "uploadedFiles"]) {

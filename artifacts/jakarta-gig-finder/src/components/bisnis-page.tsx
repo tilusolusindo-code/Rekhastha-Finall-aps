@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { TeamMemberBisnisView } from "./team-membership-banner";
+import { TeamMemberBisnisView, fetchMemberships, type Membership } from "./team-membership-banner";
 import {
   Crown, CheckCircle2, Star, QrCode, Calculator, Users, Shield,
   Zap, Clock, RefreshCw, AlertCircle, ChevronRight, X, Sparkles,
@@ -66,17 +66,14 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
   const [status, setStatus]     = useState<BisnisStatus | null>(null);
   const [loading, setLoading]   = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [membership, setMembership] = useState<any>(null);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [membershipLoaded, setMembershipLoaded] = useState(false);
 
-  // Cek apakah user ini anggota tim seseorang
+  // Cek apakah user ini anggota tim seseorang (hanya akun pekerja; akun perusahaan selalu melihat halaman Bisnis miliknya).
   useEffect(() => {
-    fetch("/api/team/my-membership", { credentials: "same-origin" })
-      .then(r => r.json())
-      .then(d => setMembership(d.membership ?? null))
-      .catch(() => {})
-      .finally(() => setMembershipLoaded(true));
-  }, []);
+    if (currentUser.role === "perusahaan") { setMembershipLoaded(true); return; }
+    void fetchMemberships().then(setMemberships).finally(() => setMembershipLoaded(true));
+  }, [currentUser.role]);
 
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [buyStep, setBuyStep]   = useState<BuyStep>("idle");
@@ -126,8 +123,8 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
   }, null);
 
   // ── Kalau user adalah anggota tim, tampilkan view khusus ──────────────────
-  if (membershipLoaded && membership) {
-    return <TeamMemberBisnisView membership={membership} />;
+  if (membershipLoaded && currentUser.role !== "perusahaan" && memberships.length > 0) {
+    return <TeamMemberBisnisView memberships={memberships} />;
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────

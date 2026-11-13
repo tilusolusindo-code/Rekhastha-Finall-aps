@@ -339,13 +339,12 @@ export async function sendPayoutNotificationEmail(params: {
 export async function sendTeamInvitationEmail(params: {
   to: string;
   companyName: string;
-  role: "hr" | "supervisor" | "finance";
+  role: "hr" | "supervisor";
   link: string;
 }): Promise<boolean> {
   const roleLabel: Record<string, string> = {
     hr: "HR / Rekrutmen",
     supervisor: "Supervisor Lapangan",
-    finance: "Keuangan",
   };
   const { to, companyName, role, link } = params;
   const label = roleLabel[role] ?? role;
@@ -353,7 +352,7 @@ export async function sendTeamInvitationEmail(params: {
     ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c] ?? c);
   return sendEmail({
     to,
-    subject: `${esc(companyName)} mengundang Anda bergabung ke tim Rekhastha`,
+    subject: `${companyName} mengundang Anda bergabung ke tim Rekhastha`,
     html:
       `<div style="font-family:sans-serif;max-width:480px;margin:auto">` +
       `<h2 style="color:#059669">Rekhastha</h2>` +

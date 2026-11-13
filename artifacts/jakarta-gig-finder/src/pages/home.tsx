@@ -157,6 +157,39 @@ export default function Home() {
     const t = setTimeout(() => setTourOpen(true), 1200);
     return () => clearTimeout(t);
   }, [currentUser?.id]);
+  // Tautan undangan tim dari email (?join_team=<token>): simpan dulu supaya tetap jalan
+  // setelah login/daftar, lalu bergabung begitu akun pekerja sudah masuk.
+  const [teamJoinMsg, setTeamJoinMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const t = url.searchParams.get("join_team");
+      if (t) {
+        sessionStorage.setItem("rekhastha_join_team", t);
+        url.searchParams.delete("join_team");
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch { /* abaikan */ }
+  }, []);
+  useEffect(() => {
+    if (!currentUser) return;
+    let token: string | null = null;
+    try { token = sessionStorage.getItem("rekhastha_join_team"); } catch { /* abaikan */ }
+    if (!token) return;
+    try { sessionStorage.removeItem("rekhastha_join_team"); } catch { /* abaikan */ }
+    fetch("/api/team/join", {
+      method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+      .then(async r => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error ?? "Undangan tidak dapat dipakai.");
+        setTeamJoinMsg({ ok: true, text: "Anda sekarang anggota tim. Buka menu Bisnis untuk mulai bekerja." });
+      })
+      .catch(e => setTeamJoinMsg({ ok: false, text: (e as Error).message }))
+      .finally(() => setTimeout(() => setTeamJoinMsg(null), 8000));
+  }, [currentUser?.id]);
   const [mode, setMode] = useState<"perusahaan" | "pekerja">("perusahaan");
   const [companyView, setCompanyView] = useState<CompanyView>("jobs");
   const [workerView, setWorkerView] = useState<"list" | "map" | "scheduled" | "applications">("list");
@@ -1715,6 +1748,12 @@ export default function Home() {
           onDecline={() => handleStatusChange(applicantToast.id, "ditolak")}
           onDismiss={() => setApplicantToast(null)}
         />
+      )}
+
+      {teamJoinMsg && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl shadow-xl text-white text-sm font-bold max-w-xs w-[90vw] ${teamJoinMsg.ok ? "bg-emerald-600" : "bg-red-500"}`}>
+          {teamJoinMsg.text}
+        </div>
       )}
 
       {/* ── DOKU Payment result toast ─────────────────────── */}

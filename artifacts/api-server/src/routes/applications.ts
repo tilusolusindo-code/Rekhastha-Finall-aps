@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import { escrowAllowsPayout } from "../lib/wage-ledger";
 import { notifyByEmail } from "../lib/notify";
+import { teamCan } from "../lib/team-access";
 import { getWorkerStats } from "../lib/worker-stats";
 import { getSessionUser, SESSION_COOKIE } from "../lib/auth";
 import {
@@ -218,16 +219,18 @@ router.get("/applications/files/:id", async (req, res): Promise<void> => {
   }
 
   let allowed = upload.workerId === user.id;
-  if (!allowed && user.role === "perusahaan" && upload.applicationId != null) {
+  if (!allowed && upload.applicationId != null) {
     const [application] = await db
-      .select({ id: applicationsTable.id })
+      .select({ id: applicationsTable.id, employerId: applicationsTable.employerId })
       .from(applicationsTable)
-      .where(and(
-        eq(applicationsTable.id, upload.applicationId),
-        eq(applicationsTable.employerId, user.id),
-      ))
+      .where(eq(applicationsTable.id, upload.applicationId))
       .limit(1);
-    allowed = !!application;
+    if (application) {
+      // Pemilik lowongan, atau anggota tim HR perusahaan itu (paket Bisnis aktif).
+      allowed =
+        (user.role === "perusahaan" && application.employerId === user.id) ||
+        (await teamCan(user.id, application.employerId, "applications.view"));
+    }
   }
   if (!allowed) {
     res.status(404).json({ error: "Berkas tidak ditemukan." });
@@ -333,7 +336,7 @@ function toApplicationAttachment(upload: {
   };
 }
 
-async function getApplicationAttachments(applicationIds: number[]) {
+export async function getApplicationAttachments(applicationIds: number[]) {
   if (applicationIds.length === 0) return new Map<number, ReturnType<typeof toApplicationAttachment>[]>();
   const rows = await db
     .select({
@@ -746,10 +749,6 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Tidak terautentikasi." });
     return;
   }
-  if (user.role !== "perusahaan") {
-    res.status(403).json({ error: "Hanya pemberi kerja yang dapat mengubah status lamaran." });
-    return;
-  }
   const id = Number(req.params.id);
   if (!id || isNaN(id)) {
     res.status(400).json({ error: "ID lamaran tidak valid." });
@@ -761,6 +760,38 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
     return;
   }
 
+  // Siapa yang bertindak: pemilik lowongan, atau anggota tim HR perusahaan itu.
+  // HR hanya boleh menandai ditinjau/diterima/ditolak (tidak "selesai"/"baru") dan tidak
+  // boleh memutuskan lamarannya sendiri.
+  const [ref] = await db
+    .select({ employerId: applicationsTable.employerId, workerId: applicationsTable.workerId })
+    .from(applicationsTable)
+    .where(eq(applicationsTable.id, id))
+    .limit(1);
+  let actingEmployerId: string | null = null;
+  if (ref && user.role === "perusahaan" && ref.employerId === user.id) {
+    actingEmployerId = user.id;
+  } else if (ref && (await teamCan(user.id, ref.employerId, "applications.decide"))) {
+    if (ref.workerId === user.id) {
+      res.status(403).json({ error: "Anda tidak dapat memutuskan lamaran Anda sendiri." });
+      return;
+    }
+    if (!["ditinjau", "diterima", "ditolak"].includes(parsed.data.status)) {
+      res.status(403).json({ error: "Peran HR hanya boleh menandai lamaran ditinjau, diterima, atau ditolak." });
+      return;
+    }
+    actingEmployerId = ref.employerId;
+  }
+  if (!actingEmployerId) {
+    if (user.role !== "perusahaan") {
+      res.status(403).json({ error: "Hanya pemberi kerja atau anggota tim HR yang dapat mengubah status lamaran." });
+      return;
+    }
+    // Tidak ditemukan ATAU bukan milik pemanggil → 404 agar tidak membocorkan keberadaan.
+    res.status(404).json({ error: "Lamaran tidak ditemukan." });
+    return;
+  }
+
   // Seluruh keputusan (kuota, pendanaan, KYC, transisi) diambil di dalam satu
   // transaksi dengan baris lowongan terkunci, supaya dua permintaan paralel tidak
   // bisa sama-sama lolos batas kuota (audit K1).
@@ -768,7 +799,7 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
     const [owned] = await tx
       .select({ jobId: applicationsTable.jobId })
       .from(applicationsTable)
-      .where(and(eq(applicationsTable.id, id), eq(applicationsTable.employerId, user.id)))
+      .where(and(eq(applicationsTable.id, id), eq(applicationsTable.employerId, actingEmployerId)))
       .limit(1);
     // Tidak ditemukan ATAU bukan milik pemanggil → 404 agar tidak membocorkan keberadaan.
     if (!owned) return { error: "not_found" as const };
@@ -782,7 +813,7 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
     const [current] = await tx
       .select()
       .from(applicationsTable)
-      .where(and(eq(applicationsTable.id, id), eq(applicationsTable.employerId, user.id)))
+      .where(and(eq(applicationsTable.id, id), eq(applicationsTable.employerId, actingEmployerId)))
       .for("update")
       .limit(1);
     if (!current) return { error: "not_found" as const };
@@ -858,7 +889,7 @@ router.patch("/applications/:id/status", async (req, res): Promise<void> => {
     void notifyByEmail(row.workerId, { kind: "status", status: row.status, jobTitle: row.jobTitle });
   }
   req.log.info(
-    { applicationId: row.id, status: row.status },
+    { applicationId: row.id, status: row.status, actorId: user.id, onBehalfOf: actingEmployerId !== user.id ? actingEmployerId : undefined },
     "Application status updated",
   );
   res.json(row);

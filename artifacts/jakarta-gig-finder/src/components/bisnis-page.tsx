@@ -152,7 +152,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
           </div>
           <div>
             <h1 className="text-white font-black text-2xl tracking-tight leading-none">Rekhastha Bisnis</h1>
-            <p className="text-white/40 text-xs mt-1">Tilu Saudara Solusindo · Manajemen pekerja harian</p>
+            <p className="text-white/65 text-xs mt-1">Tilu Saudara Solusindo · Manajemen pekerja harian</p>
           </div>
         </div>
 
@@ -193,10 +193,10 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
             <div className="rounded-2xl px-5 py-4"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center gap-2.5">
-                <Lock className="w-4 h-4 text-white/30 shrink-0" />
+                <Lock className="w-4 h-4 text-white/60 shrink-0" />
                 <div>
                   <p className="text-white/60 font-semibold text-sm">Belum Berlangganan</p>
-                  <p className="text-white/30 text-xs mt-0.5">Pilih paket di bawah untuk mulai</p>
+                  <p className="text-white/60 text-xs mt-0.5">Pilih paket di bawah untuk mulai</p>
                 </div>
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
       {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-24">
           <span className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-white/30">Memuat paket…</p>
+          <p className="text-sm text-white/60">Memuat paket…</p>
         </div>
       )}
       {!loading && loadError && (
@@ -230,7 +230,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
           {/* ── PILIH PAKET ── */}
           <div className="px-4 pt-6 pb-2">
             <p className="text-[11px] font-bold uppercase tracking-widest mb-4"
-              style={{ color: "rgba(255,255,255,0.3)" }}>Pilih Paket</p>
+              style={{ color: "rgba(255,255,255,0.6)" }}>Pilih Paket</p>
 
             <div className="grid grid-cols-2 gap-3">
               {plans.map((plan) => {
@@ -263,16 +263,16 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                     )}
 
                     <p className={`font-black text-sm leading-tight ${isBest ? "text-amber-200" : "text-white"}`}>{plan.label}</p>
-                    <p className="text-[10px] mt-0.5 font-medium" style={{ color: "rgba(255,255,255,0.3)" }}>{plan.durationDays} hari</p>
+                    <p className="text-[10px] mt-0.5 font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>{plan.durationDays} hari</p>
 
                     <div className="mt-3">
-                      <p className="text-[10px] line-through leading-none" style={{ color: "rgba(255,255,255,0.25)" }}>
+                      <p className="text-[10px] line-through leading-none" style={{ color: "rgba(255,255,255,0.55)" }}>
                         {fmt(plan.originalPrice)}
                       </p>
                       <p className={`font-black text-lg leading-tight ${isBest ? "text-amber-300" : "text-white"}`}>
                         {fmt(plan.promoPrice)}
                       </p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
+                      <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
                         ~{fmt(perDay)}/hari
                       </p>
                     </div>
@@ -289,7 +289,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
           {/* ── FITUR PER TIER ── */}
           <div className="px-4 pt-6 pb-10">
             <p className="text-[11px] font-bold uppercase tracking-widest mb-5"
-              style={{ color: "rgba(255,255,255,0.3)" }}>Fitur per Paket</p>
+              style={{ color: "rgba(255,255,255,0.6)" }}>Fitur per Paket</p>
 
             <div className="space-y-5">
               {TIER_META.map((tier) => {
@@ -372,7 +372,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                     <h2 className="font-black text-white text-base">Konfirmasi Berlangganan</h2>
                   </div>
                   {buyStep !== "paying" && (
-                    <button onClick={closeModal} style={{ color: "rgba(255,255,255,0.3)" }}>
+                    <button onClick={closeModal} style={{ color: "rgba(255,255,255,0.6)" }}>
                       <X className="w-5 h-5" />
                     </button>
                   )}
@@ -387,7 +387,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                   </div>
                   <div className="text-right">
                     <p className="font-black text-amber-400 text-lg">{fmt(selectedPlan.promoPrice)}</p>
-                    <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>{selectedPlan.durationDays} hari</p>
+                    <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.6)" }}>{selectedPlan.durationDays} hari</p>
                   </div>
                 </div>
 

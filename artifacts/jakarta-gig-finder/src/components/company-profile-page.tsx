@@ -76,17 +76,17 @@ export default function CompanyProfilePage({
       {/* ── Profile header ──────────────────────────────── */}
       <div
         className="px-5 pt-6 pb-5 flex flex-col items-center gap-3"
-        style={{ background: "linear-gradient(160deg, #1E3A5F 0%, #1D4ED8 60%, #3B82F6 100%)" }}
+        style={{ background: "linear-gradient(160deg, #064E3B 0%, #047857 60%, #10B981 100%)" }}
       >
         <ProfileAvatar
           user={currentUser}
           size={80}
-          fallbackBg="linear-gradient(135deg,#2563EB,#7C3AED)"
+          fallbackBg="linear-gradient(135deg,#047857,#10B981)"
           onUserUpdated={onUserUpdated}
         />
         <div className="text-center">
           <h2 className="text-xl font-black text-white">{currentUser.namaPerusahaan || currentUser.name}</h2>
-          <p className="text-sm text-blue-100">{currentUser.email}</p>
+          <p className="text-sm text-emerald-100">{currentUser.email}</p>
           {onUserUpdated && (
             <div className="mt-2 flex justify-center">
               <EditProfileButton user={currentUser} onUserUpdated={onUserUpdated} company />
@@ -104,7 +104,7 @@ export default function CompanyProfilePage({
 
         {nibValid ? (
           <div className="flex items-center gap-2 bg-white/20 border border-white/30 rounded-xl px-4 py-2">
-            <ShieldCheck className="w-4 h-4 text-blue-200" />
+            <ShieldCheck className="w-4 h-4 text-emerald-200" />
             <span className="text-xs font-semibold text-white">NIB Terverifikasi — Bisnis Legal</span>
           </div>
         ) : (
@@ -120,7 +120,7 @@ export default function CompanyProfilePage({
         {(["data", "riwayat"] as ProfileTab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex-1 py-3 text-xs font-bold transition-all border-b-2 ${
-              tab === t ? "border-blue-600 text-blue-700" : "border-transparent text-gray-500"
+              tab === t ? "border-primary text-primary" : "border-transparent text-gray-500"
             }`}>
             {t === "data" ? "🏢 Bisnis" : "📋 Riwayat"}
           </button>
@@ -132,26 +132,26 @@ export default function CompanyProfilePage({
 
           {/* ── Escrow Float Card ────────────────────── */}
           {escrowFloat > 0 && (
-            <div className="rounded-2xl overflow-hidden border border-blue-200"
-              style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 100%)" }}>
+            <div className="rounded-2xl overflow-hidden border border-emerald-200"
+              style={{ background: "linear-gradient(135deg, #064E3B 0%, #047857 100%)" }}>
               <div className="px-4 py-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Lock className="w-4 h-4 text-blue-200" />
-                  <p className="text-xs font-semibold text-blue-200 uppercase tracking-wide">Total Dana Mengendap di Escrow</p>
+                  <Lock className="w-4 h-4 text-emerald-200" />
+                  <p className="text-xs font-semibold text-emerald-200 uppercase tracking-wide">Total Dana Mengendap di Escrow</p>
                 </div>
                 <p className="text-2xl font-black text-white mb-3">{fmt(escrowFloat)}</p>
                 <div className="flex gap-3">
                   <div className="flex-1 bg-white/10 rounded-xl p-2.5 text-center">
                     <p className="text-sm font-black text-white">{lockedJobs.filter(j => j.escrowStatus === "locked").length}</p>
-                    <p className="text-[9px] text-blue-200">Dana Dikunci</p>
+                    <p className="text-[9px] text-emerald-200">Dana Dikunci</p>
                   </div>
                   <div className="flex-1 bg-white/10 rounded-xl p-2.5 text-center">
                     <p className="text-sm font-black text-white">{disputedJobs.length}</p>
-                    <p className="text-[9px] text-blue-200">Dana Dibekukan</p>
+                    <p className="text-[9px] text-emerald-200">Dana Dibekukan</p>
                   </div>
                   <div className="flex-1 bg-white/10 rounded-xl p-2.5 text-center">
                     <p className="text-sm font-black text-white">{customJobs.filter(j => j.escrowStatus === "released").length}</p>
-                    <p className="text-[9px] text-blue-200">Dilepas</p>
+                    <p className="text-[9px] text-emerald-200">Dilepas</p>
                   </div>
                 </div>
               </div>
@@ -174,7 +174,7 @@ export default function CompanyProfilePage({
           {lockedJobs.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-blue-600" />
+                <Lock className="w-4 h-4 text-emerald-700" />
                 <p className="text-sm font-bold text-gray-900">Lowongan Aktif (Escrow)</p>
               </div>
               <div className="divide-y divide-gray-50">
@@ -187,7 +187,7 @@ export default function CompanyProfilePage({
                           <p className="text-sm font-bold text-gray-900 truncate">{job.posisi}</p>
                           <p className="text-xs text-gray-500">
                             Escrow: {fmt(job.escrowAmount ?? 0)} ·{" "}
-                            <a href={`/api/receipts/invoice/${job.id}`} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-600 underline">Invoice</a>
+                            <a href={`/api/receipts/invoice/${job.id}`} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-700 underline">Invoice</a>
                           </p>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${isDisputed ? "bg-red-100 text-red-700 animate-pulse" : "bg-emerald-100 text-emerald-700"}`}>
@@ -261,8 +261,8 @@ export default function CompanyProfilePage({
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 hover:bg-slate-100 transition-colors group"
                           >
-                            <ExternalLink className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                            <span className="text-xs font-semibold text-blue-600 group-hover:underline truncate">
+                            <ExternalLink className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span className="text-xs font-semibold text-emerald-700 group-hover:underline truncate">
                               {safeHref}
                             </span>
                           </a>
@@ -323,7 +323,7 @@ export default function CompanyProfilePage({
           {/* Legal data */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-blue-600" />
+              <Building2 className="w-4 h-4 text-emerald-700" />
               <p className="text-sm font-bold text-gray-900">Profil Bisnis</p>
             </div>
             <div className="divide-y divide-gray-50">
@@ -341,8 +341,8 @@ export default function CompanyProfilePage({
           {/* Stats summary */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Lowongan Aktif", value: String(customJobs.length), color: "bg-blue-50 text-blue-700" },
-              { label: "Total Pelamar", value: String(notifications.length), color: "bg-violet-50 text-violet-700" },
+              { label: "Lowongan Aktif", value: String(customJobs.length), color: "bg-emerald-50 text-emerald-800" },
+              { label: "Total Pelamar", value: String(notifications.length), color: "bg-emerald-50 text-emerald-800" },
               { label: "Rating Rata-rata", value: ratings.filter(r => r.raterType === "company").length ? (ratings.filter(r => r.raterType === "company").reduce((s, r) => s + r.stars, 0) / ratings.filter(r => r.raterType === "company").length).toFixed(1) + " ★" : "—", color: "bg-amber-50 text-amber-700" },
             ].map((s) => (
               <div key={s.label} className={`${s.color} rounded-2xl p-3 text-center`}>
@@ -364,8 +364,8 @@ export default function CompanyProfilePage({
           {/* Header card */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <History className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                <History className="w-5 h-5 text-emerald-700" />
               </div>
               <div>
                 <p className="text-sm font-black text-gray-900">Audit Log Escrow Rekhastha</p>

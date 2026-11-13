@@ -492,8 +492,8 @@ export default function HiringModePanel({
       {/* ── Lowongan menunggu pembayaran (bayar lewat Midtrans) ───── */}
       {unpaidJobs.length > 0 && (
         <div className="mx-4 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 space-y-2" data-testid="unpaid-jobs">
-          <p className="text-xs font-black text-amber-800">
-            ⏳ {unpaidJobs.length} lowongan menunggu pembayaran
+          <p className="flex items-center gap-1.5 text-xs font-black text-amber-800">
+            <Clock className="w-3.5 h-3.5" /> {unpaidJobs.length} lowongan menunggu pembayaran
           </p>
           {(showAllUnpaid ? unpaidJobs : unpaidJobs.slice(0, 3)).map((job) => (
             <div key={job.id} className="flex items-center justify-between gap-2 rounded-xl bg-white border border-amber-100 px-3 py-2">
@@ -526,11 +526,11 @@ export default function HiringModePanel({
       {/* ── Stats row ─────────────────────────────────────────── */}
       <div className="p-4 grid grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
-          <p className="text-2xl font-black text-blue-600">{customJobs.length}</p>
+          <p className="text-2xl font-black text-emerald-800 tabular-nums">{customJobs.length}</p>
           <p className="text-[10px] font-medium text-gray-500 mt-0.5">Lowongan</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
-          <p className="text-2xl font-black text-violet-600">{notifications.length}</p>
+          <p className="text-2xl font-black text-emerald-700 tabular-nums">{notifications.length}</p>
           <p className="text-[10px] font-medium text-gray-500 mt-0.5">Pelamar</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">

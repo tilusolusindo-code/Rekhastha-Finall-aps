@@ -2199,16 +2199,16 @@ export default function Home() {
                        style={{ transform: companyView === "analytics" ? "translateX(100%)" : companyView === "radar" ? "translateX(200%)" : "translateX(0)" }} />
                   <button onClick={() => setCompanyView("jobs")}
                     className={`flex-1 relative flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-bold rounded-xl transition-colors ${companyView === "jobs" ? "text-primary" : "text-gray-500"}`}>
-                    <Briefcase className="w-4 h-4" /> Lowongan
+                    Lowongan
                     {customJobs.length > 0 && <span className={`w-4 h-4 rounded-full text-[11px] font-black flex items-center justify-center transition-colors ${companyView === "jobs" ? "bg-primary text-white" : "bg-gray-300 text-white"}`}>{customJobs.length}</span>}
                   </button>
                   <button onClick={() => setCompanyView("analytics")} data-testid="button-analytics-tab"
                     className={`flex-1 relative flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-bold rounded-xl transition-colors ${companyView === "analytics" ? "text-primary" : "text-gray-500"}`}>
-                    <BarChart2 className="w-4 h-4" /> Analitik
+                    Analitik
                   </button>
                   <button onClick={() => setCompanyView("radar")} data-testid="button-radar-tab"
                     className={`flex-1 relative flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-bold rounded-xl transition-colors ${companyView === "radar" ? "text-primary" : "text-gray-500"}`}>
-                    <MapIcon className="w-4 h-4" /> Radar
+                    Radar
                   </button>
                 </div>
               </div>
@@ -2271,16 +2271,13 @@ export default function Home() {
                         return (
                           <button key={key} type="button" role="tab" aria-selected={active} data-testid={`worker-tab-${key}`}
                             onClick={() => setWorkerView(key)}
-                            className={`relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[14px] py-2 text-[12px] font-bold transition-colors ${active ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-                            <span className="relative">
-                              <Icon className="h-[18px] w-[18px]" />
-                              {!!badge && badge > 0 && (
-                                <span className="absolute -right-3 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-black text-white ring-2 ring-gray-100">
-                                  {badge > 9 ? "9+" : badge}
-                                </span>
-                              )}
-                            </span>
+                            className={`relative flex min-w-0 items-center justify-center rounded-[14px] py-3 text-[13px] font-bold transition-colors ${active ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
                             <span className="truncate">{label}</span>
+                            {!!badge && badge > 0 && (
+                              <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-black text-white ring-2 ring-gray-100">
+                                {badge > 9 ? "9+" : badge}
+                              </span>
+                            )}
                           </button>
                         );
                       })}

@@ -9,6 +9,8 @@ import type { WorkerProfile } from "@/types/worker-profile";
  * The web app is served at `/`, so a root-relative `/api` base is correct (this
  * mirrors `central-server.ts`).
  */
+import { disablePush } from "./push-client";
+
 const API_BASE = "/api";
 
 export class AuthError extends Error {
@@ -136,6 +138,8 @@ export function loginWithGoogle(code: string, role: UserRole): Promise<AuthUser>
  * the chance of an orphaned server session that `/me` would later restore.
  */
 export async function logout(): Promise<void> {
+  // Lepas langganan push perangkat ini supaya akun berikutnya tidak menerima notifikasi pemilik sebelumnya.
+  await disablePush();
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await fetch(`${API_BASE}/auth/logout`, {

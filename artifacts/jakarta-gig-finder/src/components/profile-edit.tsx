@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, Pencil, Trash2, X } from "lucide-react";
 import type { AuthUser } from "@/types/auth";
+import { disablePush, enablePush, isSubscribed, pushSupport } from "@/lib/push-client";
 import { removeAvatar, updateAccount, updateNotificationPrefs, uploadAvatar } from "@/lib/auth-client";
 
 /** Perkecil foto dari kamera HP (bisa 5–10 MB) menjadi JPEG maks 640px agar muat batas 2 MB. */
@@ -276,6 +277,42 @@ const COMPANY_TOGGLES: Array<[NotifKey, string]> = [
 ];
 
 /** Pilihan jenis email notifikasi; tersimpan langsung saat diubah. */
+
+/** Notifikasi push di perangkat ini (muncul walau aplikasi tertutup). */
+function PushToggle() {
+  const support = pushSupport();
+  const [on, setOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(() => { if (support === "available") void isSubscribed().then(setOn); }, [support]);
+
+  if (support === "unsupported") return null;
+  async function flip(next: boolean) {
+    setBusy(true); setMsg("");
+    try {
+      if (next) { await enablePush(); setOn(true); } else { await disablePush(); setOn(false); }
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Gagal mengubah notifikasi.");
+    } finally { setBusy(false); }
+  }
+  return (
+    <fieldset className="space-y-1.5 border-t border-gray-100 pt-3">
+      <legend className="text-xs font-bold text-gray-600 mb-1">Notifikasi di perangkat ini</legend>
+      {support === "ios-needs-install" ? (
+        <p className="text-xs text-gray-500">Di iPhone, pasang Rekhastha dulu: ketuk Bagikan → Tambah ke Layar Utama, lalu buka dari ikonnya untuk mengaktifkan notifikasi.</p>
+      ) : support === "denied" ? (
+        <p className="text-xs text-gray-500">Notifikasi diblokir di browser ini. Izinkan lewat pengaturan situs, lalu muat ulang.</p>
+      ) : (
+        <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+          <span>Lamaran, upah, dan pengingat shift<span className="block text-[11px] text-gray-400">Tampil walau aplikasi sedang ditutup</span></span>
+          <input type="checkbox" checked={on} disabled={busy} onChange={(e) => void flip(e.target.checked)} className="h-4 w-4 accent-emerald-600" data-testid="push-toggle" />
+        </label>
+      )}
+      {msg && <p role="alert" className="text-xs font-semibold text-red-600">{msg}</p>}
+    </fieldset>
+  );
+}
+
 function NotificationToggles({ user, company, onUserUpdated }: { user: AuthUser; company: boolean; onUserUpdated: (u: AuthUser) => void }) {
   const [busy, setBusy] = useState<NotifKey | null>(null);
   const [err, setErr] = useState("");
@@ -294,6 +331,8 @@ function NotificationToggles({ user, company, onUserUpdated }: { user: AuthUser;
   }
 
   return (
+    <>
+    <PushToggle />
     <fieldset className="space-y-2 border-t border-gray-100 pt-3">
       <legend className="text-xs font-bold text-gray-600 mb-1">Notifikasi email</legend>
       {toggles.map(([key, label]) => {
@@ -314,5 +353,6 @@ function NotificationToggles({ user, company, onUserUpdated }: { user: AuthUser;
       })}
       {err && <p role="alert" className="text-xs font-semibold text-red-600">{err}</p>}
     </fieldset>
+    </>
   );
 }

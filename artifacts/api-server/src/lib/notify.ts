@@ -4,6 +4,7 @@ import { appBaseUrl, escapeHtml, mailerConfigured, sendEmail } from "./mailer";
 import { kvPutIfAbsent } from "./ephemeral";
 import { keepAlive } from "./vercel-context";
 import { logger } from "./logger";
+import { pushConfigured, sendPushToUser, type PushPayload } from "./web-push";
 
 /**
  * Jenis notifikasi email dan kunci pengaturannya di users.notification_prefs.
@@ -103,10 +104,46 @@ function compose(name: string, event: NotifyEvent, base: string): { subject: str
   }
 }
 
+/** Ringkasan singkat untuk notifikasi push (judul + isi satu kalimat). */
+function composePush(event: NotifyEvent): PushPayload {
+  switch (event.kind) {
+    case "applicant":
+      return { title: "Pelamar baru", body: `${event.applicantName || "Seorang pekerja"} melamar ${event.jobTitle}`, tag: `applicant-${event.jobId}` };
+    case "status":
+      return { title: event.status === "diterima" ? "Lamaran diterima" : "Lamaran ditolak", body: event.jobTitle, tag: "status" };
+    case "payment":
+      return { title: event.title, body: event.detail, tag: "payment" };
+    case "payout":
+      return { title: `Upah masuk ${rupiah(event.amount)}`, body: event.jobTitle, tag: "payout" };
+    case "invite":
+      return { title: `${event.employerName} mengajak Anda bekerja`, body: event.jobTitle, tag: "invite" };
+    case "reminder":
+      return { title: "Besok Anda bekerja", body: `${event.jobTitle} — ${event.dateLabel}`, tag: "reminder" };
+  }
+}
+
+/** Push dikirim bila perangkat berlangganan dan pengguna tidak mematikan jenis notifikasi ini. */
+async function deliverPush(userId: string, event: NotifyEvent): Promise<void> {
+  try {
+    if (!pushConfigured()) return;
+    const [user] = await db
+      .select({ suspended: usersTable.suspended, prefs: usersTable.notificationPrefs })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+    if (!user || user.suspended) return;
+    if (sanitizePrefs(user.prefs)[event.kind] === false) return;
+    if (await throttled(userId, event, "push")) return;
+    await sendPushToUser(userId, composePush(event));
+  } catch (err) {
+    logger.error({ err, kind: event.kind }, "[notify] gagal mengirim push");
+  }
+}
+
 /** Pembatas: maksimal satu email "pelamar baru" per pemberi kerja per lowongan tiap 10 menit. */
-async function throttled(userId: string, event: NotifyEvent): Promise<boolean> {
+async function throttled(userId: string, event: NotifyEvent, channel: "mail" | "push"): Promise<boolean> {
   if (event.kind !== "applicant") return false;
-  const fresh = await kvPutIfAbsent(`mail:applicant:${userId}:${event.jobId}`, 1, 10 * 60 * 1000);
+  const fresh = await kvPutIfAbsent(`${channel}:applicant:${userId}:${event.jobId}`, 1, 10 * 60 * 1000);
   return !fresh;
 }
 
@@ -125,7 +162,7 @@ async function deliver(userId: string, event: NotifyEvent): Promise<boolean> {
       .limit(1);
     if (!user || user.suspended || !user.email) return false;
     if (sanitizePrefs(user.prefs)[event.kind] === false) return false;
-    if (await throttled(userId, event)) return false;
+    if (await throttled(userId, event, "mail")) return false;
     const base = appBaseUrl() ?? "https://rekhastha.my.id";
     const mail = compose(user.name, event, base);
     return await sendEmail({ to: user.email, ...mail });
@@ -140,7 +177,10 @@ async function deliver(userId: string, event: NotifyEvent): Promise<boolean> {
  * Mengembalikan promise agar bisa ditunggu di tes.
  */
 export function notifyByEmail(userId: string, event: NotifyEvent): Promise<boolean> {
+  // Email dan push berjalan sendiri-sendiri: gagal/tidak terpasangnya salah satu tidak mengganggu yang lain.
+  // Pembatas "pelamar baru" dipisah per kanal (mail/push) supaya tidak saling mengambil jatah.
   const promise = deliver(userId, event);
   keepAlive(promise);
+  keepAlive(deliverPush(userId, event));
   return promise;
 }

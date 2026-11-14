@@ -1,7 +1,9 @@
 import { Bell, X, ShieldCheck, AlertCircle, CheckCircle, Clock, ChevronRight, Inbox, MessageSquare, FileText, FolderOpen } from "lucide-react";
 import { ShortlistControls } from "./client-share";
 import { ApplicationNotification, ApplicationStatus } from "@/types/notification";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ApplicantFilterBar } from "./applicant-filter-bar";
+import { EMPTY_FILTERS, filterApplicants, type ApplicantFilters } from "../lib/applicant-filters";
 
 interface NotificationPanelProps {
   notifications: ApplicationNotification[];
@@ -53,6 +55,26 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
 
   const unread = notifications.filter((n) => n.status === "baru").length;
 
+  const [filters, setFilters] = useState<ApplicantFilters>(EMPTY_FILTERS);
+  const jobOptions = useMemo(
+    () => Array.from(new Map(notifications.map((n) => [n.jobId, n.jobTitle] as [number, string])).entries()),
+    [notifications],
+  );
+  const visible = useMemo(() => {
+    const adapted = notifications.map((n) => ({
+      n,
+      id: n.id, jobId: n.jobId, jobTitle: n.jobTitle, workerName: n.applicantName, status: n.status,
+      createdAt: new Date(n.timestamp).toISOString(),
+      shortlistedAt: n.shortlistedAt, clientDecision: n.clientDecision,
+      workerSkills: n.workerSkills, workerStats: n.workerStats,
+      applicationQuestions: n.applicationQuestions as { id: string; prompt: string; required: boolean; answerType: string }[] | undefined,
+      applicationAnswers: n.applicationAnswers,
+      uploadedFiles: n.uploadedFiles,
+      supportingInfo: n.supportingInfo as Record<string, unknown> | undefined,
+    }));
+    return filterApplicants(adapted, filters).map((x) => x.n);
+  }, [notifications, filters]);
+
   return (
     <>
       <button
@@ -98,6 +120,10 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
               </button>
             </div>
 
+            {notifications.length > 1 && (
+              <ApplicantFilterBar filters={filters} onChange={setFilters} jobs={jobOptions} shown={visible.length} total={notifications.length} />
+            )}
+
             {/* List */}
             <div className="flex-1 overflow-y-auto">
               {notifications.length === 0 ? (
@@ -112,7 +138,8 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50">
-                  {notifications.map((n) => {
+                  {visible.length === 0 && <p className="py-10 text-center text-sm text-gray-400">Tidak ada pelamar yang cocok dengan filter.</p>}
+                  {visible.map((n) => {
                     const cfg = statusConfig[n.status];
                     const isExpanded = expanded === n.id;
                     return (

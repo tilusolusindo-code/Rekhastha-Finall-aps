@@ -373,13 +373,6 @@ export default function HiringModePanel({
       setPostingError("Maksimal 10 pertanyaan per lowongan.");
       return;
     }
-    if (
-      (questionType === "photo" || questionType === "file") &&
-      applicationQuestions.filter((q) => q.answerType === "photo" || q.answerType === "file").length >= 4
-    ) {
-      setPostingError("Maksimal 4 syarat foto/file per lowongan.");
-      return;
-    }
     setApplicationQuestions((questions) => [
       ...questions,
       {
@@ -569,7 +562,7 @@ export default function HiringModePanel({
                 : "text-gray-500 hover:text-emerald-700"
             }`}>
             <CalendarDays className={`w-3.5 h-3.5 ${hiringMode === "lama" ? "text-amber-300" : ""}`} />
-            📅 Posting Reguler
+            Posting reguler
           </button>
         </div>
         {/* Mode description pill */}
@@ -881,11 +874,7 @@ export default function HiringModePanel({
                             addApplicationQuestion();
                           }
                         }}
-                        placeholder={
-                          questionType === "photo" ? "Contoh: Foto KTP, foto seragam, foto diri setengah badan"
-                          : questionType === "file" ? "Contoh: Surat lamaran, sertifikat, hasil tes (PDF/DOC)"
-                          : "Contoh: Berapa lama pengalaman Anda?"
-                        }
+                        placeholder="Contoh: Berapa lama pengalaman Anda?"
                         className={`${inputCls} min-w-0`}
                       />
                       <button
@@ -909,8 +898,6 @@ export default function HiringModePanel({
                         <option value="short">Jawaban singkat</option>
                         <option value="long">Jawaban panjang</option>
                         <option value="yes_no">Ya / Tidak</option>
-                        <option value="photo">Syarat foto (unggah)</option>
-                        <option value="file">Syarat file/dokumen (unggah)</option>
                       </select>
                       <label className="flex items-center gap-1.5 text-[11px] text-gray-600">
                         <input
@@ -918,7 +905,7 @@ export default function HiringModePanel({
                           checked={questionRequired}
                           onChange={(event) => setQuestionRequired(event.target.checked)}
                         />
-                        {questionType === "photo" || questionType === "file" ? "Wajib dilampirkan" : "Wajib dijawab"}
+                        Wajib dijawab
                       </label>
                     </div>
 
@@ -929,11 +916,6 @@ export default function HiringModePanel({
                             <span className="min-w-0 flex-1 text-[11px] text-gray-700">
                               {index + 1}. {question.prompt}
                               {question.required && <span className="ml-1 font-bold text-red-500">*</span>}
-                              {(question.answerType === "photo" || question.answerType === "file") && (
-                                <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">
-                                  {question.answerType === "photo" ? "FOTO" : "FILE"}
-                                </span>
-                              )}
                             </span>
                             <button
                               type="button"
@@ -1063,7 +1045,7 @@ export default function HiringModePanel({
         {/* Section label */}
         {customJobs.length > 0 && (
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            {hiringMode === "cepat" ? `⚡ Lowongan Broadcast Instan (${activeJobs.length})` : `📅 Lowongan Posting Reguler (${activeJobs.length})`}
+            {hiringMode === "cepat" ? `Lowongan broadcast instan (${activeJobs.length})` : `Lowongan posting reguler (${activeJobs.length})`}
           </p>
         )}
 
@@ -1081,9 +1063,7 @@ export default function HiringModePanel({
           const jobExpanded = expandedJobId === job.id;
 
           return (
-            <div key={job.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
-              isCepatJob ? "border-orange-100" : "border-blue-100"
-            }`}>
+            <div key={job.id} className="overflow-hidden rounded-[22px] border border-gray-200 bg-white shadow-sm">
               {/* Mode badge strip */}
               <div className={`h-1 ${
                 isCepatJob
@@ -1097,28 +1077,29 @@ export default function HiringModePanel({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-bold text-gray-900 text-sm">{job.posisi}</p>
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
                         isCepatJob
-                          ? "bg-orange-50 text-orange-700 border-orange-200"
-                          : "bg-blue-50 text-blue-700 border-blue-200"
+                          ? "bg-orange-50 text-orange-700"
+                          : "bg-blue-50 text-blue-700"
                       }`}>
-                        {isCepatJob ? "⚡ CEPAT" : "📅 TERJADWAL"}
+                        {isCepatJob ? <Zap className="h-2.5 w-2.5" /> : <CalendarDays className="h-2.5 w-2.5" />}
+                        {isCepatJob ? "Instan" : "Terjadwal"}
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-400 mt-0.5">{job.namaPerusahaan || currentUser.name}</p>
                   </div>
                   {/* Escrow status */}
                   {phase === "sengketa" ? (
-                    <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full shrink-0">
-                      ⚠️ Sengketa
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-extrabold text-red-700">
+                      <AlertTriangle className="h-2.5 w-2.5" /> Sengketa
                     </span>
                   ) : isJobLocked ? (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
-                      <Lock className="w-2.5 h-2.5" /> Escrow Terkunci 🔒
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                      <Lock className="w-2.5 h-2.5" /> Escrow terkunci
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
-                      ⏳ Menunggu Seleksi
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">
+                      <Clock className="h-2.5 w-2.5" /> Menunggu seleksi
                     </span>
                   )}
                 </div>
@@ -1158,10 +1139,10 @@ export default function HiringModePanel({
                     {applicants.length > 0 ? `${applicants.length} pelamar` : "Belum ada pelamar"}
                   </span>
                   {pending > 0 && (
-                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">{pending} menunggu</span>
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">{pending} menunggu</span>
                   )}
                   {accepted > 0 && (
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">{accepted} diterima</span>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">{accepted} diterima</span>
                   )}
                   {applicants.length > 0 && (
                     jobExpanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -1221,10 +1202,6 @@ export default function HiringModePanel({
                               className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-lg hover:bg-amber-200 transition-colors shrink-0 disabled:opacity-60">
                               🔓 Buka {formatRp(SUBSCRIPTION_PRICE_MONTHLY)}/bln
                             </button>
-                          ) : notif.status === "diterima" && notif.workCompletedAt ? (
-                            <span className="text-[10px] font-bold text-blue-700 flex items-center gap-1 shrink-0" title="Pekerja sudah scan masuk dan pulang. Setujui upah untuk menutup pekerjaan.">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Kerja selesai · setujui upah
-                            </span>
                           ) : notif.status === "diterima" || notif.status === "selesai" ? (
                             <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1 shrink-0">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Diterima
@@ -1456,6 +1433,7 @@ export default function HiringModePanel({
         jobTitle={snapJob.title}
         amount={snapJob.amount}
         breakdown={{ wage: snapJob.wage, fee: snapJob.fee }}
+        onUseManual={onOpenPayments ? () => { setSnapJob(null); onOpenPayments(); } : undefined}
         onSuccess={() => { const id = snapJob.id; setSnapJob(null); onJobPaid?.(id); }}
         onClose={() => setSnapJob(null)}
       />

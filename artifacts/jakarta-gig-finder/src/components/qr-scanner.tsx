@@ -226,7 +226,7 @@ export default function QrScanner({ onScan, onError }: QrScannerProps) {
             className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-white backdrop-blur-sm transition-opacity hover:bg-black/80 disabled:opacity-50"
           >
             <FlipHorizontal className="h-3.5 w-3.5" />
-            <span className="text-[11px] font-medium">
+            <span className="text-[12px] font-medium">
               {isFront ? "Belakang" : "Depan"}
             </span>
           </button>
@@ -240,7 +240,7 @@ export default function QrScanner({ onScan, onError }: QrScannerProps) {
             ) : (
               <CameraOff className="h-3 w-3 opacity-70" />
             )}
-            <span className="text-[10px] font-medium">
+            <span className="text-[11px] font-medium">
               {isFront ? "Kamera Depan" : "Kamera Belakang"}
             </span>
           </div>

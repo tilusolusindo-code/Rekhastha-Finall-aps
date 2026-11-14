@@ -62,10 +62,10 @@ export default function DokuPaymentModal({ planId, planLabel, amount, onClose }:
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="font-black text-gray-900 text-base">Bayar via DOKU</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Rekhastha Bisnis · {planLabel}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Rekhastha Bisnis · {planLabel}</p>
           </div>
           {step !== "loading" && (
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-600 p-1">
               <X className="w-5 h-5" />
             </button>
           )}
@@ -99,7 +99,7 @@ export default function DokuPaymentModal({ planId, planLabel, amount, onClose }:
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 leading-tight">{ch.label}</p>
-                    <p className="text-[11px] text-gray-400">{ch.sublabel}</p>
+                    <p className="text-[12px] text-gray-500">{ch.sublabel}</p>
                   </div>
                   <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
                     selected === ch.id ? "border-emerald-500 bg-emerald-500" : "border-gray-300"
@@ -132,7 +132,7 @@ export default function DokuPaymentModal({ planId, planLabel, amount, onClose }:
             <div className="w-14 h-14 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
             <div className="text-center">
               <p className="font-bold text-gray-900">Menyiapkan pembayaran…</p>
-              <p className="text-xs text-gray-400 mt-1">Anda akan diarahkan ke halaman DOKU</p>
+              <p className="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman DOKU</p>
             </div>
           </div>
         )}

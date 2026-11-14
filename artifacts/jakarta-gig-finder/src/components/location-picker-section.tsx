@@ -175,7 +175,7 @@ export default function LocationPickerSection({
       </label>
 
       <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 z-10 pointer-events-none" />
+        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 z-10 pointer-events-none" />
         <input
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
@@ -194,7 +194,7 @@ export default function LocationPickerSection({
               setMarkerPos(null);
               onLocationChange(null, null, "");
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
             data-testid="button-clear-job-location"
           >
             <X className="w-3.5 h-3.5" />
@@ -230,7 +230,7 @@ export default function LocationPickerSection({
           : <Navigation className="w-3.5 h-3.5" />}
         {gpsLoading ? "Mendapatkan lokasi GPS..." : "Gunakan Lokasi Saya Saat Ini"}
       </button>
-      {gpsError && <p className="text-[11px] text-red-600" role="alert">{gpsError}</p>}
+      {gpsError && <p className="text-[12px] text-red-600" role="alert">{gpsError}</p>}
 
       <div className="rounded-xl overflow-hidden border border-gray-200" style={{ height: 190 }}>
         <MapContainer
@@ -248,7 +248,7 @@ export default function LocationPickerSection({
           <MapFlyController target={flyTarget} />
         </MapContainer>
       </div>
-      <p className="text-[10px] text-gray-400">
+      <p className="text-[11px] text-gray-500">
         Cari kota atau alamat di seluruh Indonesia, gunakan GPS, atau klik peta untuk menetapkan titik kerja · Powered by OpenStreetMap
       </p>
     </div>

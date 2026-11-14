@@ -14,7 +14,7 @@ export function WorkerStatsLine({ stats, skills }: { stats?: Stats; skills?: str
   const isNew = stats.completedJobs === 0 && stats.ratingCount === 0;
   return (
     <div className="mt-1 space-y-1">
-      <p className="text-[10px] text-gray-500 flex items-center gap-1 flex-wrap">
+      <p className="text-[11px] text-gray-500 flex items-center gap-1 flex-wrap">
         {isNew ? (
           <span className="font-semibold text-blue-600">Pekerja baru</span>
         ) : (
@@ -22,7 +22,7 @@ export function WorkerStatsLine({ stats, skills }: { stats?: Stats; skills?: str
             {stats.ratingAvg !== null && (
               <span className="inline-flex items-center gap-0.5 font-bold text-amber-600">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {stats.ratingAvg.toFixed(1)}
-                <span className="font-normal text-gray-400">({stats.ratingCount})</span>
+                <span className="font-normal text-gray-500">({stats.ratingCount})</span>
               </span>
             )}
             <span>{stats.completedJobs} pekerjaan selesai</span>
@@ -32,7 +32,7 @@ export function WorkerStatsLine({ stats, skills }: { stats?: Stats; skills?: str
       {skills && skills.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {skills.slice(0, 3).map((s) => (
-            <span key={s} className="text-[9px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{s}</span>
+            <span key={s} className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{s}</span>
           ))}
         </div>
       )}
@@ -69,9 +69,9 @@ export function FavoriteStar({ workerId, initial, onChange }: { workerId: string
         aria-label={on ? "Hapus dari pekerja favorit" : "Tambah ke pekerja favorit"}
         className={`p-1.5 rounded-lg border transition-colors disabled:opacity-50 ${on ? "bg-amber-50 border-amber-300" : "bg-white border-gray-200 hover:bg-gray-50"}`}
       >
-        <Star className={`w-4 h-4 ${on ? "fill-amber-400 text-amber-400" : "text-gray-400"}`} />
+        <Star className={`w-4 h-4 ${on ? "fill-amber-400 text-amber-400" : "text-gray-500"}`} />
       </button>
-      {error && <span className="text-[9px] text-red-600 max-w-[110px] text-center">{error}</span>}
+      {error && <span className="text-[11px] text-red-600 max-w-[110px] text-center">{error}</span>}
     </span>
   );
 }

@@ -94,9 +94,9 @@ export default function CompanyProfilePage({
           )}
           <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
             {currentUser.linkedWithGoogle && (
-              <span className="text-[10px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">🔗 Linked with Google</span>
+              <span className="text-[11px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">🔗 Linked with Google</span>
             )}
-            <span className="text-[10px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">
+            <span className="text-[11px] font-bold bg-white/20 text-white px-2.5 py-1 rounded-full">
               {currentUser.tipeAkun === "agensi" ? "🏢 Agensi / EO" : "🏪 Perusahaan Langsung"}
             </span>
           </div>
@@ -143,15 +143,15 @@ export default function CompanyProfilePage({
                 <div className="flex gap-3">
                   <div className="flex-1 bg-white/10 rounded-xl p-2.5 text-center">
                     <p className="text-sm font-black text-white">{lockedJobs.filter(j => j.escrowStatus === "locked").length}</p>
-                    <p className="text-[9px] text-emerald-200">Dana Dikunci</p>
+                    <p className="text-[11px] text-emerald-200">Dana Dikunci</p>
                   </div>
                   <div className="flex-1 bg-white/10 rounded-xl p-2.5 text-center">
                     <p className="text-sm font-black text-white">{disputedJobs.length}</p>
-                    <p className="text-[9px] text-emerald-200">Dana Dibekukan</p>
+                    <p className="text-[11px] text-emerald-200">Dana Dibekukan</p>
                   </div>
                   <div className="flex-1 bg-white/10 rounded-xl p-2.5 text-center">
                     <p className="text-sm font-black text-white">{customJobs.filter(j => j.escrowStatus === "released").length}</p>
-                    <p className="text-[9px] text-emerald-200">Dilepas</p>
+                    <p className="text-[11px] text-emerald-200">Dilepas</p>
                   </div>
                 </div>
               </div>
@@ -190,7 +190,7 @@ export default function CompanyProfilePage({
                             <a href={`/api/receipts/invoice/${job.id}`} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-700 underline">Invoice</a>
                           </p>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${isDisputed ? "bg-red-100 text-red-700 animate-pulse" : "bg-emerald-100 text-emerald-700"}`}>
+                        <span className={`text-[11px] font-bold px-2 py-1 rounded-full shrink-0 ${isDisputed ? "bg-red-100 text-red-700 animate-pulse" : "bg-emerald-100 text-emerald-700"}`}>
                           {isDisputed ? "🔴 DIBEKUKAN" : "🔒 DIKUNCI"}
                         </span>
                       </div>
@@ -227,17 +227,17 @@ export default function CompanyProfilePage({
                           <p className="text-xs text-gray-500">Proyek Borongan Remote</p>
                         </div>
                         {job.proofStatus === "submitted" && (
-                          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 shrink-0 whitespace-nowrap">
+                          <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700 shrink-0 whitespace-nowrap">
                             ⏳ Menunggu Ulasan
                           </span>
                         )}
                         {job.proofStatus === "approved" && (
-                          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0 whitespace-nowrap">
+                          <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0 whitespace-nowrap">
                             ✅ Disetujui
                           </span>
                         )}
                         {job.proofStatus === "rejected" && (
-                          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-700 shrink-0 whitespace-nowrap">
+                          <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-700 shrink-0 whitespace-nowrap">
                             ❌ Ditolak
                           </span>
                         )}
@@ -347,7 +347,7 @@ export default function CompanyProfilePage({
             ].map((s) => (
               <div key={s.label} className={`${s.color} rounded-2xl p-3 text-center`}>
                 <p className="text-xl font-black">{s.value}</p>
-                <p className="text-[10px] font-semibold mt-0.5 leading-tight">{s.label}</p>
+                <p className="text-[11px] font-semibold mt-0.5 leading-tight">{s.label}</p>
               </div>
             ))}
           </div>
@@ -387,7 +387,7 @@ export default function CompanyProfilePage({
                   };
                   const labels: Record<string, string> = { locked: "🔒 Dikunci", disputed: "⚠️ Sengketa", released: "✅ Dilepas", refunded: "↩️ Refund" };
                   return (
-                    <span key={s} className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${colors[s]}`}>
+                    <span key={s} className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${colors[s]}`}>
                       {labels[s]} ×{count}
                     </span>
                   );
@@ -416,7 +416,7 @@ function DataRow({ label, value, badge }: { label: string; value: string; badge?
       <p className="text-xs text-gray-500 shrink-0 max-w-[100px]">{label}</p>
       <div className="flex items-center gap-2 min-w-0">
         <p className="text-xs font-semibold text-gray-800 text-right">{value}</p>
-        {badge && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${badgeStyle}`}>{badge.text}</span>}
+        {badge && <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded shrink-0 ${badgeStyle}`}>{badge.text}</span>}
       </div>
     </div>
   );

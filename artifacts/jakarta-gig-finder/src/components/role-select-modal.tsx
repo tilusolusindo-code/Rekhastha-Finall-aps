@@ -36,7 +36,7 @@ export default function RoleSelectModal({ onSelect, isGoogle }: RoleSelectModalP
           {isGoogle && (
             <div className="flex items-center justify-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-white text-[9px] font-black">G</span>
+                <span className="text-white text-[11px] font-black">G</span>
               </div>
               <span className="text-xs font-semibold text-blue-600">Identitas Google terverifikasi</span>
             </div>
@@ -96,7 +96,7 @@ export default function RoleSelectModal({ onSelect, isGoogle }: RoleSelectModalP
               ? selected === "pekerja"
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
                 : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-              : "bg-gray-100 text-gray-400"
+              : "bg-gray-100 text-gray-500"
           } ${confirming ? "opacity-70" : ""}`}
         >
           {confirming ? (
@@ -133,7 +133,7 @@ function RoleCard({ icon, title, subtitle, color, selected, onClick }: {
       <div className={selected ? "text-white" : iconColor}>{icon}</div>
       <div>
         <p className={`text-sm font-bold ${selected ? "text-white" : "text-gray-900"}`}>{title}</p>
-        <p className={`text-[10px] mt-0.5 leading-tight ${selected ? "text-white/80" : "text-gray-500"}`}>{subtitle}</p>
+        <p className={`text-[11px] mt-0.5 leading-tight ${selected ? "text-white/80" : "text-gray-500"}`}>{subtitle}</p>
       </div>
       {selected && <CheckCircle className="w-4 h-4 text-white/80" />}
     </button>

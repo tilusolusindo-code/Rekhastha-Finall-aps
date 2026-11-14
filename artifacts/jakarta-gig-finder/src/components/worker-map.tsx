@@ -146,7 +146,7 @@ export default function WorkerMap({
         {/* User location (pulsing) */}
         {locationReady && (
           <Marker position={[userLat, userLng]} icon={createUserIcon(radarActive)}>
-            <Tooltip permanent direction="top" offset={[0, -22]} className="!bg-primary !text-white !text-[10px] !font-semibold !border-0 !rounded-lg !shadow-lg">
+            <Tooltip permanent direction="top" offset={[0, -22]} className="!bg-primary !text-white !text-[11px] !font-semibold !border-0 !rounded-lg !shadow-lg">
               Lokasi Saya
             </Tooltip>
           </Marker>
@@ -160,7 +160,7 @@ export default function WorkerMap({
             icon={createJobIcon()}
             eventHandlers={{ click: () => onJobClick(job) }}
           >
-            <Tooltip direction="top" offset={[0, -14]} className="!bg-emerald-800 !text-white !text-[10px] !font-semibold !border-0 !rounded-lg !shadow-lg">
+            <Tooltip direction="top" offset={[0, -14]} className="!bg-emerald-800 !text-white !text-[11px] !font-semibold !border-0 !rounded-lg !shadow-lg">
               {job.posisi}
             </Tooltip>
           </Marker>
@@ -174,7 +174,7 @@ export default function WorkerMap({
             icon={createBroadcastIcon()}
             eventHandlers={{ click: () => onJobClick(gig) }}
           >
-            <Tooltip direction="top" offset={[0, -20]} className="!bg-emerald-600 !text-white !text-[10px] !font-semibold !border-0 !rounded-lg !shadow-lg">
+            <Tooltip direction="top" offset={[0, -20]} className="!bg-emerald-600 !text-white !text-[11px] !font-semibold !border-0 !rounded-lg !shadow-lg">
               ⚡ Mencari: {gig.posisi} | Upah: Rp {gig.nominal.toLocaleString("id-ID")} / {paymentUnits[gig.pembayaran]}
             </Tooltip>
           </Marker>

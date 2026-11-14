@@ -129,7 +129,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
             <SlidersHorizontal className="w-3.5 h-3.5" />
             Filter
             {activeFilterCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-primary text-white text-[9px] font-black flex items-center justify-center">
+              <span className="w-4 h-4 rounded-full bg-primary text-white text-[11px] font-black flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
@@ -150,7 +150,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
 
             {/* Sort */}
             <div>
-              <p className="text-[11px] font-bold text-gray-500 mb-1.5">Urutkan</p>
+              <p className="text-[12px] font-bold text-gray-500 mb-1.5">Urutkan</p>
               <div className="flex flex-wrap gap-1.5">
                 {([
                   { v: "newest", l: "Terbaru" },
@@ -162,7 +162,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
                     key={v}
                     disabled={disabled}
                     onClick={() => setSortBy(v)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                       sortBy === v ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -175,7 +175,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
             {/* Distance */}
             {hasLocation && (
               <div>
-                <p className="text-[11px] font-bold text-gray-500 mb-1.5">Radius dari lokasi Anda</p>
+                <p className="text-[12px] font-bold text-gray-500 mb-1.5">Radius dari lokasi Anda</p>
                 <div className="relative">
                   <select
                     value={maxDistKm}
@@ -186,14 +186,14 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
                 </div>
               </div>
             )}
 
             {/* Category */}
             <div>
-              <p className="text-[11px] font-bold text-gray-500 mb-1.5">Kategori pekerjaan</p>
+              <p className="text-[12px] font-bold text-gray-500 mb-1.5">Kategori pekerjaan</p>
               <div className="flex flex-wrap gap-1.5">
                 {([
                   { v: "", l: "Semua" },
@@ -204,7 +204,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
                   <button
                     key={String(v)}
                     onClick={() => setFilterCategory(v)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                    className={`px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors ${
                       filterCategory === v ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -216,7 +216,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
 
             {/* Payment type */}
             <div>
-              <p className="text-[11px] font-bold text-gray-500 mb-1.5">Tipe pembayaran</p>
+              <p className="text-[12px] font-bold text-gray-500 mb-1.5">Tipe pembayaran</p>
               <div className="flex flex-wrap gap-1.5">
                 {([
                   { v: "", l: "Semua" },
@@ -228,7 +228,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
                   <button
                     key={String(v)}
                     onClick={() => setFilterPayment(v)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                    className={`px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors ${
                       filterPayment === v ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -240,7 +240,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
 
             {/* Wage range */}
             <div>
-              <p className="text-[11px] font-bold text-gray-500 mb-1.5">Kisaran upah (Rp)</p>
+              <p className="text-[12px] font-bold text-gray-500 mb-1.5">Kisaran upah (Rp)</p>
               <div className="flex gap-2 items-center">
                 <input
                   type="number"
@@ -249,7 +249,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
                   onChange={(e) => setMinUpah(e.target.value)}
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
-                <span className="text-gray-400 text-sm">—</span>
+                <span className="text-gray-500 text-sm">—</span>
                 <input
                   type="number"
                   placeholder="Max"
@@ -271,7 +271,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
             <p className="font-bold text-gray-700 text-sm">
               {jobs.length === 0 ? "Belum ada lowongan terjadwal" : "Tidak ada lowongan yang cocok"}
             </p>
-            <p className="text-xs text-gray-400 leading-relaxed max-w-[240px]">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-[240px]">
               {jobs.length === 0
                 ? "Lowongan \"Posting Reguler\" dari perusahaan akan tampil di sini secara otomatis — tanpa alarm."
                 : "Coba ubah atau reset filter untuk melihat lebih banyak lowongan."}
@@ -304,7 +304,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
                       <span className="truncate">{job.namaPerusahaan || "Rekhastha by Tilu Saudara Solusindo"}</span>
                     </p>
                   </div>
-                  <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-[11px] font-extrabold text-blue-700">
+                  <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-[12px] font-extrabold text-blue-700">
                     <CalendarDays className="h-3 w-3" /> Terjadwal
                   </span>
                 </div>
@@ -365,7 +365,7 @@ export default function ScheduledJobsFeed({ jobs, suspended, userLat, userLng, o
                     )}
                     <Button
                       disabled={suspended}
-                      className={`h-11 rounded-full px-6 text-[15px] font-extrabold ${suspended ? "cursor-not-allowed bg-gray-200 text-gray-400" : "bg-primary text-white hover:bg-primary/90"}`}
+                      className={`h-11 rounded-full px-6 text-[15px] font-extrabold ${suspended ? "cursor-not-allowed bg-gray-200 text-gray-500" : "bg-primary text-white hover:bg-primary/90"}`}
                       onClick={() => !suspended && onSelect(job)}
                     >
                       {suspended ? "Ditangguhkan" : "Lamar"}

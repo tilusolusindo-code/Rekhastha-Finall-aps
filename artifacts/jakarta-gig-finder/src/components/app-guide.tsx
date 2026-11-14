@@ -324,13 +324,13 @@ export default function AppGuide({ open, role, userId, onClose, onStartTour }: A
             </button>
           </div>
           <div className="relative mt-3">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari, misalnya: presensi, bayar, lamar"
               aria-label="Cari panduan"
-              className="w-full rounded-xl border-0 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              className="w-full rounded-xl border-0 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-300"
             />
           </div>
         </div>
@@ -354,21 +354,21 @@ export default function AppGuide({ open, role, userId, onClose, onStartTour }: A
                     <span className="block text-sm font-black text-gray-900">{t.title}</span>
                     <span className="block text-xs text-gray-500">{t.summary}</span>
                   </span>
-                  <ChevronDown className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`h-4 w-4 shrink-0 text-gray-500 transition-transform ${expanded ? "rotate-180" : ""}`} />
                 </button>
                 {expanded && (
                   <div className="space-y-3 border-t border-gray-100 px-4 pb-4 pt-3">
                     <ol className="space-y-2">
                       {t.steps.map((s, i) => (
                         <li key={i} className="flex gap-2.5 text-[13px] leading-relaxed text-gray-700">
-                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-black text-white">{i + 1}</span>
+                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[12px] font-black text-white">{i + 1}</span>
                           <span>{s}</span>
                         </li>
                       ))}
                     </ol>
                     {t.tips && t.tips.length > 0 && (
                       <div className="space-y-1 rounded-xl border border-amber-100 bg-amber-50 p-3">
-                        <p className="text-[11px] font-black uppercase tracking-wide text-amber-800">Tips</p>
+                        <p className="text-[12px] font-black uppercase tracking-wide text-amber-800">Tips</p>
                         {t.tips.map((tip, i) => (
                           <p key={i} className="text-xs leading-relaxed text-amber-900">{tip}</p>
                         ))}
@@ -392,7 +392,7 @@ export default function AppGuide({ open, role, userId, onClose, onStartTour }: A
             className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-black text-white active:scale-[0.98] transition">
             Saya Paham
           </button>
-          <p className="mt-2 text-center text-[11px] text-gray-400">Buka lagi kapan saja lewat tombol Panduan.</p>
+          <p className="mt-2 text-center text-[12px] text-gray-500">Buka lagi kapan saja lewat tombol Panduan.</p>
         </div>
       </div>
     </div>

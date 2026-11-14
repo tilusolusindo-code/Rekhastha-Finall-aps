@@ -264,7 +264,7 @@ export default function ManualPaymentsPanel({
 
               {(midtransBills.length > 0 || subscriptions.length > 0) && (
                 <section className="space-y-3">
-                  <h3 className="text-[11px] font-black uppercase tracking-wide text-slate-500">Menunggu pembayaran</h3>
+                  <h3 className="text-[12px] font-black uppercase tracking-wide text-slate-500">Menunggu pembayaran</h3>
                   {midtransBills.map((payment) => (
                     <article key={`gig-${payment.id}`} className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -272,10 +272,10 @@ export default function ManualPaymentsPanel({
                           <p className="text-sm font-bold text-slate-900 truncate">
                             {payment.title ?? `Lowongan #${payment.targetId}`}
                           </p>
-                          <p className="text-[11px] text-slate-500">Pendanaan upah + biaya layanan</p>
+                          <p className="text-[12px] text-slate-500">Pendanaan upah + biaya layanan</p>
                           <p className="mt-1 text-lg font-black text-slate-900">{formatRp(payment.amount)}</p>
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-800">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800">
                           <Clock3 className="w-3 h-3" /> Belum dibayar
                         </span>
                       </div>
@@ -312,7 +312,7 @@ export default function ManualPaymentsPanel({
                           <p className="text-sm font-bold text-slate-900">Rekhastha Bisnis {sub.label}</p>
                           <p className="mt-1 text-lg font-black text-slate-900">{formatRp(sub.amount)}</p>
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-800">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800">
                           <Clock3 className="w-3 h-3" /> Belum dibayar
                         </span>
                       </div>
@@ -336,21 +336,21 @@ export default function ManualPaymentsPanel({
                           </a>
                         )}
                       </div>
-                      <p className="mt-2 text-[10px] text-slate-500">
+                      <p className="mt-2 text-[11px] text-slate-500">
                         Ingin metode lain? Batalkan, lalu pilih paket lagi di tab Rekhastha Bisnis.
                       </p>
                     </article>
                   ))}
-                  <p className="text-[10px] text-slate-500">Tagihan lowongan yang tidak dibayar dalam 24 jam ditutup otomatis.</p>
+                  <p className="text-[11px] text-slate-500">Tagihan lowongan yang tidak dibayar dalam 24 jam ditutup otomatis.</p>
                 </section>
               )}
 
               {otherPayments.length > 0 && (
                 <section className="space-y-3">
-                  <h3 className="text-[11px] font-black uppercase tracking-wide text-slate-500">Riwayat dan tagihan lain</h3>
+                  <h3 className="text-[12px] font-black uppercase tracking-wide text-slate-500">Riwayat dan tagihan lain</h3>
                   {needsManualInstructions && (instructions ? (
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-                      <p className="text-[11px] font-black uppercase tracking-wide text-emerald-800">Tagihan ini dibayar lewat transfer bank</p>
+                      <p className="text-[12px] font-black uppercase tracking-wide text-emerald-800">Tagihan ini dibayar lewat transfer bank</p>
                       <div className="mt-2 flex items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-bold text-slate-900">{instructions.bankName}</p>
@@ -386,7 +386,7 @@ export default function ManualPaymentsPanel({
                             </p>
                             <p className="mt-1 text-lg font-black text-slate-900">{formatRp(payment.amount)}</p>
                           </div>
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
                             payment.status === "confirmed"
                               ? "bg-emerald-100 text-emerald-800"
                               : payment.status === "rejected"
@@ -420,12 +420,12 @@ export default function ManualPaymentsPanel({
                                 </span>
                               )}
                             </button>
-                            <p className="text-center text-[11px] leading-relaxed text-slate-500">
+                            <p className="text-center text-[12px] leading-relaxed text-slate-500">
                               Chat akan dibuka ke {MANUAL_PAYMENT_WHATSAPP.display}. Lampirkan foto atau screenshot bukti transfer sebelum mengirim pesan.
                             </p>
                           </div>
                         )}
-                        <p className="mt-3 text-[10px] text-slate-400">
+                        <p className="mt-3 text-[11px] text-slate-400">
                           Dibuat {new Date(payment.createdAt).toLocaleString("id-ID")}
                         </p>
                       </article>

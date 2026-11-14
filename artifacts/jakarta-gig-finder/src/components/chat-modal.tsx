@@ -385,7 +385,7 @@ export default function ChatModal({
               </div>
             </div>
             <div className={`rounded-xl p-3 border ${currentRole === "worker" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}`}>
-              <p className="text-[11px] leading-relaxed font-medium text-center">
+              <p className="text-[12px] leading-relaxed font-medium text-center">
                 {currentRole === "worker"
                   ? "Gunakan chat Rekhastha untuk menyimpan riwayat komunikasi. Transaksi di luar aplikasi tidak tercatat di sini."
                   : "Koordinasikan pekerjaan melalui chat Rekhastha. Pembayaran di luar aplikasi tidak tercatat dalam riwayat Rekhastha."}
@@ -393,7 +393,7 @@ export default function ChatModal({
             </div>
             <div className="bg-red-600 text-white rounded-xl px-3 py-2 text-center">
               <p className="text-xs font-black">⚠️ Peringatan {bypassStrikes} dari {MAX_BYPASS_STRIKES}</p>
-              <p className="text-[10px] mt-0.5 opacity-90">
+              <p className="text-[11px] mt-0.5 opacity-90">
                 {MAX_BYPASS_STRIKES - bypassStrikes} pesan serupa lagi akan menjeda chat ini untuk sementara.
               </p>
             </div>
@@ -453,7 +453,7 @@ export default function ChatModal({
             <div className="bg-primary/80 px-4 py-1.5 flex items-center gap-2 overflow-hidden border-b border-white/10">
               <Lock className="w-3 h-3 text-white/80 shrink-0" />
               <div className="overflow-hidden flex-1">
-                <p className="text-[10px] text-white/90 font-medium whitespace-nowrap" style={{ animation: "ticker 18s linear infinite" }}>
+                <p className="text-[11px] text-white/90 font-medium whitespace-nowrap" style={{ animation: "ticker 18s linear infinite" }}>
                   Ruang chat untuk koordinasi pekerjaan · Pembayaran di luar aplikasi tidak tercatat di Rekhastha.&nbsp;&nbsp;&nbsp;Ruang chat untuk koordinasi pekerjaan · Pembayaran di luar aplikasi tidak tercatat di Rekhastha.
                 </p>
               </div>
@@ -468,7 +468,7 @@ export default function ChatModal({
                 />
                 <div>
                   <p className="font-bold text-sm leading-tight">{jobTitle}</p>
-                  <p className="text-[10px] text-white/70">
+                  <p className="text-[11px] text-white/70">
                     {currentRole === "company" ? workerName : companyName}
                     {" "}· {hiringMode === "cepat" ? "⚡ Mode Cepat" : "📅 Mode Lama"}
                   </p>
@@ -477,7 +477,7 @@ export default function ChatModal({
               {currentRole === "company" && (
                 <button
                   onClick={() => setShowBuyOut(true)}
-                  className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white text-[10px] font-semibold px-3 py-1.5 rounded-full transition-colors">
+                  className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full transition-colors">
                   <Briefcase className="w-3 h-3" /> Kontrak Tetap <ChevronRight className="w-3 h-3 opacity-70" />
                 </button>
               )}
@@ -490,7 +490,7 @@ export default function ChatModal({
               <Zap className="w-4 h-4 text-orange-600 shrink-0" />
               <div className="flex-1">
                 <p className="text-xs font-bold text-orange-800">⚡ Mode Butuh Cepat — Upah Terkunci</p>
-                <p className="text-[10px] text-orange-700">
+                <p className="text-[11px] text-orange-700">
                   Nominal upah <span className="font-bold">Rp {nominal.toLocaleString("id-ID")}</span> tidak dapat dimodifikasi. Negosiasi dinonaktifkan.
                 </p>
               </div>
@@ -504,7 +504,7 @@ export default function ChatModal({
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-emerald-800">✅ Kesepakatan Upah Terkunci</p>
-                <p className="text-[10px] text-emerald-700 flex flex-wrap gap-x-2">
+                <p className="text-[11px] text-emerald-700 flex flex-wrap gap-x-2">
                   <span>Upah Pokok: <b>Rp {lockedNominal!.toLocaleString("id-ID")}</b></span>
                   <span>· Biaya admin flat sudah dicantumkan pada tagihan lowongan</span>
                 </p>
@@ -529,7 +529,7 @@ export default function ChatModal({
             ) : (
               <>
                 <div className="flex justify-center my-2">
-                  <span className="bg-white/80 text-gray-500 text-[10px] font-medium px-3 py-1 rounded-full shadow-sm">
+                  <span className="bg-white/80 text-gray-500 text-[11px] font-medium px-3 py-1 rounded-full shadow-sm">
                     {messages.length === 0 ? "Belum ada pesan — mulai percakapan!" : "Hari ini"}
                   </span>
                 </div>
@@ -554,16 +554,16 @@ export default function ChatModal({
                               : "bg-white text-gray-900 rounded-tl-sm"
                         }`}>
                           {!isMine && !msg.isOfferMsg && (
-                            <p className="text-[10px] font-bold text-primary mb-0.5">
+                            <p className="text-[11px] font-bold text-primary mb-0.5">
                               {msg.sender === "company" ? companyName : workerName}
                             </p>
                           )}
                           {msg.isOfferMsg && (
                             <div className="flex items-center gap-1.5 mb-1">
                               <BadgeDollarSign className="w-3.5 h-3.5 shrink-0" />
-                              <span className="text-[10px] font-black uppercase tracking-wide flex-1">Tawaran Upah</span>
+                              <span className="text-[11px] font-black uppercase tracking-wide flex-1">Tawaran Upah</span>
                               {msg.offerStatus === "accepted" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-                              {msg.offerStatus === "countered" && <span className="text-[10px] text-gray-400">⚡ Di-counter</span>}
+                              {msg.offerStatus === "countered" && <span className="text-[11px] text-gray-500">⚡ Di-counter</span>}
                             </div>
                           )}
                           {msg.attachmentUrl && (
@@ -587,16 +587,16 @@ export default function ChatModal({
                                 <div className="min-w-0 flex-1">
                                   <p className="text-xs font-semibold truncate">Dokumen PDF</p>
                                   {msg.fileSize != null && (
-                                    <p className={`text-[10px] ${isMine ? "text-white/70" : "text-gray-400"}`}>{formatFileSize(msg.fileSize)}</p>
+                                    <p className={`text-[11px] ${isMine ? "text-white/70" : "text-gray-500"}`}>{formatFileSize(msg.fileSize)}</p>
                                   )}
                                 </div>
-                                <Download className={`w-4 h-4 shrink-0 ${isMine ? "text-white/80" : "text-gray-400"}`} />
+                                <Download className={`w-4 h-4 shrink-0 ${isMine ? "text-white/80" : "text-gray-500"}`} />
                               </a>
                             )
                           )}
                           {msg.text && <p className="text-sm leading-relaxed">{msg.text}</p>}
-                          <p className={`text-[10px] mt-1 text-right ${
-                            msg.isOfferMsg ? "opacity-50" : isMine ? "text-white/60" : "text-gray-400"
+                          <p className={`text-[11px] mt-1 text-right ${
+                            msg.isOfferMsg ? "opacity-50" : isMine ? "text-white/60" : "text-gray-500"
                           }`}>{formatTime(msg.time)}</p>
                         </div>
 
@@ -605,12 +605,12 @@ export default function ChatModal({
                           <div className="flex gap-1.5">
                             <button
                               onClick={() => handleAcceptOffer(msg.offerAmount!)}
-                              className="flex-1 flex items-center justify-center gap-1 bg-emerald-500 text-white text-[10px] font-black py-2 rounded-xl active:scale-95 transition-all shadow-sm">
+                              className="flex-1 flex items-center justify-center gap-1 bg-emerald-500 text-white text-[11px] font-black py-2 rounded-xl active:scale-95 transition-all shadow-sm">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Setujui Upah
                             </button>
                             <button
                               onClick={handleCounterOffer}
-                              className="flex-1 flex items-center justify-center gap-1 bg-blue-500 text-white text-[10px] font-black py-2 rounded-xl active:scale-95 transition-all shadow-sm">
+                              className="flex-1 flex items-center justify-center gap-1 bg-blue-500 text-white text-[11px] font-black py-2 rounded-xl active:scale-95 transition-all shadow-sm">
                               <RefreshCw className="w-3.5 h-3.5" /> Tawar Balik
                             </button>
                           </div>
@@ -627,12 +627,12 @@ export default function ChatModal({
           {/* Offer input panel */}
           {canNegotiate && showOfferInput && (
             <div className="bg-amber-50 border-t border-amber-200 px-3 py-3 shrink-0">
-              <p className="text-[10px] font-bold text-amber-800 mb-2">
+              <p className="text-[11px] font-bold text-amber-800 mb-2">
                 💰 {pendingOffer === null ? "Ajukan Tawaran Upah Baru" : "Masukkan Counter Offer"} — Mode Bisa Lama
               </p>
               <div className="flex gap-2">
                 <div className="flex-1 flex items-center bg-white border border-amber-300 rounded-xl px-3 py-2 gap-1.5">
-                  <span className="text-sm text-gray-400 font-medium shrink-0">Rp</span>
+                  <span className="text-sm text-gray-500 font-medium shrink-0">Rp</span>
                   <input
                     type="text"
                     value={offerRaw}
@@ -648,7 +648,7 @@ export default function ChatModal({
                 <button
                   onClick={handleSendOffer}
                   disabled={!offerRaw}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${offerRaw ? "bg-amber-500 text-white active:scale-95" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${offerRaw ? "bg-amber-500 text-white active:scale-95" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}>
                   Kirim
                 </button>
                 <button
@@ -664,7 +664,7 @@ export default function ChatModal({
           <div className="bg-white border-t border-gray-100 px-3 py-3 shrink-0 safe-area-bottom">
             {/* Negotiate button */}
             {wageLocked && hiringMode !== "cepat" && (
-              <p className="w-full text-center py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 text-[11px] font-medium mb-2.5">
+              <p className="w-full text-center py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 text-[12px] font-medium mb-2.5">
                 Rincian upah untuk lowongan ini sudah ditetapkan dan tidak dapat diubah melalui chat.
               </p>
             )}
@@ -678,7 +678,7 @@ export default function ChatModal({
             )}
 
             {attachError && (
-              <p className="text-[10px] font-semibold text-red-500 mb-1.5 px-1">{attachError}</p>
+              <p className="text-[11px] font-semibold text-red-500 mb-1.5 px-1">{attachError}</p>
             )}
 
             <div className="flex items-center gap-2">
@@ -694,7 +694,7 @@ export default function ChatModal({
                 disabled={uploading || blacklisted}
                 className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all ${uploading ? "bg-gray-100" : "bg-gray-100 hover:bg-gray-200 active:scale-95"}`}>
                 {uploading
-                  ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  ? <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
                   : <Paperclip className="w-4.5 h-4.5 text-gray-500" />
                 }
               </button>
@@ -714,8 +714,8 @@ export default function ChatModal({
                 disabled={!input.trim() || sending}
                 className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${input.trim() && !sending ? "bg-primary hover:bg-primary/90 active:scale-95" : "bg-gray-200"}`}>
                 {sending
-                  ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                  : <Send className={`w-4 h-4 ${input.trim() ? "text-white" : "text-gray-400"}`} />
+                  ? <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
+                  : <Send className={`w-4 h-4 ${input.trim() ? "text-white" : "text-gray-500"}`} />
                 }
               </button>
             </div>

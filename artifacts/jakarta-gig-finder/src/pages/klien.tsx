@@ -57,7 +57,7 @@ function CandidateCard({ c, token, onSaved }: { c: Candidate; token: string; onS
           </p>
         </div>
         {c.decision && (
-          <span className={`ml-auto shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black ${c.decision === "setuju" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
+          <span className={`ml-auto shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ${c.decision === "setuju" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
             {c.decision === "setuju" ? "Setuju" : "Tidak"}
           </span>
         )}
@@ -65,7 +65,7 @@ function CandidateCard({ c, token, onSaved }: { c: Candidate; token: string; onS
 
       {c.skills.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {c.skills.slice(0, 8).map((s) => <span key={s} className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-600">{s}</span>)}
+          {c.skills.slice(0, 8).map((s) => <span key={s} className="rounded-full bg-gray-100 px-2.5 py-1 text-[12px] font-semibold text-gray-600">{s}</span>)}
         </div>
       )}
       {(c.experience || c.education) && (
@@ -76,17 +76,17 @@ function CandidateCard({ c, token, onSaved }: { c: Candidate; token: string; onS
       )}
       {c.answers.length > 0 && (
         <div className="mt-3 space-y-2 rounded-xl bg-blue-50/60 p-3">
-          <p className="text-[10px] font-black uppercase tracking-wide text-blue-500">Jawaban pelamar</p>
+          <p className="text-[11px] font-black uppercase tracking-wide text-blue-500">Jawaban pelamar</p>
           {c.answers.map((a, i) => (
             <div key={`${i}-${a.prompt}`}>
-              <p className="text-[11px] font-bold text-blue-900">{a.prompt}{a.required && <span className="text-red-500"> *</span>}</p>
+              <p className="text-[12px] font-bold text-blue-900">{a.prompt}{a.required && <span className="text-red-500"> *</span>}</p>
               {a.type === "photo" || a.type === "file" ? (
-                <p className={`flex items-center gap-1 text-xs font-semibold ${a.attached ? "text-emerald-700" : "text-gray-400"}`}>
+                <p className={`flex items-center gap-1 text-xs font-semibold ${a.attached ? "text-emerald-700" : "text-gray-500"}`}>
                   {a.type === "photo" ? <Camera className="h-3 w-3" /> : <ClipboardList className="h-3 w-3" />}
                   {a.attached ? "Sudah dilampirkan (diperiksa agensi)" : "Belum dilampirkan"}
                 </p>
               ) : (
-                <p className="whitespace-pre-wrap break-words text-xs text-gray-700">{a.answer || <span className="text-gray-400">Tidak dijawab</span>}</p>
+                <p className="whitespace-pre-wrap break-words text-xs text-gray-700">{a.answer || <span className="text-gray-500">Tidak dijawab</span>}</p>
               )}
             </div>
           ))}
@@ -106,7 +106,7 @@ function CandidateCard({ c, token, onSaved }: { c: Candidate; token: string; onS
         </button>
       </div>
       {c.decision && (
-        <button onClick={() => send(null)} disabled={busy !== null} className="mt-2 text-[11px] font-semibold text-gray-400 underline">Batalkan penilaian</button>
+        <button onClick={() => send(null)} disabled={busy !== null} className="mt-2 text-[12px] font-semibold text-gray-500 underline">Batalkan penilaian</button>
       )}
       {error && <p className="mt-2 text-xs font-semibold text-red-600">{error}</p>}
     </article>
@@ -138,13 +138,13 @@ export default function KlienPage({ token }: { token: string }) {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white"><Briefcase className="h-5 w-5" /></div>
           <div className="min-w-0">
             <p className="truncate text-sm font-black text-gray-900">{view?.jobTitle ?? "Shortlist kandidat"}</p>
-            <p className="truncate text-[11px] text-gray-500">{view ? `Disiapkan oleh ${view.companyName}` : "Rekhastha"}</p>
+            <p className="truncate text-[12px] text-gray-500">{view ? `Disiapkan oleh ${view.companyName}` : "Rekhastha"}</p>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-xl space-y-3 px-4 py-5">
-        {state === "loading" && <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>}
+        {state === "loading" && <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>}
         {state === "invalid" && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
             <p className="text-base font-black text-gray-900">Tautan tidak berlaku</p>
@@ -169,18 +169,18 @@ export default function KlienPage({ token }: { token: string }) {
                 <ol className="mt-2 space-y-1.5 text-xs text-gray-700">
                   {view.questions.map((q, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[9px] font-black text-blue-700">{i + 1}</span>
+                      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[11px] font-black text-blue-700">{i + 1}</span>
                       <span className="min-w-0 flex-1 break-words">{q.prompt}{q.required && <span className="text-red-500"> *</span>}
-                        {(q.type === "photo" || q.type === "file") && <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-500">{q.type === "photo" ? "foto" : "berkas"}</span>}
+                        {(q.type === "photo" || q.type === "file") && <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-bold uppercase text-gray-500">{q.type === "photo" ? "foto" : "berkas"}</span>}
                       </span>
                     </li>
                   ))}
                 </ol>
-                <p className="mt-2 text-[10px] text-gray-400">* wajib diisi. Foto/berkas diperiksa oleh agensi dan tidak dibagikan ke halaman ini.</p>
+                <p className="mt-2 text-[11px] text-gray-500">* wajib diisi. Foto/berkas diperiksa oleh agensi dan tidak dibagikan ke halaman ini.</p>
               </div>
             )}
             {view.candidates.length === 0
-              ? <p className="py-10 text-center text-sm text-gray-400">Belum ada kandidat di shortlist.</p>
+              ? <p className="py-10 text-center text-sm text-gray-500">Belum ada kandidat di shortlist.</p>
               : view.candidates.map((c) => <CandidateCard key={c.id} c={c} token={token} onSaved={load} />)}
           </>
         )}

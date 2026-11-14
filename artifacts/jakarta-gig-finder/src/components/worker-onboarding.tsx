@@ -31,7 +31,7 @@ const emptyProfile: WorkerProfile = {
 };
 
 function FieldHint({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">{children}</p>;
+  return <p className="text-[12px] text-gray-500 mt-0.5 leading-tight">{children}</p>;
 }
 
 function Field({ label, hint, required, children }: {
@@ -172,7 +172,7 @@ export default function WorkerOnboarding({
               disabled={saving}
               type="button"
               onClick={onDismiss}
-              className="text-xs text-gray-400 hover:text-gray-600 underline disabled:opacity-50"
+              className="text-xs text-gray-500 hover:text-gray-600 underline disabled:opacity-50"
             >
               Lewati
             </button>
@@ -189,12 +189,12 @@ export default function WorkerOnboarding({
                         ? "bg-primary border-primary text-white"
                         : i === step
                         ? "border-primary text-primary bg-primary/10"
-                        : "border-gray-200 text-gray-400 bg-white"
+                        : "border-gray-200 text-gray-500 bg-white"
                     }`}
                   >
                     {i < step ? <CheckCircle className="w-4 h-4" /> : i + 1}
                   </div>
-                  <span className={`text-[10px] font-semibold ${i === step ? "text-primary" : "text-gray-400"}`}>
+                  <span className={`text-[11px] font-semibold ${i === step ? "text-primary" : "text-gray-500"}`}>
                     {label}
                   </span>
                 </div>
@@ -231,7 +231,7 @@ export default function WorkerOnboarding({
                   onChange={(e) => set("nik", e.target.value.replace(/\D/g, "").slice(0, 16))}
                 />
                 {profile.nik.length > 0 && profile.nik.length < 16 && (
-                  <p className="text-[11px] text-amber-500 mt-0.5 flex items-center gap-1">
+                  <p className="text-[12px] text-amber-500 mt-0.5 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> NIK harus 16 digit ({profile.nik.length}/16)
                   </p>
                 )}
@@ -325,7 +325,7 @@ export default function WorkerOnboarding({
                 <div>
                   <span className="text-sm font-medium text-gray-800">Saya belum memiliki NPWP</span>
                   {profile.belumPunyaNpwp && (
-                    <p className="text-[11px] text-amber-600 mt-1 leading-tight bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <p className="text-[12px] text-amber-600 mt-1 leading-tight bg-amber-50 border border-amber-200 rounded-lg p-2">
                       NPWP hanya digunakan sebagai data verifikasi. Segala kewajiban perpajakan menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku. Disarankan segera daftar NPWP di pajak.go.id.
                     </p>
                   )}
@@ -407,13 +407,13 @@ export default function WorkerOnboarding({
                   <>
                     <CheckCircle className="w-8 h-8 text-primary" />
                     <p className="text-sm font-semibold text-primary">Foto KTP Terunggah</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       {ktpPhoto?.name ?? "Klik untuk memilih atau mengganti foto"}
                     </p>
                   </>
                 ) : (
                   <>
-                    <Upload className="w-8 h-8 text-gray-400" />
+                    <Upload className="w-8 h-8 text-gray-500" />
                     <p className="text-sm font-semibold text-gray-700">Unggah Foto KTP</p>
                     <p className="text-xs text-gray-500 text-center">
                       Pastikan seluruh teks terbaca jelas, tidak buram atau terpotong
@@ -452,13 +452,13 @@ export default function WorkerOnboarding({
                   <>
                     <CheckCircle className="w-8 h-8 text-primary" />
                     <p className="text-sm font-semibold text-primary">Foto Selfie Terunggah</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       {selfieWithKtp?.name ?? "Klik untuk memilih atau mengganti foto"}
                     </p>
                   </>
                 ) : (
                   <>
-                    <Upload className="w-8 h-8 text-gray-400" />
+                    <Upload className="w-8 h-8 text-gray-500" />
                     <p className="text-sm font-semibold text-gray-700">Selfie Pegang KTP</p>
                     <p className="text-xs text-gray-500 text-center">
                       Foto wajah Anda sambil memegang KTP menghadap kamera
@@ -499,7 +499,7 @@ export default function WorkerOnboarding({
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
               canNext && !saving
                 ? "bg-primary text-white hover:bg-primary/90 active:scale-[0.98] shadow-lg"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-gray-100 text-gray-500 cursor-not-allowed"
             }`}
             style={canNext && !saving ? { boxShadow: "0 4px 16px rgba(6,95,70,0.3)" } : {}}
           >

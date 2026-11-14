@@ -138,13 +138,13 @@ export default function RatingModal({ raterType, targetName, jobTitle, onSubmit,
                     blacklist ? "bg-red-100" : "bg-gray-100"
                   }`}
                 >
-                  <Ban className={`h-5 w-5 ${blacklist ? "text-red-500" : "text-gray-400"}`} />
+                  <Ban className={`h-5 w-5 ${blacklist ? "text-red-500" : "text-gray-500"}`} />
                 </div>
                 <div>
                   <p className={`text-sm font-bold ${blacklist ? "text-red-700" : "text-gray-800"}`}>
                     Blacklist pekerja ini
                   </p>
-                  <p className="mt-0.5 text-[11px] text-gray-500">
+                  <p className="mt-0.5 text-[12px] text-gray-500">
                     {targetName} tidak akan melihat lowongan Anda lagi.
                   </p>
                 </div>
@@ -171,7 +171,7 @@ export default function RatingModal({ raterType, targetName, jobTitle, onSubmit,
               className={`w-full font-bold py-3.5 rounded-xl text-base transition-all ${
                 stars > 0
                   ? "bg-primary text-white hover:bg-primary/90 active:scale-[0.98] shadow-lg"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-gray-100 text-gray-500 cursor-not-allowed"
               }`}
               style={stars > 0 ? { boxShadow: "0 4px 16px rgba(6,95,70,0.3)" } : {}}
             >

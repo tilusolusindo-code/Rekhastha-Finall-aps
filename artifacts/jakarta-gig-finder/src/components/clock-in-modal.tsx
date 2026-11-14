@@ -168,7 +168,7 @@ export default function ClockInModal({
                 Validasi akhir memakai GPS terbaru dan lokasi yang ditentukan oleh QR.
               </p>
               {locationAccuracy != null && (
-                <p className="text-[10px] mt-1 font-medium text-gray-500">
+                <p className="text-[11px] mt-1 font-medium text-gray-500">
                   Akurasi lokasi terakhir ±{Math.round(locationAccuracy)} m; GPS diperbarui saat scan.
                 </p>
               )}
@@ -194,7 +194,7 @@ export default function ClockInModal({
                 </div>
                 <div>
                   <p className="text-xs font-black text-emerald-800">Presensi shift tercatat</p>
-                  <p className="text-[10px] text-emerald-700 mt-0.5">Waktu mulai dan data presensi dicatat sesuai alur aplikasi.</p>
+                  <p className="text-[11px] text-emerald-700 mt-0.5">Waktu mulai dan data presensi dicatat sesuai alur aplikasi.</p>
                 </div>
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               </div>
@@ -210,9 +210,9 @@ export default function ClockInModal({
                   <p className="text-sm font-bold text-blue-900">Cara Presensi dengan QR</p>
                 </div>
                 <ol className="space-y-2 text-xs text-blue-800">
-                  <li className="flex items-start gap-2"><span className="font-black bg-blue-200 text-blue-800 w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">1</span>Minta Pemberi Kerja menampilkan QR Presensi {isClockedIn ? "Pulang" : "Masuk"} di lokasi.</li>
-                  <li className="flex items-start gap-2"><span className="font-black bg-blue-200 text-blue-800 w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">2</span>Tekan "Scan QR" dan arahkan kamera ke QR Code milik Pemberi Kerja.</li>
-                  <li className="flex items-start gap-2"><span className="font-black bg-blue-200 text-blue-800 w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">3</span>{isClockedIn ? "Presensi pulang tercatat; status pembayaran mengikuti proses pada aplikasi." : "QR terverifikasi → presensi shift tercatat di aplikasi."}</li>
+                  <li className="flex items-start gap-2"><span className="font-black bg-blue-200 text-blue-800 w-4 h-4 rounded-full flex items-center justify-center text-[11px] shrink-0 mt-0.5">1</span>Minta Pemberi Kerja menampilkan QR Presensi {isClockedIn ? "Pulang" : "Masuk"} di lokasi.</li>
+                  <li className="flex items-start gap-2"><span className="font-black bg-blue-200 text-blue-800 w-4 h-4 rounded-full flex items-center justify-center text-[11px] shrink-0 mt-0.5">2</span>Tekan "Scan QR" dan arahkan kamera ke QR Code milik Pemberi Kerja.</li>
+                  <li className="flex items-start gap-2"><span className="font-black bg-blue-200 text-blue-800 w-4 h-4 rounded-full flex items-center justify-center text-[11px] shrink-0 mt-0.5">3</span>{isClockedIn ? "Presensi pulang tercatat; status pembayaran mengikuti proses pada aplikasi." : "QR terverifikasi → presensi shift tercatat di aplikasi."}</li>
                 </ol>
               </div>
               <button

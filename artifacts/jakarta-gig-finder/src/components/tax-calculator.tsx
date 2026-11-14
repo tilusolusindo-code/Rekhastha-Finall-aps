@@ -50,7 +50,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h2 className="text-base font-black text-gray-900">Kalkulator Pajak</h2>
-              <p className="text-[11px] text-gray-400">PPh 21 · BPJS hanya untuk kontrak</p>
+              <p className="text-[12px] text-gray-500">PPh 21 · BPJS hanya untuk kontrak</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">✕</button>
@@ -93,7 +93,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
                   Kontrak Bulanan
                 </button>
               </div>
-              <p className="text-[10px] text-gray-400 mt-1">
+              <p className="text-[11px] text-gray-500 mt-1">
                 {mode === "harian"
                   ? "PPh 21 saja · tidak ada BPJS untuk pekerja harian"
                   : "PPh 21 + BPJS Kesehatan + BPJS Ketenagakerjaan"}
@@ -127,17 +127,17 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
               {/* Quick summary */}
               <div className={`grid gap-2 ${mode === "kontrak" ? "grid-cols-3" : "grid-cols-1"}`}>
                 <div className="bg-orange-50 rounded-xl p-3 text-center">
-                  <p className="text-[10px] font-bold text-orange-600">PPh 21</p>
+                  <p className="text-[11px] font-bold text-orange-600">PPh 21</p>
                   <p className="text-sm font-black text-orange-600">{IDR(result.pph21Monthly)}</p>
                 </div>
                 {mode === "kontrak" && (
                   <>
                     <div className="bg-blue-50 rounded-xl p-3 text-center">
-                      <p className="text-[10px] font-bold text-blue-600">BPJS Kesehatan</p>
+                      <p className="text-[11px] font-bold text-blue-600">BPJS Kesehatan</p>
                       <p className="text-sm font-black text-blue-600">{IDR(result.bpjsKesehatanEmployee)}</p>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-3 text-center">
-                      <p className="text-[10px] font-bold text-purple-600">BPJS TK</p>
+                      <p className="text-[11px] font-bold text-purple-600">BPJS TK</p>
                       <p className="text-sm font-black text-purple-600">{IDR(result.bpjsJhtEmployee + result.bpjsJpEmployee)}</p>
                     </div>
                   </>
@@ -149,7 +149,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-bold text-amber-800">Total Beban Perusahaan</p>
-                    <p className="text-[11px] text-amber-600">Gaji + iuran BPJS yang ditanggung perusahaan</p>
+                    <p className="text-[12px] text-amber-600">Gaji + iuran BPJS yang ditanggung perusahaan</p>
                   </div>
                   <p className="text-base font-black text-amber-800 ml-3 shrink-0">{IDR(result.totalEmployerCost)}</p>
                 </div>
@@ -158,7 +158,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
               {/* Info harian */}
               {mode === "harian" && (
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                  <p className="text-[12px] text-gray-500 leading-relaxed">
                     Pekerja harian tidak wajib didaftarkan BPJS. PPh 21 hanya dikenakan jika upah harian melebihi Rp 450.000.
                   </p>
                 </div>
@@ -190,7 +190,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
                             row.label.includes("Bersih") ? "text-emerald-700" : "text-gray-900"
                           }`}>{row.amount < 0 ? `(${IDR(-row.amount)})` : IDR(row.amount)}</td>
                           <td className="px-3 py-2.5 text-center">
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
                               row.paidBy === "perusahaan" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                             }`}>{row.paidBy}</span>
                           </td>
@@ -204,7 +204,7 @@ export default function TaxCalculator({ onClose }: { onClose: () => void }) {
               {/* Disclaimer */}
               <div className="flex gap-2 p-3 bg-blue-50 rounded-xl">
                 <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-blue-700 leading-relaxed">
+                <p className="text-[12px] text-blue-700 leading-relaxed">
                   Hasil ini adalah <b>estimasi</b> berdasarkan PMK 168/2023 dan regulasi BPJS 2024.
                   Untuk perhitungan resmi, konsultasikan dengan akuntan atau HRD Anda.
                 </p>

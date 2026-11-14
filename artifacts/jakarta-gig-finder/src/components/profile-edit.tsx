@@ -139,7 +139,7 @@ export function ProfileAvatar({ user, size = 80, className = "", fallbackBg = "#
       )}
 
       {error && (
-        <p role="alert" className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 text-center text-[11px] font-semibold text-red-100 bg-red-600/80 rounded-lg px-2 py-1">
+        <p role="alert" className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 text-center text-[12px] font-semibold text-red-100 bg-red-600/80 rounded-lg px-2 py-1">
           {error}
         </p>
       )}
@@ -210,7 +210,7 @@ export function EditProfileButton({ user, onUserUpdated, company = false }: Edit
           <form onSubmit={save} className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-gray-900">Edit Profil</h3>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Tutup" className="text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setOpen(false)} aria-label="Tutup" className="text-gray-500 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -240,7 +240,7 @@ export function EditProfileButton({ user, onUserUpdated, company = false }: Edit
 
             <NotificationToggles user={user} company={company} onUserUpdated={onUserUpdated} />
 
-            <p className="text-[11px] text-gray-400 leading-relaxed">
+            <p className="text-[12px] text-gray-500 leading-relaxed">
               Email, data KTP, dan status verifikasi tidak bisa diubah dari sini.
             </p>
 

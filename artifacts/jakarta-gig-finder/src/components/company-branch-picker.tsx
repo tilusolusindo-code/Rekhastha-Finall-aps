@@ -111,7 +111,7 @@ export default function CompanyBranchPicker({
           <h3 className="flex items-center gap-1.5 text-sm font-bold text-gray-900">
             <MapPin className="h-4 w-4 text-primary" /> Cabang lokasi kerja
           </h3>
-          <p className="mt-0.5 text-[11px] text-gray-500">
+          <p className="mt-0.5 text-[12px] text-gray-500">
             QR dan catatan presensi terikat pada cabang yang dipilih.
           </p>
         </div>
@@ -148,7 +148,7 @@ export default function CompanyBranchPicker({
       )}
 
       {selected && !adding && (
-        <p className="text-[11px] leading-relaxed text-gray-600">
+        <p className="text-[12px] leading-relaxed text-gray-600">
           {selected.address} · Radius presensi {selected.radiusMeters} m
         </p>
       )}

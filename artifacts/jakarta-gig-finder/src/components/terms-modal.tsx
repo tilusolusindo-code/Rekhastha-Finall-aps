@@ -66,7 +66,7 @@ function Section({
             <p className="text-xs font-semibold text-gray-800 mb-1">
               {i + 1}. {c.title}
             </p>
-            <p className="text-[11px] text-gray-600 leading-relaxed text-justify">{c.body}</p>
+            <p className="text-[12px] text-gray-600 leading-relaxed text-justify">{c.body}</p>
           </li>
         ))}
       </ol>
@@ -92,7 +92,7 @@ export default function TermsModal({ onClose }: TermsModalProps) {
             </div>
             <div>
               <h2 className="text-white font-bold text-base leading-tight">Syarat & Ketentuan</h2>
-              <p className="text-emerald-100 text-[11px]">Draf operasional · belum final</p>
+              <p className="text-emerald-100 text-[12px]">Draf operasional · belum final</p>
             </div>
           </div>
           <button
@@ -107,14 +107,14 @@ export default function TermsModal({ onClose }: TermsModalProps) {
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
-          <p className="text-[11px] text-gray-500 leading-relaxed text-justify">
+          <p className="text-[12px] text-gray-500 leading-relaxed text-justify">
             Ini adalah ringkasan operasional, bukan perjanjian final atau nasihat hukum. Syarat dan
             Ketentuan final harus ditinjau dan disahkan sebelum pendaftaran publik dibuka. Kebijakan
             Privasi tersedia di halaman /privasi.
           </p>
 
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-3">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 mb-3">
               Bagian I · Ketentuan Penyedia Pekerjaan (Employer)
             </div>
             <Section
@@ -125,7 +125,7 @@ export default function TermsModal({ onClose }: TermsModalProps) {
           </div>
 
           <div className="border-t border-gray-100 pt-5">
-            <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-3">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 mb-3">
               Bagian II · Ketentuan Mitra Pekerja (Worker)
             </div>
             <Section
@@ -146,12 +146,12 @@ export default function TermsModal({ onClose }: TermsModalProps) {
               </h3>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2.5">
-              <p className="text-[11px] text-amber-950 leading-relaxed text-justify font-semibold">
+              <p className="text-[12px] text-amber-950 leading-relaxed text-justify font-semibold">
                 Fitur pembayaran, presensi, dan status dana mengikuti alur yang tersedia di aplikasi.
                 Fitur tersebut tidak dengan sendirinya menjamin penitipan dana, pemulihan pembayaran,
                 BPJS Ketenagakerjaan, asuransi, atau perlindungan sosial.
               </p>
-              <p className="text-[11px] text-amber-950 leading-relaxed text-justify">
+              <p className="text-[12px] text-amber-950 leading-relaxed text-justify">
                 Kebijakan Privasi (halaman /privasi) menjelaskan data yang dikumpulkan, penggunaannya,
                 penyimpanan, dan penghapusannya. Sebelum pendaftaran publik dibuka, kebijakan tersebut
                 dan proses pembayaran perlu ditinjau oleh pihak yang berwenang.

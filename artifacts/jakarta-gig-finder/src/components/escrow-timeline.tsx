@@ -41,8 +41,8 @@ export default function EscrowTimeline({ events, filterJobIds, emptyLabel }: Esc
         <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center">
           <Clock className="w-7 h-7 text-gray-200" />
         </div>
-        <p className="text-sm font-semibold text-gray-400">{emptyLabel ?? "Belum ada aktivitas escrow"}</p>
-        <p className="text-xs text-gray-400 leading-relaxed">
+        <p className="text-sm font-semibold text-gray-500">{emptyLabel ?? "Belum ada aktivitas escrow"}</p>
+        <p className="text-xs text-gray-500 leading-relaxed">
           Setiap perubahan status dana akan tercatat secara real-time di sini — transparan dan tidak dapat diubah.
         </p>
       </div>
@@ -69,10 +69,10 @@ export default function EscrowTimeline({ events, filterJobIds, emptyLabel }: Esc
             <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 space-y-1.5 min-w-0">
               {/* Status badge + timestamp row */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
+                <span className={`text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
                   {cfg.label}
                 </span>
-                <span className="text-[10px] text-gray-400 shrink-0">{timeStr(event.timestamp)}</span>
+                <span className="text-[11px] text-gray-500 shrink-0">{timeStr(event.timestamp)}</span>
               </div>
 
               {/* Job title */}
@@ -80,12 +80,12 @@ export default function EscrowTimeline({ events, filterJobIds, emptyLabel }: Esc
 
               {/* Actor + amount row */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                  <span className="w-4 h-4 flex items-center justify-center text-gray-400">👤</span>
+                <span className="text-[11px] text-gray-500 flex items-center gap-1">
+                  <span className="w-4 h-4 flex items-center justify-center text-gray-500">👤</span>
                   {event.actorName ?? (ACTOR[event.actor] || event.actor)}
                 </span>
                 {event.amount != null && event.amount > 0 && (
-                  <span className={`text-[10px] font-black ${
+                  <span className={`text-[11px] font-black ${
                     event.toStatus === "released" ? "text-emerald-600"
                     : event.toStatus === "disputed" ? "text-red-600"
                     : event.toStatus === "refunded" ? "text-gray-500"
@@ -96,7 +96,7 @@ export default function EscrowTimeline({ events, filterJobIds, emptyLabel }: Esc
                 )}
                 {/* Transition arrow */}
                 {event.fromStatus && (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[11px] text-gray-500">
                     {STATUS[event.fromStatus]?.label ?? event.fromStatus}
                     {" → "}
                     {cfg.label}
@@ -106,7 +106,7 @@ export default function EscrowTimeline({ events, filterJobIds, emptyLabel }: Esc
 
               {/* Note */}
               {event.note && (
-                <p className="text-[10px] text-gray-400 leading-relaxed border-t border-gray-50 pt-1.5">{event.note}</p>
+                <p className="text-[11px] text-gray-500 leading-relaxed border-t border-gray-50 pt-1.5">{event.note}</p>
               )}
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function EscrowTimeline({ events, filterJobIds, emptyLabel }: Esc
       })}
 
       {sorted.length >= 5 && (
-        <p className="text-center text-[10px] text-gray-400 py-1">Menampilkan {sorted.length} event · Tersimpan permanen di blockchain Rekhastha</p>
+        <p className="text-center text-[11px] text-gray-500 py-1">Menampilkan {sorted.length} event · Tersimpan permanen di blockchain Rekhastha</p>
       )}
     </div>
   );

@@ -136,7 +136,7 @@ export default function MidtransReturnHandler() {
       tone: "bg-red-50 border-red-100",
     },
     unknown: {
-      icon: <Clock3 className="w-6 h-6 text-gray-400" />,
+      icon: <Clock3 className="w-6 h-6 text-gray-500" />,
       title: "Status belum dapat dipastikan",
       body: "Status akan diperbarui otomatis begitu pembayaran dikonfirmasi. Muat ulang halaman beberapa saat lagi.",
       tone: "bg-gray-50 border-gray-200",
@@ -154,7 +154,7 @@ export default function MidtransReturnHandler() {
           <p className="text-xs text-gray-600 mt-0.5">{body}</p>
         </div>
         {outcome !== "checking" && (
-          <button onClick={() => setOutcome(null)} className="text-gray-400 p-1 shrink-0">
+          <button onClick={() => setOutcome(null)} className="text-gray-500 p-1 shrink-0">
             <X className="w-4 h-4" />
           </button>
         )}

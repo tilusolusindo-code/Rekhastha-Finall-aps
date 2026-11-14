@@ -104,12 +104,12 @@ export default function MyApplications({
                   role="tab"
                   aria-selected={active}
                   onClick={() => setFilter(f.key)}
-                  className={`flex h-9 items-center justify-center gap-0.5 whitespace-nowrap rounded-full border px-1 text-[12px] max-[360px]:text-[11px] max-[360px]:px-0 font-bold transition-colors ${
+                  className={`flex h-9 items-center justify-center gap-0.5 whitespace-nowrap rounded-full border px-1 text-[12px] max-[360px]:text-[12px] max-[360px]:px-0 font-bold transition-colors ${
                     active ? "border-emerald-900 bg-emerald-900 text-white" : "border-gray-200 bg-white text-gray-700"
                   }`}
                 >
                   <span>{f.label}</span>
-                  <span className={`text-[10.5px] font-extrabold ${active ? "text-white/80" : "text-gray-400"}`}>{counts[f.key]}</span>
+                  <span className={`text-[10.5px] font-extrabold ${active ? "text-white/80" : "text-gray-500"}`}>{counts[f.key]}</span>
                 </button>
               );
             })}
@@ -129,7 +129,7 @@ export default function MyApplications({
               <ClipboardList className="w-8 h-8 text-amber-500" />
             </div>
             <p className="font-bold text-gray-700 text-sm">Riwayat belum dapat dimuat</p>
-            <p className="text-xs text-gray-400 leading-relaxed max-w-[260px]">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-[260px]">
               Kami akan mencoba kembali otomatis. Periksa koneksi Anda jika daftar belum muncul.
             </p>
           </div>
@@ -139,7 +139,7 @@ export default function MyApplications({
               <ClipboardList className="w-8 h-8 text-primary/40" />
             </div>
             <p className="font-bold text-gray-700 text-sm">Belum ada lamaran</p>
-            <p className="text-xs text-gray-400 leading-relaxed max-w-[240px]">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-[240px]">
               Lamar lowongan dari feed Radar atau Terjadwal — semua riwayat lamaran Anda akan tampil di sini.
             </p>
           </div>
@@ -195,13 +195,13 @@ export default function MyApplications({
                     </div>
                     <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-[11.5px] font-bold">
                       {STEPS.map((label, i) => (
-                        <span key={label} className={i < reached ? "text-emerald-900" : "text-gray-400"}>{label}</span>
+                        <span key={label} className={i < reached ? "text-emerald-900" : "text-gray-500"}>{label}</span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-center gap-1 text-[11px] text-gray-400">
+                <div className="flex items-center gap-1 text-[12px] text-gray-500">
                   <Clock className="h-3 w-3" />
                   Dilamar {notif.timestamp.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
                 </div>

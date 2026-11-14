@@ -156,7 +156,7 @@ export default function ManualFinanceAdminTab() {
             <h3 className="font-black text-gray-900">Rekening penerima pembayaran</h3>
             <p className="mt-1 text-xs text-gray-500">Ditampilkan kepada perusahaan sebelum mereka mengirim transfer.</p>
           </div>
-          {settings && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800">Aktif</span>}
+          {settings && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">Aktif</span>}
         </div>
         <form onSubmit={(event) => void saveSettings(event)} className="grid gap-3 sm:grid-cols-2">
           <label className="space-y-1 text-xs font-bold text-gray-700">
@@ -211,7 +211,7 @@ export default function ManualFinanceAdminTab() {
             </span>
           </div>
           {loading ? (
-            <div className="flex justify-center py-10 text-gray-400"><Loader2 className="h-5 w-5 animate-spin" /></div>
+            <div className="flex justify-center py-10 text-gray-500"><Loader2 className="h-5 w-5 animate-spin" /></div>
           ) : payments.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500">Belum ada tagihan.</p>
           ) : (
@@ -261,7 +261,7 @@ export default function ManualFinanceAdminTab() {
             <p className="mt-1 text-xs text-gray-500">Transfer manual ke rekening yang tersimpan saat permintaan dibuat.</p>
           </div>
           {loading ? (
-            <div className="flex justify-center py-10 text-gray-400"><Loader2 className="h-5 w-5 animate-spin" /></div>
+            <div className="flex justify-center py-10 text-gray-500"><Loader2 className="h-5 w-5 animate-spin" /></div>
           ) : payouts.length === 0 ? (
             <p className="py-8 text-center text-sm text-gray-500">Belum ada permintaan pencairan.</p>
           ) : (

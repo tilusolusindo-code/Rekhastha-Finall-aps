@@ -105,7 +105,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
             data-testid="button-export-report-csv"
             onClick={handleExportCsv}
             disabled={customJobs.length === 0}
-            className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-3 py-2 rounded-xl hover:bg-emerald-400/20 transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 text-[12px] font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/30 px-3 py-2 rounded-xl hover:bg-emerald-400/20 transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-3.5 h-3.5" /> Unduh Laporan
           </button>
@@ -118,7 +118,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
             style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.35)" }}
           >
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-300 leading-relaxed">
+            <p className="text-[12px] text-amber-300 leading-relaxed">
               <span className="font-bold">{metrics.unknownCount} lowongan lama</span> belum menyimpan snapshot biaya admin.
               Baris tersebut tidak diberi estimasi, sehingga <span className="font-bold">tidak dihitung</span> dalam total biaya admin tersimpan.
             </p>
@@ -171,7 +171,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
               <Zap className="w-4 h-4 text-emerald-400" />
               <p className="text-sm font-bold text-white">Biaya Admin Flat</p>
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-400 mt-0.5">
               Sekali per lowongan, berdasarkan kategori; dibebaskan untuk langganan aktif atau masa uji coba
             </p>
           </div>
@@ -187,13 +187,13 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
                 <div className="grid grid-cols-3 gap-2">
                   {(Object.entries(FLAT_ADMIN_FEES) as [string, number][]).map(([cat, amount]) => (
                     <div key={cat} className="rounded-lg px-2 py-2 text-center" style={{ background: "rgba(16,185,129,0.12)" }}>
-                      <p className="text-[10px] text-slate-400 capitalize">{cat}</p>
+                      <p className="text-[11px] text-slate-400 capitalize">{cat}</p>
                       <p className="text-sm font-black text-emerald-400">{fmt(amount)}</p>
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="text-[10px] text-slate-500 leading-relaxed">Ditagihkan sekali ke perusahaan · upah pekerja tidak dipotong</p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">Ditagihkan sekali ke perusahaan · upah pekerja tidak dipotong</p>
             </div>
 
             {/* What the fee covers */}
@@ -205,7 +205,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-2">
                   <ArrowUpRight className="w-3.5 h-3.5 shrink-0" style={{ color: item.color }} />
-                  <p className="text-[11px] text-slate-400">{item.label}</p>
+                  <p className="text-[12px] text-slate-400">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -242,7 +242,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
                           <p className="text-sm font-bold text-white truncate">{job.posisi}</p>
                           {job.isAgency && (
                             <span
-                              className="text-[9px] font-black px-1.5 py-0.5 rounded"
+                              className="text-[11px] font-black px-1.5 py-0.5 rounded"
                               style={{ background: "rgba(59,130,246,0.2)", color: "#60A5FA", border: "1px solid rgba(59,130,246,0.3)" }}
                             >
                               AGENCY JOB
@@ -250,7 +250,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
                           )}
                           {isUnknown && (
                             <span
-                              className="text-[9px] font-black px-1.5 py-0.5 rounded"
+                              className="text-[11px] font-black px-1.5 py-0.5 rounded"
                               style={{ background: "rgba(234,179,8,0.15)", color: "#FCD34D", border: "1px solid rgba(234,179,8,0.4)" }}
                               title="Snapshot biaya admin belum tersedia untuk lowongan lama"
                             >
@@ -258,7 +258,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
+                        <p className="text-[11px] text-slate-500 mt-0.5">
                           {durasiLabel} · {job.kuota} org ·{" "}
                           {isUnknown
                             ? <span style={{ color: "#F59E0B" }}>biaya admin belum tersimpan</span>
@@ -269,9 +269,9 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-white">{fmt(gross)}</p>
                         {isUnknown ? (
-                          <p className="text-[10px]" style={{ color: "#F59E0B" }}>snapshot belum tersedia</p>
+                          <p className="text-[11px]" style={{ color: "#F59E0B" }}>snapshot belum tersedia</p>
                         ) : (
-                          <p className="text-[10px]" style={{ color: "#34D399" }}>{fmt(comm)} biaya admin</p>
+                          <p className="text-[11px]" style={{ color: "#34D399" }}>{fmt(comm)} biaya admin</p>
                         )}
                       </div>
                     </div>
@@ -286,8 +286,8 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
                           />
                         </div>
                         <div className="flex justify-between mt-1">
-                          <span className="text-[9px] text-emerald-500">Payout pekerja: {fmt(workerPay)}</span>
-                          <span className="text-[9px] text-emerald-400">Biaya admin: {fmt(comm)}</span>
+                          <span className="text-[11px] text-emerald-500">Payout pekerja: {fmt(workerPay)}</span>
+                          <span className="text-[11px] text-emerald-400">Biaya admin: {fmt(comm)}</span>
                         </div>
                       </>
                     )}
@@ -305,7 +305,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
           {/* Missing historical snapshots */}
           {jobBreakdowns.some(b => b.certainty === "missing") && (
             <div className="px-4 py-2.5 border-t" style={{ borderColor: "#334155" }}>
-              <p className="text-[10px] text-slate-500 leading-relaxed">
+              <p className="text-[11px] text-slate-500 leading-relaxed">
                 Biaya admin untuk lowongan lama yang belum dimigrasi tidak diperkirakan. Jalankan migrasi historis melalui panel admin untuk menyimpan snapshot.
               </p>
             </div>
@@ -326,7 +326,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
                 <div key={i} className="px-4 py-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-white">{r.targetName}</p>
-                    {r.comment && <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[180px]">{r.comment}</p>}
+                    {r.comment && <p className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[180px]">{r.comment}</p>}
                   </div>
                   <div className="flex gap-0.5 shrink-0">
                     {[1,2,3,4,5].map((s) => (
@@ -345,7 +345,7 @@ export default function AnalyticsDashboard({ customJobs, ratings, totalApplicant
           style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.2)" }}
         >
           <Shield className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-slate-400 leading-relaxed">
+          <p className="text-[12px] text-slate-400 leading-relaxed">
             Semua transaksi dilindungi oleh sistem escrow dan anti-penipuan Rekhastha.
             Data diperbarui secara <span className="text-emerald-400 font-semibold">real-time</span> setiap transaksi baru.
           </p>
@@ -373,7 +373,7 @@ function MetricCard({ icon, label, value, sub, accent, dimmed }: {
       style={{ background: "#1E293B", border: "1px solid #334155" }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: a.icon }}>
           <span style={{ color: a.text }}>{icon}</span>
         </div>
@@ -381,10 +381,10 @@ function MetricCard({ icon, label, value, sub, accent, dimmed }: {
       <div className="flex items-baseline gap-1.5">
         <p className="text-lg font-black leading-tight" style={{ color: dimmed ? "#94A3B8" : a.text }}>{value}</p>
         {dimmed && (
-          <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wide">sebagian</span>
+          <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wide">sebagian</span>
         )}
       </div>
-      <p className="text-[10px] text-slate-500">{sub}</p>
+      <p className="text-[11px] text-slate-500">{sub}</p>
     </div>
   );
 }

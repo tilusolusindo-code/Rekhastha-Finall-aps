@@ -170,7 +170,7 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                       }`}
                     >
                       <p className={`text-xs font-bold leading-tight ${tipeAkun === opt.val ? "text-white" : ""}`}>{opt.label}</p>
-                      <p className={`text-[10px] mt-0.5 leading-tight ${tipeAkun === opt.val ? "text-white/70" : "text-gray-400"}`}>{opt.sub}</p>
+                      <p className={`text-[11px] mt-0.5 leading-tight ${tipeAkun === opt.val ? "text-white/70" : "text-gray-500"}`}>{opt.sub}</p>
                     </button>
                   ))}
                 </div>
@@ -181,7 +181,7 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                     <Users className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
                     <div>
                       <p className="text-xs font-bold text-emerald-700">Perekrutan Massal Agensi</p>
-                      <p className="text-[11px] text-emerald-600 mt-0.5">
+                      <p className="text-[12px] text-emerald-600 mt-0.5">
                         Setiap pekerja menerima <strong>100% upah</strong> — biaya platform {(DEFAULT_FEE_RATE * 100).toFixed(0)}% ditanggung penuh oleh perusahaan.
                       </p>
                     </div>
@@ -204,9 +204,9 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                       onChange={(e) => setKuotaMassal(e.target.value)}
                       className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">orang</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500">orang</span>
                   </div>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[11px] text-gray-500">
                     Maksimal 999 tenaga kerja per lowongan · Pin di peta akan ditandai <strong>[AGENCY JOB]</strong>
                   </p>
                 </div>
@@ -230,7 +230,7 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                 <label className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                   NIB / KTP Perusahaan
-                  <span className="text-[10px] font-normal text-gray-500">(opsional, 13 digit)</span>
+                  <span className="text-[11px] font-normal text-gray-500">(opsional, 13 digit)</span>
                 </label>
                 <input
                   data-testid="input-nib" type="text" inputMode="numeric"
@@ -238,8 +238,8 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                   maxLength={13} placeholder="1234567890123"
                   className={`w-full border rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${nibError ? "border-red-300 focus:ring-red-200" : "border-gray-200 focus:ring-primary/30 focus:border-primary"}`}
                 />
-                {nibError && <p className="text-[11px] text-red-500 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{nibError}</p>}
-                {nibPerusahaan.length === 13 && <p className="text-[11px] text-primary flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> NIB terverifikasi</p>}
+                {nibError && <p className="text-[12px] text-red-500 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{nibError}</p>}
+                {nibPerusahaan.length === 13 && <p className="text-[12px] text-primary flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> NIB terverifikasi</p>}
               </div>
 
               {/* ── Posisi ── */}
@@ -268,12 +268,12 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                 {fraudWarning ? (
                   <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
                     <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-red-600 leading-relaxed">
+                    <p className="text-[12px] text-red-600 leading-relaxed">
                       <strong>⚠️ Kata Kunci Penipuan:</strong> "{fraudWarning}" terdeteksi. Hapus untuk melanjutkan.
                     </p>
                   </div>
                 ) : (
-                  <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                  <p className="text-[11px] text-gray-500 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-primary" /> Sensor anti-penipuan aktif
                   </p>
                 )}
@@ -293,7 +293,7 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                     </option>
                   ))}
                 </select>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[12px] text-gray-500">
                   Biaya platform:{" "}
                   <span className="font-bold text-primary">
                     {(DEFAULT_FEE_RATE * 100).toFixed(0)}% (beban perusahaan, pekerja terima 100%)
@@ -345,7 +345,7 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                     {isAgency && effectiveKuota > 1 && (
                       <div className="flex justify-between text-xs border-t border-primary/10 pt-2">
                         <span className="font-semibold text-gray-800">Total ({effectiveKuota} orang)</span>
-                        <span className="font-bold text-violet-700">{formatRupiah(calcEmployerDeposit(total) * effectiveKuota)}</span>
+                        <span className="font-bold text-primary">{formatRupiah(calcEmployerDeposit(total) * effectiveKuota)}</span>
                       </div>
                     )}
                   </div>
@@ -385,7 +385,7 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                   <label className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-blue-600" />
                     Estimasi Jumlah Hari Kerja
-                    <span className="text-[10px] font-normal text-gray-500">(untuk kalkulator escrow)</span>
+                    <span className="text-[11px] font-normal text-gray-500">(untuk kalkulator escrow)</span>
                   </label>
                   <div className="flex items-center gap-3">
                     <button type="button" onClick={() => setJumlahHari(d => Math.max(1, d - 1))}
@@ -404,7 +404,7 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                   disabled={blocked || (nibPerusahaan.length > 0 && nibPerusahaan.length < 13)}
                   className={`w-full font-bold py-3.5 rounded-xl text-base transition-all ${
                     blocked || (nibPerusahaan.length > 0 && nibPerusahaan.length < 13)
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
                       : "bg-primary text-white hover:bg-primary/90 active:scale-[0.98] shadow-lg"
                   }`}
                   style={!blocked ? { boxShadow: "0 4px 16px rgba(6,95,70,0.35)" } : {}}
@@ -484,16 +484,16 @@ export default function JobPostingModal({ onSubmit }: JobPostingModalProps) {
                         <span className="text-primary">Upah Bersih ke Pekerja (100%)</span>
                         <span className="text-primary">Rp {escrowSplit.workerNet.toLocaleString("id-ID")}</span>
                       </div>
-                      <p className="text-[10px] text-emerald-700/80 leading-relaxed">
+                      <p className="text-[11px] text-emerald-700/80 leading-relaxed">
                         🟢 Pekerja menerima 100% upah utuh — biaya platform ditanggung penuh oleh perusahaan.
                       </p>
-                      <p className="text-[10px] text-gray-400 leading-relaxed border-t border-gray-200 pt-2.5">
+                      <p className="text-[11px] text-gray-500 leading-relaxed border-t border-gray-200 pt-2.5">
                         Segala kewajiban perpajakan menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku.
                       </p>
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-gray-400 text-center leading-relaxed">
+                  <p className="text-[12px] text-gray-500 text-center leading-relaxed">
                     Lowongan hanya akan aktif di peta setelah dana dikunci. Dana dapat dicairkan kembali jika tidak ada pekerja yang diterima dalam 7 hari.
                   </p>
 

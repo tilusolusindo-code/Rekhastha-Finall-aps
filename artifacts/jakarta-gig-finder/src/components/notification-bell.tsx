@@ -107,7 +107,7 @@ export default function NotificationBell() {
       >
         <Bell className="w-5 h-5 text-gray-700" />
         {unreadCount > 0 && (
-          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -120,7 +120,7 @@ export default function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
               >
                 <Check className="w-3 h-3" /> Tandai semua dibaca
               </button>
@@ -128,7 +128,7 @@ export default function NotificationBell() {
           </div>
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
-              <div className="px-4 py-8 text-center text-xs text-gray-400">
+              <div className="px-4 py-8 text-center text-xs text-gray-500">
                 Belum ada notifikasi
               </div>
             ) : (
@@ -146,7 +146,7 @@ export default function NotificationBell() {
                     )}
                     <div className={n.isRead ? "pl-3.5" : ""}>
                       <p className="text-xs text-gray-800 leading-snug">{n.message}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
+                      <p className="text-[11px] text-gray-500 mt-1">{timeAgo(n.createdAt)}</p>
                     </div>
                   </div>
                 </button>

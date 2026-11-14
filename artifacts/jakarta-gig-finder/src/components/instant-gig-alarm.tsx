@@ -56,7 +56,7 @@ export default function InstantGigAlarm({ gig, onAccept, onSkip }: InstantGigAla
               <p className="text-xs font-black text-red-400 uppercase tracking-widest">
                 🚨 Broadcast Instan!
               </p>
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[11px] text-gray-500">
                 Rekhastha <span className="opacity-80">(by Tilu Saudara Solusindo)</span> · Radar Aktif
               </p>
             </div>
@@ -66,7 +66,7 @@ export default function InstantGigAlarm({ gig, onAccept, onSkip }: InstantGigAla
             <h2 className="text-3xl font-black text-white tracking-tight leading-tight">
               {gig.posisi}
             </h2>
-            <p className="text-sm text-gray-400 mt-1 flex items-center justify-center gap-1.5">
+            <p className="text-sm text-gray-500 mt-1 flex items-center justify-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 shrink-0" />
               {gig.namaPerusahaan || "Rekhastha by Tilu Saudara Solusindo"}
             </p>
@@ -78,14 +78,14 @@ export default function InstantGigAlarm({ gig, onAccept, onSkip }: InstantGigAla
               <p className="text-sm font-black text-white leading-none">
                 Rp {gig.nominal.toLocaleString("id-ID")}
               </p>
-              <p className="text-[9px] text-emerald-500/80 mt-1">
+              <p className="text-[11px] text-emerald-500/80 mt-1">
                 / {paymentUnits[gig.pembayaran]}
               </p>
             </div>
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-3 text-center">
               <MapPin className="w-4 h-4 text-amber-400 mx-auto mb-1" />
               <p className="text-sm font-black text-white leading-none">Radius 5 km</p>
-              <p className="text-[9px] text-gray-500 mt-1">Escrow Aman 🔒</p>
+              <p className="text-[11px] text-gray-500 mt-1">Escrow Aman 🔒</p>
             </div>
           </div>
 

@@ -157,7 +157,7 @@ export default function EmergencySOS({ activeJob, workerPhone }: EmergencySOSPro
                 {FIRST_AID_TIPS.map((tip, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span
-                      className="mt-0.5 w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-black text-white"
+                      className="mt-0.5 w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[11px] font-black text-white"
                       style={{ background: EMERALD, border: "1px solid rgba(212,175,55,0.5)" }}
                     >
                       {i + 1}

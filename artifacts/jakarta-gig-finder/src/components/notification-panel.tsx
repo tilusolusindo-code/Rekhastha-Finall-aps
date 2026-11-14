@@ -25,7 +25,7 @@ function notifCopy(n: ApplicationNotification): string {
 }
 
 const statusConfig: Record<ApplicationStatus, { label: string; color: string; bg: string }> = {
-  baru:     { label: "Baru",     color: "text-violet-700",  bg: "bg-violet-100"  },
+  baru:     { label: "Baru",     color: "text-primary",  bg: "bg-primary/10"  },
   ditinjau: { label: "Ditinjau", color: "text-amber-700",   bg: "bg-amber-100"   },
   diterima: { label: "Diterima", color: "text-primary",     bg: "bg-primary/10"  },
   ditolak:  { label: "Ditolak",  color: "text-red-600",     bg: "bg-red-100"     },
@@ -84,7 +84,7 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
       >
         <Bell className="w-4 h-4 text-gray-600" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -131,14 +131,14 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                   <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center">
                     <Inbox className="w-8 h-8 text-gray-300" />
                   </div>
-                  <p className="text-sm font-semibold text-gray-400">Belum Ada Lamaran</p>
-                  <p className="text-xs text-gray-400 leading-relaxed">
+                  <p className="text-sm font-semibold text-gray-500">Belum Ada Lamaran</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">
                     Lamaran dari pekerja akan muncul di sini setelah mereka mendaftar ke lowongan Anda.
                   </p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50">
-                  {visible.length === 0 && <p className="py-10 text-center text-sm text-gray-400">Tidak ada pelamar yang cocok dengan filter.</p>}
+                  {visible.length === 0 && <p className="py-10 text-center text-sm text-gray-500">Tidak ada pelamar yang cocok dengan filter.</p>}
                   {visible.map((n) => {
                     const cfg = statusConfig[n.status];
                     const isExpanded = expanded === n.id;
@@ -159,7 +159,7 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-sm text-gray-900 truncate">{n.applicantName}</span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
+                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                                 {cfg.label}
                               </span>
                             </div>
@@ -168,20 +168,20 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                             </p>
                             <div className="flex items-center gap-3 mt-1">
                               {n.hasNpwp ? (
-                                <span className="flex items-center gap-1 text-[10px] font-semibold text-primary">
+                                <span className="flex items-center gap-1 text-[11px] font-semibold text-primary">
                                   <ShieldCheck className="w-3 h-3" /> NPWP Terverifikasi
                                 </span>
                               ) : (
-                                <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600">
+                                <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
                                   <AlertCircle className="w-3 h-3" /> Tanpa NPWP
                                 </span>
                               )}
-                              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                              <span className="flex items-center gap-1 text-[11px] text-gray-500">
                                 <Clock className="w-3 h-3" /> {timeAgo(n.timestamp)}
                               </span>
                             </div>
                           </div>
-                          <ChevronRight className={`w-4 h-4 text-gray-400 shrink-0 mt-1 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                          <ChevronRight className={`w-4 h-4 text-gray-500 shrink-0 mt-1 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                         </div>
 
                         {/* Expanded */}
@@ -216,7 +216,7 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                                     data-testid={`link-portfolio-${n.id}`}
                                     href={n.portfolioUrl} target="_blank" rel="noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="flex-1 flex items-center justify-center gap-1.5 bg-violet-50 border border-violet-100 text-violet-700 text-xs font-bold py-2.5 rounded-xl hover:bg-violet-100 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-1.5 bg-primary/5 border border-primary/20 text-primary text-xs font-bold py-2.5 rounded-xl hover:bg-primary/10 transition-colors"
                                   >
                                     <FolderOpen className="w-3.5 h-3.5" /> Lihat Portofolio
                                   </a>
@@ -232,7 +232,7 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                                   if (!answer) return null;
                                   return (
                                     <div key={question.id}>
-                                      <p className="text-[10px] font-semibold text-blue-800">{question.prompt}</p>
+                                      <p className="text-[11px] font-semibold text-blue-800">{question.prompt}</p>
                                       <p className="whitespace-pre-wrap break-words text-xs text-gray-700">{answer}</p>
                                     </div>
                                   );
@@ -249,7 +249,7 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                                   ["Keahlian", n.supportingInfo.skills],
                                   ["Ketersediaan", n.supportingInfo.availability],
                                 ] as [string, string | undefined][]).filter(([, value]) => value?.trim()).map(([label, value]) => (
-                                  <p key={label} className="break-words text-[11px] text-gray-700">
+                                  <p key={label} className="break-words text-[12px] text-gray-700">
                                     <span className="font-semibold">{label}:</span> {value}
                                   </p>
                                 ))}
@@ -257,8 +257,8 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                             )}
 
                             {(n.uploadedFiles?.length ?? 0) > 0 && (
-                              <section className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 space-y-2">
-                                <h3 className="text-xs font-bold text-violet-900">Berkas lamaran</h3>
+                              <section className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                                <h3 className="text-xs font-bold text-primary">Berkas lamaran</h3>
                                 <div className="space-y-1.5">
                                   {n.uploadedFiles?.map((file) => (
                                     <a
@@ -268,11 +268,11 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                                       target="_blank"
                                       rel="noreferrer"
                                       onClick={(event) => event.stopPropagation()}
-                                      className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-[11px] font-semibold text-violet-800 hover:bg-violet-100"
+                                      className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-[12px] font-semibold text-primary hover:bg-primary/10"
                                     >
                                       <FileText className="h-3.5 w-3.5 shrink-0" />
                                       <span className="min-w-0 flex-1 truncate">{file.fileName}</span>
-                                      <span className="max-w-[45%] shrink-0 truncate text-[9px] font-bold uppercase text-violet-500">
+                                      <span className="max-w-[45%] shrink-0 truncate text-[11px] font-bold uppercase text-primary/70">
                                         {(file.questionId && n.applicationQuestions?.find((q) => q.id === file.questionId)?.prompt) || file.kind}
                                       </span>
                                     </a>
@@ -294,8 +294,8 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                             )}
 
                             <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
-                              <ShieldCheck className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
-                              <p className="text-[11px] text-gray-600 leading-relaxed">
+                              <ShieldCheck className="w-3.5 h-3.5 text-gray-500 shrink-0 mt-0.5" />
+                              <p className="text-[12px] text-gray-600 leading-relaxed">
                                 Segala kewajiban perpajakan menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku.
                               </p>
                             </div>
@@ -341,7 +341,7 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
                               <div className="space-y-2 pt-1">
                                 {/* Payment-status note */}
                                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
-                                  <span className="text-blue-600 text-[11px] font-bold">Status pembayaran tercatat di aplikasi</span>
+                                  <span className="text-blue-600 text-[12px] font-bold">Status pembayaran tercatat di aplikasi</span>
                                 </div>
                                 <div className="flex gap-2">
                                   {onMarkComplete && (
@@ -392,7 +392,7 @@ export default function NotificationPanel({ notifications, onStatusChange, onOpe
 function DataRow({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div>
-      <p className="text-[10px] text-gray-400">{label}</p>
+      <p className="text-[11px] text-gray-500">{label}</p>
       <p className={`text-xs font-semibold truncate ${warn ? "text-amber-600" : "text-gray-800"}`}>{value}</p>
     </div>
   );

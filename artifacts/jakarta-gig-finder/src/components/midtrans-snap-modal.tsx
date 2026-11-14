@@ -110,10 +110,10 @@ export default function MidtransSnapModal({
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
           <div>
             <h2 className="font-black text-gray-900 text-base">Bayar via Midtrans</h2>
-            <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[220px]">{title}</p>
+            <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[220px]">{title}</p>
           </div>
           {step !== "loading" && step !== "redirecting" && (
-            <button onClick={onClose} className="text-gray-400 p-1"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="text-gray-500 p-1"><X className="w-5 h-5" /></button>
           )}
         </div>
 
@@ -123,7 +123,7 @@ export default function MidtransSnapModal({
             <span className="text-xl font-black text-blue-700">{fmt(amount)}</span>
           </div>
           {breakdown && (
-            <div className="mt-2 space-y-0.5 text-[11px] text-blue-600">
+            <div className="mt-2 space-y-0.5 text-[12px] text-blue-600">
               <div className="flex justify-between"><span>Upah pekerja (escrow)</span><span>{fmt(breakdown.wage)}</span></div>
               <div className="flex justify-between">
                 <span>Biaya layanan posting</span>
@@ -162,7 +162,7 @@ export default function MidtransSnapModal({
                 <p className="text-xs font-bold text-gray-700">Metode pembayaran tersedia:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {["VA BCA","VA BNI","VA BRI","VA Mandiri","QRIS","Kartu Kredit","Indomaret","Alfamart"].map(m => (
-                    <span key={m} className="text-[10px] bg-white border border-gray-200 rounded px-2 py-0.5 text-gray-500">{m}</span>
+                    <span key={m} className="text-[11px] bg-white border border-gray-200 rounded px-2 py-0.5 text-gray-500">{m}</span>
                   ))}
                 </div>
               </div>

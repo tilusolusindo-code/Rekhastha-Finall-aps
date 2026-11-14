@@ -255,7 +255,7 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
               <RotateCcw className="w-4 h-4 text-amber-400" />
               <h2 className="text-sm font-black text-white">Pulihkan Akun Admin</h2>
             </div>
-            <p className="text-[11px] text-emerald-300/70 leading-relaxed -mt-2">
+            <p className="text-[12px] text-emerald-300/70 leading-relaxed -mt-2">
               Gunakan kunci <strong className="text-emerald-200">ADMIN_TOKEN</strong> dari Secrets Replit dan buat kata sandi baru. ID akun akan diperbarui ke nilai <strong className="text-emerald-200">ADMIN_ID</strong>.
             </p>
 
@@ -320,7 +320,7 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
           </form>
         )}
 
-        <p className="text-center text-[11px] text-emerald-300/50 mt-4">
+        <p className="text-center text-[12px] text-emerald-300/50 mt-4">
           Akses terbatas untuk operator platform. Aktivitas dicatat.
         </p>
       </div>
@@ -368,7 +368,7 @@ function ChangePasswordTab() {
           </div>
           <div>
             <p className="font-black text-sm text-gray-900">Ganti Kata Sandi</p>
-            <p className="text-[11px] text-gray-400">Kata sandi disimpan terenkripsi di database</p>
+            <p className="text-[12px] text-gray-500">Kata sandi disimpan terenkripsi di database</p>
           </div>
         </div>
 
@@ -432,8 +432,8 @@ function ChangePasswordTab() {
         </form>
 
         <div className="border-t border-gray-100 pt-4 mt-2">
-          <p className="text-[11px] text-gray-400 leading-relaxed">
-            <strong className="text-gray-500">Lupa kata sandi?</strong> Gunakan fitur &ldquo;Reset Kata Sandi&rdquo; di halaman masuk dengan token pemulihan dari Secrets Replit (<code className="bg-gray-100 px-1 rounded text-[10px]">ADMIN_TOKEN</code>).
+          <p className="text-[12px] text-gray-500 leading-relaxed">
+            <strong className="text-gray-500">Lupa kata sandi?</strong> Gunakan fitur &ldquo;Reset Kata Sandi&rdquo; di halaman masuk dengan token pemulihan dari Secrets Replit (<code className="bg-gray-100 px-1 rounded text-[11px]">ADMIN_TOKEN</code>).
           </p>
         </div>
       </div>
@@ -450,7 +450,7 @@ function StatusBadge({ row }: { row: LedgerRow }) {
   } as const;
   const s = map[row.status];
   return (
-    <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold border ${s.cls}`}>
+    <span className={`inline-block px-2.5 py-1 rounded-full text-[12px] font-bold border ${s.cls}`}>
       {s.label}
     </span>
   );
@@ -475,9 +475,9 @@ function StatCard({
         <span style={{ color }}>{icon}</span>
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] font-bold text-[#6b7b73] uppercase tracking-[0.11em] truncate">{label}</p>
+        <p className="text-[11px] font-bold text-[#6b7b73] uppercase tracking-[0.11em] truncate">{label}</p>
         <p className="mt-1 text-[clamp(1.2rem,2vw,1.55rem)] font-extrabold tracking-tight text-[#163b2d] leading-tight tabular-nums">{value}</p>
-        {sub && <p className="text-[11px] text-[#87948d] mt-1">{sub}</p>}
+        {sub && <p className="text-[12px] text-[#87948d] mt-1">{sub}</p>}
       </div>
     </div>
   );
@@ -548,7 +548,7 @@ function DashboardTab() {
         <div>
           <div className="mb-1 flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#479b75] opacity-30" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#32845d]" /></span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#518365]">Live platform</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#518365]">Live platform</span>
           </div>
           <h3 className="text-lg font-extrabold tracking-tight text-[#183c2e]">Statistik Platform Live</h3>
           <p className="mt-1 text-xs text-[#87948d]">
@@ -577,7 +577,7 @@ function DashboardTab() {
 
       {/* Users section */}
       <div>
-        <p className="mb-3 text-[10px] font-extrabold text-[#718078] uppercase tracking-[0.16em]">Pengguna</p>
+        <p className="mb-3 text-[11px] font-extrabold text-[#718078] uppercase tracking-[0.16em]">Pengguna</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard
             icon={<Users className="w-5 h-5" />}
@@ -609,7 +609,7 @@ function DashboardTab() {
 
       {/* Gigs section */}
       <div>
-        <p className="mb-3 text-[10px] font-extrabold text-[#718078] uppercase tracking-[0.16em]">Gig</p>
+        <p className="mb-3 text-[11px] font-extrabold text-[#718078] uppercase tracking-[0.16em]">Gig</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard
             icon={<Briefcase className="w-5 h-5" />}
@@ -641,7 +641,7 @@ function DashboardTab() {
 
       {/* Escrow section */}
       <div>
-        <p className="mb-3 text-[10px] font-extrabold text-[#718078] uppercase tracking-[0.16em]">Escrow</p>
+        <p className="mb-3 text-[11px] font-extrabold text-[#718078] uppercase tracking-[0.16em]">Escrow</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div
             className="rounded-2xl border border-[#ead5b4] p-5 text-[#67471d] shadow-[0_3px_12px_rgba(80,58,24,0.045)]"
@@ -649,10 +649,10 @@ function DashboardTab() {
           >
             <div className="flex items-center gap-2 mb-1">
               <Banknote className="w-4 h-4 text-[#a46a22]" />
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#8d652d]">Dana Ditahan</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8d652d]">Dana Ditahan</span>
             </div>
             <p className="text-[clamp(1.3rem,2vw,1.7rem)] font-extrabold leading-tight tracking-tight tabular-nums">{formatRp(stats.escrowHeld)}</p>
-            <p className="text-[11px] text-[#967951] mt-1">{stats.activeGigs} gig aktif</p>
+            <p className="text-[12px] text-[#967951] mt-1">{stats.activeGigs} gig aktif</p>
           </div>
           <div
             className="rounded-2xl border border-[#c9e2d2] p-5 text-[#1f5738] shadow-[0_3px_12px_rgba(35,78,50,0.045)]"
@@ -660,10 +660,10 @@ function DashboardTab() {
           >
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle2 className="w-4 h-4 text-[#398058]" />
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#4f805e]">Dana Cair</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#4f805e]">Dana Cair</span>
             </div>
             <p className="text-[clamp(1.3rem,2vw,1.7rem)] font-extrabold leading-tight tracking-tight tabular-nums">{formatRp(stats.escrowReleased)}</p>
-            <p className="text-[11px] text-[#63816c] mt-1">{stats.releasedGigs} gig selesai</p>
+            <p className="text-[12px] text-[#63816c] mt-1">{stats.releasedGigs} gig selesai</p>
           </div>
           <div
             className="rounded-2xl border border-[#edceca] p-5 text-[#773d38] shadow-[0_3px_12px_rgba(100,44,38,0.045)]"
@@ -671,16 +671,16 @@ function DashboardTab() {
           >
             <div className="flex items-center gap-2 mb-1">
               <Scale className="w-4 h-4 text-[#a2574f]" />
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#9a5e56]">Dana Sengketa</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#9a5e56]">Dana Sengketa</span>
             </div>
             <p className="text-[clamp(1.3rem,2vw,1.7rem)] font-extrabold leading-tight tracking-tight tabular-nums">{formatRp(stats.escrowDisputed)}</p>
-            <p className="text-[11px] text-[#9a6c66] mt-1">{stats.disputedGigs} gig sengketa</p>
+            <p className="text-[12px] text-[#9a6c66] mt-1">{stats.disputedGigs} gig sengketa</p>
           </div>
         </div>
       </div>
 
       {/* Live indicator */}
-      <div className="flex items-center justify-center gap-2 border-t border-[#e2e9e4] pt-4 text-[11px] text-[#77867e]">
+      <div className="flex items-center justify-center gap-2 border-t border-[#e2e9e4] pt-4 text-[12px] text-[#77867e]">
         <span className={`inline-block h-2 w-2 rounded-full ${realtimeConnected ? "bg-[#49a477]" : "bg-[#c89b55]"}`} />
         {realtimeConnected
           ? "Realtime tersambung · sinkron otomatis tiap menit"
@@ -792,7 +792,7 @@ function RevenueTab() {
         <div>
           <div className="mb-1 flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full rounded-full bg-[#479b75] opacity-30" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#32845d]" /></span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#518365]">Pendapatan</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#518365]">Pendapatan</span>
           </div>
           <h3 className="text-lg font-extrabold tracking-tight text-[#183c2e]">Analitik Pendapatan</h3>
           <p className="mt-1 text-xs text-[#87948d]">
@@ -834,10 +834,10 @@ function RevenueTab() {
         >
           <div className="flex items-center gap-2 mb-1">
             <Wallet className="w-4 h-4 text-[#398058]" />
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#4f805e]">Total Pendapatan</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#4f805e]">Total Pendapatan</span>
           </div>
           <p className="mt-1 text-[clamp(1.15rem,2vw,1.55rem)] font-extrabold leading-tight tracking-tight tabular-nums">{formatRp(stats.totalRevenue)}</p>
-          <p className="text-[11px] text-[#63816c] mt-1">Sepanjang waktu</p>
+          <p className="text-[12px] text-[#63816c] mt-1">Sepanjang waktu</p>
         </div>
         <StatCard
           icon={<TrendingUp className="w-5 h-5" />}
@@ -898,7 +898,7 @@ function RevenueTab() {
             <h4 className="font-extrabold tracking-tight text-[#183c2e] text-sm">Pendapatan per Kategori (Instan Kilat)</h4>
           </div>
           {categoryEntries.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">Belum ada pesanan terbayar.</p>
+            <p className="text-sm text-gray-500 py-8 text-center">Belum ada pesanan terbayar.</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={categoryEntries.map(([cat, v]) => ({
@@ -933,7 +933,7 @@ function RevenueTab() {
                       style={{ background: CATEGORY_COLOR[cat] }}
                     />
                     <span className="text-sm font-bold text-gray-700">{CATEGORY_LABEL[cat]}</span>
-                    <span className="text-[11px] text-gray-400">({v.count}x)</span>
+                    <span className="text-[12px] text-gray-500">({v.count}x)</span>
                   </div>
                   <span className="text-sm font-black text-gray-900">{formatRp(v.amount)}</span>
                 </div>
@@ -947,7 +947,7 @@ function RevenueTab() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2 border-t border-[#e2e9e4] pt-4 text-[11px] text-[#77867e]">
+      <div className="flex items-center justify-center gap-2 border-t border-[#e2e9e4] pt-4 text-[12px] text-[#77867e]">
         <span className={`inline-block h-2 w-2 rounded-full ${realtimeConnected ? "bg-[#49a477]" : "bg-[#c89b55]"}`} />
         {realtimeConnected
           ? "Realtime tersambung · sinkron otomatis tiap menit"
@@ -1098,12 +1098,12 @@ function EscrowTab({ trainingPassed, requireAcademy }: { trainingPassed: boolean
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
         ) : rows.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-400">Belum ada transaksi escrow.</div>
+          <div className="py-16 text-center text-sm text-gray-500">Belum ada transaksi escrow.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
+                <tr className="bg-gray-50 text-left text-[12px] uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-2.5 font-bold">Job ID</th>
                   <th className="px-4 py-2.5 font-bold">Perusahaan</th>
                   <th className="px-4 py-2.5 font-bold">Pekerja</th>
@@ -1117,10 +1117,10 @@ function EscrowTab({ trainingPassed, requireAcademy }: { trainingPassed: boolean
               <tbody className="divide-y divide-gray-100">
                 {rows.map((r) => (
                   <tr key={r.jobId} data-testid={`ledger-row-${r.jobId}`} className="hover:bg-gray-50/60">
-                    <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{r.jobId}</td>
+                    <td className="px-4 py-3 font-mono text-[12px] text-gray-500">{r.jobId}</td>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-900">{r.employerName}</p>
-                      <p className="text-[11px] text-gray-400">{r.posisi}</p>
+                      <p className="text-[12px] text-gray-500">{r.posisi}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-700">{r.workerName}</td>
                     <td className="px-4 py-3 text-right font-bold text-emerald-700">
@@ -1140,7 +1140,7 @@ function EscrowTab({ trainingPassed, requireAcademy }: { trainingPassed: boolean
                           <span
                             data-testid={`button-force-release-${r.jobId}`}
                             title="Selesaikan Asesmen Akademi untuk mengaktifkan fitur ini"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-gray-200 text-gray-400 text-[11px] font-bold px-2.5 py-1.5 cursor-not-allowed select-none"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-gray-200 text-gray-500 text-[12px] font-bold px-2.5 py-1.5 cursor-not-allowed select-none"
                           >
                             <Lock className="w-3 h-3" /> Paksa Pencairan
                           </span>
@@ -1150,18 +1150,18 @@ function EscrowTab({ trainingPassed, requireAcademy }: { trainingPassed: boolean
                             data-testid={`button-force-release-${r.jobId}`}
                             onClick={() => void handleRelease(r.jobId)}
                             disabled={releasing === r.jobId}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1.5 hover:bg-emerald-600 disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 text-white text-[12px] font-bold px-2.5 py-1.5 hover:bg-emerald-600 disabled:opacity-50"
                           >
                             {releasing === r.jobId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
                             Paksa Pencairan
                           </button>
                         )
                       ) : r.status === "released" ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
+                        <span className="inline-flex items-center gap-1 text-[12px] text-emerald-600 font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Selesai
                         </span>
                       ) : (
-                        <span className="text-[11px] text-gray-400">Menunggu pembayaran atau pekerja</span>
+                        <span className="text-[12px] text-gray-500">Menunggu pembayaran atau pekerja</span>
                       )}
                     </td>
                   </tr>
@@ -1237,13 +1237,13 @@ function UsersTab() {
         <h3 className="font-black text-gray-900 flex items-center gap-2 flex-1">
           <Users className="w-4 h-4 text-emerald-700" /> Manajemen Pengguna
           {pagination && (
-            <span className="text-xs font-semibold text-gray-400 ml-1">({pagination.total} total)</span>
+            <span className="text-xs font-semibold text-gray-500 ml-1">({pagination.total} total)</span>
           )}
         </h3>
         {/* Search */}
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
             <input
               type="text"
               value={searchInput}
@@ -1270,7 +1270,7 @@ function UsersTab() {
           <span className="text-gray-500 font-semibold">Peran:</span>
           {[["all","Semua"],["pekerja","Pekerja"],["perusahaan","Perusahaan"]].map(([v,l]) => (
             <button key={v} onClick={() => { setRoleFilter(v); setPage(1); }}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors ${
                 roleFilter === v ? "bg-emerald-700 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-emerald-400"
               }`}>{l}</button>
           ))}
@@ -1286,14 +1286,14 @@ function UsersTab() {
       {loading ? (
         <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
       ) : rows.length === 0 ? (
-        <div className="py-16 text-center text-sm text-gray-400">
+        <div className="py-16 text-center text-sm text-gray-500">
           {search ? `Tidak ada hasil untuk "${search}".` : "Belum ada pengguna terdaftar."}
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
+              <tr className="bg-gray-50 text-left text-[12px] uppercase tracking-wide text-gray-500">
                 <th className="px-4 py-2.5 font-bold">Nama</th>
                 <th className="px-4 py-2.5 font-bold">Email</th>
                 <th className="px-4 py-2.5 font-bold">Peran</th>
@@ -1308,7 +1308,7 @@ function UsersTab() {
                   <td className="px-4 py-3 font-semibold text-gray-900">{u.displayName}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                    <span className={`px-2 py-0.5 rounded-full text-[12px] font-bold ${
                       u.role === "perusahaan" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
                     }`}>
                       {u.role === "perusahaan" ? "Perusahaan" : "Pekerja"}
@@ -1325,9 +1325,9 @@ function UsersTab() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {u.suspended ? (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">Ditangguhkan</span>
+                      <span className="px-2 py-0.5 rounded-full text-[12px] font-bold bg-red-100 text-red-700">Ditangguhkan</span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700">Aktif</span>
+                      <span className="px-2 py-0.5 rounded-full text-[12px] font-bold bg-emerald-100 text-emerald-700">Aktif</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -1335,7 +1335,7 @@ function UsersTab() {
                       data-testid={`button-suspend-${u.id}`}
                       onClick={() => void handleToggle(u)}
                       disabled={busyId === u.id}
-                      className={`inline-flex items-center gap-1.5 rounded-lg text-[11px] font-bold px-2.5 py-1.5 disabled:opacity-50 ${
+                      className={`inline-flex items-center gap-1.5 rounded-lg text-[12px] font-bold px-2.5 py-1.5 disabled:opacity-50 ${
                         u.suspended ? "bg-emerald-700 text-white hover:bg-emerald-600" : "bg-red-600 text-white hover:bg-red-500"
                       }`}
                     >
@@ -1353,7 +1353,7 @@ function UsersTab() {
       {/* Pagination controls */}
       {pagination && pagination.totalPages > 1 && (
         <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-500">
             Hal. {pagination.page} dari {pagination.totalPages} &nbsp;·&nbsp; {pagination.total} pengguna
           </span>
           <div className="flex items-center gap-1.5">
@@ -1434,7 +1434,7 @@ function KycTab() {
       rejected: "Ditolak",
       unverified: "Belum Diajukan",
     };
-    return <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${map[s]}`}>{label[s]}</span>;
+    return <span className={`px-2 py-0.5 rounded-full text-[12px] font-bold ${map[s]}`}>{label[s]}</span>;
   };
 
   return (
@@ -1447,7 +1447,7 @@ function KycTab() {
       {loading ? (
         <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
       ) : rows.length === 0 ? (
-        <div className="py-16 text-center text-sm text-gray-400">Belum ada pengajuan verifikasi.</div>
+        <div className="py-16 text-center text-sm text-gray-500">Belum ada pengajuan verifikasi.</div>
       ) : (
         <div className="divide-y divide-gray-100">
           {rows.map((u) => (
@@ -1459,12 +1459,12 @@ function KycTab() {
               </div>
               <div className="flex items-center gap-2">
                 {u.ktpPhotoUrl && (
-                  <a href={u.ktpPhotoUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-lg bg-gray-50 border border-gray-200 px-2.5 py-1.5 text-[11px] font-bold text-gray-600 hover:bg-gray-100">
+                  <a href={u.ktpPhotoUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-lg bg-gray-50 border border-gray-200 px-2.5 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-100">
                     <ExternalLink className="w-3 h-3" /> Foto KTP
                   </a>
                 )}
                 {u.selfieWithKtpUrl && (
-                  <a href={u.selfieWithKtpUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-lg bg-gray-50 border border-gray-200 px-2.5 py-1.5 text-[11px] font-bold text-gray-600 hover:bg-gray-100">
+                  <a href={u.selfieWithKtpUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-lg bg-gray-50 border border-gray-200 px-2.5 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-100">
                     <ExternalLink className="w-3 h-3" /> Selfie+KTP
                   </a>
                 )}
@@ -1474,7 +1474,7 @@ function KycTab() {
                   data-testid={`button-kyc-verify-${u.id}`}
                   onClick={() => void handleDecision(u.id, "verified")}
                   disabled={busyId === u.id || u.verificationStatus === "verified"}
-                  className="inline-flex items-center gap-1.5 rounded-lg text-[11px] font-bold px-2.5 py-1.5 disabled:opacity-40 bg-emerald-700 text-white hover:bg-emerald-600"
+                  className="inline-flex items-center gap-1.5 rounded-lg text-[12px] font-bold px-2.5 py-1.5 disabled:opacity-40 bg-emerald-700 text-white hover:bg-emerald-600"
                 >
                   {busyId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
                   Verifikasi
@@ -1483,7 +1483,7 @@ function KycTab() {
                   data-testid={`button-kyc-reject-${u.id}`}
                   onClick={() => void handleDecision(u.id, "rejected")}
                   disabled={busyId === u.id || u.verificationStatus === "rejected"}
-                  className="inline-flex items-center gap-1.5 rounded-lg text-[11px] font-bold px-2.5 py-1.5 disabled:opacity-40 bg-red-600 text-white hover:bg-red-500"
+                  className="inline-flex items-center gap-1.5 rounded-lg text-[12px] font-bold px-2.5 py-1.5 disabled:opacity-40 bg-red-600 text-white hover:bg-red-500"
                 >
                   {busyId === u.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
                   Tolak
@@ -1562,7 +1562,7 @@ function QuestionForm({
     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wide text-gray-500 block mb-1">Kategori</label>
+          <label className="text-[12px] font-bold uppercase tracking-wide text-gray-500 block mb-1">Kategori</label>
           <input
             type="text"
             value={form.category}
@@ -1572,7 +1572,7 @@ function QuestionForm({
           />
         </div>
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wide text-gray-500 block mb-1">Urutan</label>
+          <label className="text-[12px] font-bold uppercase tracking-wide text-gray-500 block mb-1">Urutan</label>
           <input
             type="number"
             value={form.sortOrder}
@@ -1583,7 +1583,7 @@ function QuestionForm({
       </div>
 
       <div>
-        <label className="text-[11px] font-bold uppercase tracking-wide text-gray-500 block mb-1">Pertanyaan</label>
+        <label className="text-[12px] font-bold uppercase tracking-wide text-gray-500 block mb-1">Pertanyaan</label>
         <textarea
           value={form.prompt}
           onChange={(e) => setForm((f) => ({ ...f, prompt: e.target.value }))}
@@ -1594,8 +1594,8 @@ function QuestionForm({
       </div>
 
       <div>
-        <label className="text-[11px] font-bold uppercase tracking-wide text-gray-500 block mb-1">
-          Pilihan Jawaban <span className="text-gray-400 font-normal">(tandai jawaban benar dengan radio)</span>
+        <label className="text-[12px] font-bold uppercase tracking-wide text-gray-500 block mb-1">
+          Pilihan Jawaban <span className="text-gray-500 font-normal">(tandai jawaban benar dengan radio)</span>
         </label>
         <div className="space-y-2">
           {form.options.map((opt, i) => (
@@ -1638,8 +1638,8 @@ function QuestionForm({
       </div>
 
       <div>
-        <label className="text-[11px] font-bold uppercase tracking-wide text-gray-500 block mb-1">
-          Penjelasan <span className="text-gray-400 font-normal">(tampil setelah kuis selesai)</span>
+        <label className="text-[12px] font-bold uppercase tracking-wide text-gray-500 block mb-1">
+          Penjelasan <span className="text-gray-500 font-normal">(tampil setelah kuis selesai)</span>
         </label>
         <textarea
           value={form.explanation}
@@ -1782,7 +1782,7 @@ function QuestionEditor({
               onChange={(e) => { setScoreInput(e.target.value); setScoreError(null); }}
               className="w-24 rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 pr-7"
             />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">%</span>
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">%</span>
           </div>
           <button
             onClick={() => void handleSaveScore()}
@@ -1824,7 +1824,7 @@ function QuestionEditor({
         {questions.length === 0 && editingId !== "new" ? (
           <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center">
             <GraduationCap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">Belum ada soal — klik "Tambah Soal" untuk mulai.</p>
+            <p className="text-sm text-gray-500">Belum ada soal — klik "Tambah Soal" untuk mulai.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -1848,7 +1848,7 @@ function QuestionEditor({
                   <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 mb-0.5">{q.category}</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700 mb-0.5">{q.category}</p>
                         <p className="text-sm font-semibold text-gray-900">
                           {qi + 1}. {q.prompt}
                         </p>
@@ -1860,13 +1860,13 @@ function QuestionEditor({
                           ))}
                         </div>
                         {q.explanation && (
-                          <p className="text-[11px] text-gray-400 mt-1 italic">{q.explanation}</p>
+                          <p className="text-[12px] text-gray-500 mt-1 italic">{q.explanation}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => setEditingId(q.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-700 hover:bg-emerald-50"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-emerald-700 hover:bg-emerald-50"
                           title="Edit soal"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -1874,7 +1874,7 @@ function QuestionEditor({
                         <button
                           onClick={() => void handleDelete(q.id)}
                           disabled={deletingId === q.id}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
                           title="Hapus soal"
                         >
                           {deletingId === q.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
@@ -1984,7 +1984,7 @@ function AcademyTab({ onTrainingPassed }: { onTrainingPassed?: () => void }) {
         {!editorMode && !taking && (
           <button
             onClick={() => void load()}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            className="p-2 rounded-xl text-gray-500 hover:text-gray-600 hover:bg-gray-100"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -2046,7 +2046,7 @@ function AcademyTab({ onTrainingPassed }: { onTrainingPassed?: () => void }) {
 
               {questions.map((q, qi) => (
                 <div key={q.id} data-testid={`question-${q.id}`} className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">{q.category}</p>
+                  <p className="text-[12px] font-bold uppercase tracking-wide text-emerald-700">{q.category}</p>
                   <p className="font-semibold text-gray-900 mt-0.5">
                     {qi + 1}. {q.prompt}
                   </p>
@@ -2164,7 +2164,7 @@ function AcademyTab({ onTrainingPassed }: { onTrainingPassed?: () => void }) {
                 {completions.length === 0 ? (
                   <div className="rounded-xl border-2 border-dashed border-gray-200 py-12 text-center">
                     <GraduationCap className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-400">Belum ada percobaan — mulai asesmen pertama Anda.</p>
+                    <p className="text-sm text-gray-500">Belum ada percobaan — mulai asesmen pertama Anda.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -2175,15 +2175,15 @@ function AcademyTab({ onTrainingPassed }: { onTrainingPassed?: () => void }) {
                         className="flex items-center justify-between rounded-xl border border-gray-100 px-3.5 py-2.5"
                       >
                         <div>
-                          <p className="font-bold text-gray-900 text-sm">{c.score}% <span className="font-normal text-gray-400">({c.correct}/{c.total})</span></p>
-                          <p className="text-[11px] text-gray-400">{formatDateTime(c.completedAt)}</p>
+                          <p className="font-bold text-gray-900 text-sm">{c.score}% <span className="font-normal text-gray-500">({c.correct}/{c.total})</span></p>
+                          <p className="text-[12px] text-gray-500">{formatDateTime(c.completedAt)}</p>
                         </div>
                         {c.passed ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2.5 py-1">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[12px] font-bold px-2.5 py-1">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Lulus
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 text-red-600 text-[11px] font-bold px-2.5 py-1">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 text-red-600 text-[12px] font-bold px-2.5 py-1">
                             <XCircle className="w-3.5 h-3.5" /> Belum Lulus
                           </span>
                         )}
@@ -2260,7 +2260,7 @@ function ResolutionTab() {
       {loading ? (
         <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
       ) : rows.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm py-16 text-center text-sm text-gray-400">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm py-16 text-center text-sm text-gray-500">
           Tidak ada sengketa aktif.
         </div>
       ) : (
@@ -2274,9 +2274,9 @@ function ResolutionTab() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-black text-gray-900">{r.posisi}</p>
-                  <p className="text-[11px] text-gray-400 font-mono">Job #{r.jobId}</p>
+                  <p className="text-[12px] text-gray-500 font-mono">Job #{r.jobId}</p>
                 </div>
-                <span className="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-100 text-red-700 border border-red-200">
+                <span className="inline-block px-2.5 py-1 rounded-full text-[12px] font-bold bg-red-100 text-red-700 border border-red-200">
                   Dibekukan (Sengketa)
                 </span>
               </div>
@@ -2288,7 +2288,7 @@ function ResolutionTab() {
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-gray-500">Employer ID</span>
-                  <span className="font-mono text-[11px] text-gray-600 text-right">{r.employerId ?? "—"}</span>
+                  <span className="font-mono text-[12px] text-gray-600 text-right">{r.employerId ?? "—"}</span>
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-gray-500">Escrow Terkunci</span>
@@ -2312,7 +2312,7 @@ function ResolutionTab() {
                     <ExternalLink className="w-3.5 h-3.5 shrink-0" /> Lihat Bukti Kerja (Project Link)
                   </a>
                 ) : (
-                  <span className="text-xs text-gray-400 italic">Tidak ada link bukti terlampir.</span>
+                  <span className="text-xs text-gray-500 italic">Tidak ada link bukti terlampir.</span>
                 )}
               </div>
 
@@ -2398,7 +2398,7 @@ function OnsiteTab() {
       ) : (
         <>
           {data.gigs.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm py-16 text-center text-sm text-gray-400">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm py-16 text-center text-sm text-gray-500">
               Belum ada proyek fisik aktif.
             </div>
           ) : (
@@ -2419,13 +2419,13 @@ function OnsiteTab() {
                           <Building2 className="w-3 h-3" /> {g.employerName}
                         </p>
                       </div>
-                      <span className="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                      <span className="inline-block px-2.5 py-1 rounded-full text-[12px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
                         {g.escrowStatus}
                       </span>
                     </div>
 
                     {g.alamat && (
-                      <p className="text-[11px] text-gray-400 mt-1.5">{g.alamat}</p>
+                      <p className="text-[12px] text-gray-500 mt-1.5">{g.alamat}</p>
                     )}
 
                     <div className="mt-4">
@@ -2458,12 +2458,12 @@ function OnsiteTab() {
               </h3>
             </div>
             {data.payouts.length === 0 ? (
-              <div className="py-12 text-center text-sm text-gray-400">Belum ada pencairan harian.</div>
+              <div className="py-12 text-center text-sm text-gray-500">Belum ada pencairan harian.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
+                    <tr className="bg-gray-50 text-left text-[12px] uppercase tracking-wide text-gray-500">
                       <th className="px-4 py-2.5 font-bold">Pekerja</th>
                       <th className="px-4 py-2.5 font-bold">Job ID</th>
                       <th className="px-4 py-2.5 font-bold">Hari ke-</th>
@@ -2477,12 +2477,12 @@ function OnsiteTab() {
                     {data.payouts.map((p) => (
                       <tr key={p.id} data-testid={`payout-row-${p.id}`} className="hover:bg-gray-50/60">
                         <td className="px-4 py-3 font-semibold text-gray-900">{p.workerName}</td>
-                        <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{p.jobId}</td>
+                        <td className="px-4 py-3 font-mono text-[12px] text-gray-500">{p.jobId}</td>
                         <td className="px-4 py-3 text-gray-700">Hari ke-{p.dayIndex}</td>
                         <td className="px-4 py-3 text-right text-gray-600">{formatRp(p.grossFraction)}</td>
                         <td className="px-4 py-3 text-right text-red-600">− {formatRp(p.platformFee)}</td>
                         <td className="px-4 py-3 text-right font-bold text-emerald-700">{formatRp(p.netToWorker)}</td>
-                        <td className="px-4 py-3 text-[11px] text-gray-400">
+                        <td className="px-4 py-3 text-[12px] text-gray-500">
                           {new Date(p.at).toLocaleString("id-ID")}
                         </td>
                       </tr>
@@ -2525,12 +2525,12 @@ function ConfirmModal({
             <h3 className="font-black text-gray-900 text-base">{title}</h3>
             <p className="text-sm text-gray-500 mt-0.5">{description}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 shrink-0">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wide text-gray-500 block mb-1">
+          <label className="text-[12px] font-bold uppercase tracking-wide text-gray-500 block mb-1">
             Alasan / Catatan (wajib)
           </label>
           <textarea
@@ -2624,7 +2624,7 @@ function JobsTab() {
     };
     const d = map[s] ?? { label: s, cls: "bg-gray-100 text-gray-700 border-gray-200" };
     return (
-      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${d.cls}`}>
+      <span className={`inline-block px-2 py-0.5 rounded-full text-[12px] font-bold border ${d.cls}`}>
         {d.label}
       </span>
     );
@@ -2686,12 +2686,12 @@ function JobsTab() {
         {loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
         ) : rows.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-400">Belum ada job posting.</div>
+          <div className="py-16 text-center text-sm text-gray-500">Belum ada job posting.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
+                <tr className="bg-gray-50 text-left text-[12px] uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-2.5 font-bold">ID</th>
                   <th className="px-4 py-2.5 font-bold">Posisi</th>
                   <th className="px-4 py-2.5 font-bold">Perusahaan</th>
@@ -2703,11 +2703,11 @@ function JobsTab() {
               <tbody className="divide-y divide-gray-100">
                 {rows.map((r) => (
                   <tr key={r.jobId} className="hover:bg-gray-50/60">
-                    <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{r.jobId}</td>
+                    <td className="px-4 py-3 font-mono text-[12px] text-gray-500">{r.jobId}</td>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-900">{r.posisi}</p>
                       {r.hiringMode && (
-                        <p className="text-[11px] text-gray-400 capitalize">{r.hiringMode}</p>
+                        <p className="text-[12px] text-gray-500 capitalize">{r.hiringMode}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-700">{r.employerName}</td>
@@ -2717,21 +2717,21 @@ function JobsTab() {
                       <div className="flex items-center gap-1.5 justify-end flex-wrap">
                         <button
                           onClick={() => setAction({ jobId: r.jobId, posisi: r.posisi, kind: "delete" })}
-                          className="inline-flex items-center gap-1 rounded-lg bg-red-600 text-white text-[11px] font-bold px-2 py-1.5 hover:bg-red-500"
+                          className="inline-flex items-center gap-1 rounded-lg bg-red-600 text-white text-[12px] font-bold px-2 py-1.5 hover:bg-red-500"
                         >
                           <Trash2 className="w-3 h-3" /> Hapus
                         </button>
                         <button
                           onClick={() => setAction({ jobId: r.jobId, posisi: r.posisi, kind: "refund" })}
                           disabled={r.escrowStatus === "refunded" || r.escrowStatus === "released"}
-                          className="inline-flex items-center gap-1 rounded-lg bg-blue-600 text-white text-[11px] font-bold px-2 py-1.5 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-600 text-white text-[12px] font-bold px-2 py-1.5 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <RotateCcw className="w-3 h-3" /> Refund
                         </button>
                         <button
                           onClick={() => setAction({ jobId: r.jobId, posisi: r.posisi, kind: "payout" })}
                           disabled={r.escrowStatus === "released"}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 text-white text-[11px] font-bold px-2 py-1.5 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 text-white text-[12px] font-bold px-2 py-1.5 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Zap className="w-3 h-3" /> Force Payout
                         </button>
@@ -2790,31 +2790,31 @@ function SecurityTab() {
       : s === "warn" ? "bg-amber-100 text-amber-700 border-amber-200"
       : "bg-gray-100 text-gray-600 border-gray-200";
     const label = s === "high" ? "Tinggi" : s === "warn" ? "Waspada" : "Info";
-    return <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${cls}`}>{label}</span>;
+    return <span className={`inline-block px-2 py-0.5 rounded-full text-[12px] font-bold border ${cls}`}>{label}</span>;
   };
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">Kejadian 24 jam</p>
+          <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">Kejadian 24 jam</p>
           <p className="text-3xl font-black text-gray-900 mt-1">{data?.summary.last24h ?? "–"}</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">Tingkat tinggi (24 jam)</p>
+          <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">Tingkat tinggi (24 jam)</p>
           <p className={`text-3xl font-black mt-1 ${data && data.summary.high24h > 0 ? "text-red-600" : "text-gray-900"}`}>
             {data?.summary.high24h ?? "–"}
           </p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-bold">IP paling aktif (24 jam)</p>
+          <p className="text-[12px] uppercase tracking-wide text-gray-500 font-bold">IP paling aktif (24 jam)</p>
           <ul className="mt-1 text-sm text-gray-800 space-y-0.5">
             {data?.summary.topIps.length ? data.summary.topIps.map((r) => (
               <li key={r.ip ?? "?"} className="flex justify-between gap-2">
                 <span className="font-mono text-xs truncate">{r.ip ?? "tidak diketahui"}</span>
                 <span className="font-bold">{r.count}</span>
               </li>
-            )) : <li className="text-gray-400 text-xs">Belum ada</li>}
+            )) : <li className="text-gray-500 text-xs">Belum ada</li>}
           </ul>
         </div>
       </div>
@@ -2847,12 +2847,12 @@ function SecurityTab() {
         ) : loading ? (
           <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
         ) : !data || data.events.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-400">Belum ada kejadian tercatat. Itu kabar baik.</div>
+          <div className="py-16 text-center text-sm text-gray-500">Belum ada kejadian tercatat. Itu kabar baik.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
+                <tr className="bg-gray-50 text-left text-[12px] uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-2.5 font-bold">Waktu</th>
                   <th className="px-4 py-2.5 font-bold">Tingkat</th>
                   <th className="px-4 py-2.5 font-bold">Jenis</th>
@@ -2877,7 +2877,7 @@ function SecurityTab() {
           </div>
         )}
       </div>
-      <p className="text-[11px] text-gray-400 px-1">
+      <p className="text-[12px] text-gray-500 px-1">
         Data disimpan 90 hari. Input berpola serangan hanya dicatat (tidak diblokir) agar pengguna sah tidak salah ditolak;
         akses data tetap aman karena semua query memakai parameter.
       </p>
@@ -2981,7 +2981,7 @@ function RefundsTab() {
                       {busyId === r.id ? "…" : "Tandai sudah ditransfer"}
                     </button>
                   ) : (
-                    <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800">Sudah dikembalikan</span>
+                    <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">Sudah dikembalikan</span>
                   )}
                 </div>
               </div>
@@ -3017,7 +3017,7 @@ function LogsTab() {
     };
     const d = map[action] ?? { label: action, cls: "bg-gray-100 text-gray-600 border-gray-200" };
     return (
-      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${d.cls}`}>
+      <span className={`inline-block px-2 py-0.5 rounded-full text-[12px] font-bold border ${d.cls}`}>
         {d.label}
       </span>
     );
@@ -3040,12 +3040,12 @@ function LogsTab() {
       {loading ? (
         <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div>
       ) : logs.length === 0 ? (
-        <div className="py-16 text-center text-sm text-gray-400">Belum ada aktivitas admin tercatat.</div>
+        <div className="py-16 text-center text-sm text-gray-500">Belum ada aktivitas admin tercatat.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-left text-[11px] uppercase tracking-wide text-gray-500">
+              <tr className="bg-gray-50 text-left text-[12px] uppercase tracking-wide text-gray-500">
                 <th className="px-4 py-2.5 font-bold">Waktu</th>
                 <th className="px-4 py-2.5 font-bold">Admin</th>
                 <th className="px-4 py-2.5 font-bold">Aksi</th>
@@ -3056,15 +3056,15 @@ function LogsTab() {
             <tbody className="divide-y divide-gray-100">
               {logs.map((l) => (
                 <tr key={l.id} className="hover:bg-gray-50/60">
-                  <td className="px-4 py-3 text-[11px] text-gray-500 whitespace-nowrap">
+                  <td className="px-4 py-3 text-[12px] text-gray-500 whitespace-nowrap">
                     {new Date(l.createdAt).toLocaleString("id-ID", {
                       day: "2-digit", month: "short", year: "numeric",
                       hour: "2-digit", minute: "2-digit",
                     })}
                   </td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-gray-600">{l.adminId}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-gray-600">{l.adminId}</td>
                   <td className="px-4 py-3">{actionBadge(l.action)}</td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{l.targetId ?? "—"}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-gray-500">{l.targetId ?? "—"}</td>
                   <td className="px-4 py-3 text-sm text-gray-700 max-w-xs truncate" title={l.reason ?? ""}>
                     {l.reason ?? "—"}
                   </td>
@@ -3086,7 +3086,7 @@ function SummaryCard({ label, value, tone }: { label: string; value: string; ton
   } as const;
   return (
     <div className={`rounded-2xl bg-gradient-to-br ${tones[tone]} p-4 text-white shadow-sm`}>
-      <p className="text-[11px] font-semibold opacity-80">{label}</p>
+      <p className="text-[12px] font-semibold opacity-80">{label}</p>
       <p className="text-xl font-black mt-1">{value}</p>
     </div>
   );
@@ -3138,7 +3138,7 @@ function CommandCenter({
           </div>
           <div>
             <p className="font-extrabold text-sm leading-tight tracking-tight">Tilu Saudara Solusindo</p>
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[#dfbd70]">Command Center</p>
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[#dfbd70]">Command Center</p>
           </div>
         </div>
 
@@ -3150,7 +3150,7 @@ function CommandCenter({
               className="flex items-center gap-1.5 rounded-lg bg-emerald-800/60 border border-emerald-600/40 px-2.5 py-1.5"
             >
               <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[11px] font-bold text-emerald-100">Pelatihan Lulus</span>
+              <span className="text-[12px] font-bold text-emerald-100">Pelatihan Lulus</span>
             </div>
           ) : (
             <button
@@ -3159,7 +3159,7 @@ function CommandCenter({
               className="w-full flex items-center gap-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 px-2.5 py-1.5 hover:bg-amber-500/30 transition-colors text-left"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[11px] font-bold text-amber-300">Pelatihan belum lulus</span>
+              <span className="text-[12px] font-bold text-amber-300">Pelatihan belum lulus</span>
             </button>
           )}
         </div>
@@ -3204,13 +3204,13 @@ function CommandCenter({
       <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#dfe7e2] pb-5">
           <div>
-            <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#718078]">Rekhastha · Operations</div>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#718078]">Rekhastha · Operations</div>
             <h2 className="text-xl font-extrabold tracking-tight text-[#183c2e]">
               {tabs.find((t) => t.id === tab)?.label}
             </h2>
             <p className="mt-1 text-xs text-[#7d8c83]">Panel operator platform Rekhastha</p>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-[#d8e4db] bg-[#fffefa] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.11em] text-[#4d775e]">
+          <div className="flex items-center gap-2 rounded-full border border-[#d8e4db] bg-[#fffefa] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.11em] text-[#4d775e]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#49a477]" /> Control center
           </div>
         </header>

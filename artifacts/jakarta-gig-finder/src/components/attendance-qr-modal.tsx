@@ -162,7 +162,7 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
                   <option key={w.workerId} value={w.workerId}>Khusus {w.workerName}</option>
                 ))}
               </select>
-              <p className="mt-1 text-[10px] text-gray-500">
+              <p className="mt-1 text-[11px] text-gray-500">
                 Pilih nama pekerja agar QR tidak bisa dipakai orang lain, walau difoto atau dikirim.
               </p>
             </div>
@@ -194,7 +194,7 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-5">
             {loading && (
               <div className="flex h-[220px] w-[220px] items-center justify-center">
-                <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                <RefreshCw className="h-6 w-6 animate-spin text-gray-500" />
               </div>
             )}
             {!loading && error && (
@@ -209,7 +209,7 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
               </div>
             )}
             {!loading && !error && token && <QrCodeView value={token} />}
-            <div className="flex items-center gap-2 text-[10px] text-gray-500">
+            <div className="flex items-center gap-2 text-[11px] text-gray-500">
               <Zap className="h-3 w-3 text-orange-500" />
               <span>QR sekali pakai — berganti otomatis tiap 20 detik</span>
             </div>
@@ -243,7 +243,7 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
                   {confirmed.workerName} berhasil presensi{" "}
                   {confirmed.kind === "masuk" ? "MASUK ✅" : "PULANG 🏁"}
                 </p>
-                <p className="mt-0.5 text-[10px] text-gray-500">
+                <p className="mt-0.5 text-[11px] text-gray-500">
                   {confirmed.kind === "masuk"
                     ? "Shift dimulai — status tersinkron di semua perangkat."
                     : "Shift selesai — escrow dilepas & rating dibuka."}
@@ -254,7 +254,7 @@ export default function AttendanceQrModal({ jobId, jobTitle, onClose }: Attendan
 
           <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-            <p className="text-[11px] leading-relaxed text-emerald-800">
+            <p className="text-[12px] leading-relaxed text-emerald-800">
               Presensi via QR mencegah joki: hanya pekerja yang hadir fisik di lokasi dan memindai
               QR dinamis ini yang tercatat. Status presensi tersinkron real-time ke perangkat
               pekerja.

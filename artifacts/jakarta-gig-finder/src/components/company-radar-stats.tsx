@@ -123,7 +123,7 @@ export default function CompanyRadarStats({ onGoInstant }: CompanyRadarStatsProp
         {/* Stat card */}
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm px-6 py-8">
           {loading ? (
-            <p className="text-sm text-gray-400">Memuat data radar...</p>
+            <p className="text-sm text-gray-500">Memuat data radar...</p>
           ) : error ? (
             <p className="text-sm text-red-600 font-semibold">{error}</p>
           ) : (
@@ -132,13 +132,13 @@ export default function CompanyRadarStats({ onGoInstant }: CompanyRadarStatsProp
               <p className="text-sm font-bold text-gray-800 mt-2">
                 Ada <span className="text-blue-700">{count ?? 0}</span> pekerja yang siap kerja di sekitar Anda
               </p>
-              <p className="text-[11px] text-gray-400 mt-1">dalam radius {radiusKm} km dari lokasi bisnis Anda</p>
+              <p className="text-[12px] text-gray-500 mt-1">dalam radius {radiusKm} km dari lokasi bisnis Anda</p>
             </>
           )}
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-700 hover:underline disabled:opacity-50"
+            className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold text-blue-700 hover:underline disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Muat ulang
           </button>

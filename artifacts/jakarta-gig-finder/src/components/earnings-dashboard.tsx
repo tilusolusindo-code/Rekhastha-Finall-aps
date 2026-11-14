@@ -112,7 +112,7 @@ export default function EarningsDashboard({
                 style={{ width: `${reputationPoints}%` }}
               />
             </div>
-            <div className="flex justify-between text-[10px] text-gray-400 mt-1.5">
+            <div className="flex justify-between text-[11px] text-gray-500 mt-1.5">
               <span>Suspended (&lt;50)</span>
               <span>Aktif (50-79)</span>
               <span>Terpercaya (80+)</span>
@@ -120,7 +120,7 @@ export default function EarningsDashboard({
             {reputationPoints < 50 && (
               <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
                 <p className="text-xs font-bold text-red-600">Akun Ditangguhkan</p>
-                <p className="text-[11px] text-red-500 mt-0.5">Poin reputasi di bawah 50. Hubungi admin untuk pemulihan akun.</p>
+                <p className="text-[12px] text-red-500 mt-0.5">Poin reputasi di bawah 50. Hubungi admin untuk pemulihan akun.</p>
               </div>
             )}
           </div>
@@ -145,7 +145,7 @@ export default function EarningsDashboard({
                   <span className="font-semibold">- {formatRp(0)}</span>
                 </div>
               </div>
-              <p className="text-[10px] opacity-70 leading-relaxed border-t border-white/20 pt-2.5">
+              <p className="text-[11px] opacity-70 leading-relaxed border-t border-white/20 pt-2.5">
                 Segala kewajiban perpajakan menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku.
               </p>
             </div>
@@ -157,7 +157,7 @@ export default function EarningsDashboard({
               <TrendingUp className="w-4 h-4 text-primary" /> Riwayat Penghasilan Mingguan
             </p>
             {weeklyEarnings.every((w) => w.total === 0) ? (
-              <p className="text-xs text-gray-400 text-center py-6">Belum ada penghasilan tercatat minggu ini.</p>
+              <p className="text-xs text-gray-500 text-center py-6">Belum ada penghasilan tercatat minggu ini.</p>
             ) : (
               <div className="flex items-end justify-between gap-2 h-32">
                 {weeklyEarnings.map((w, i) => {
@@ -165,14 +165,14 @@ export default function EarningsDashboard({
                   const isCurrent = i === weeklyEarnings.length - 1;
                   return (
                     <div key={w.start.getTime()} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                      <span className={`text-[9px] font-bold ${w.total > 0 ? "text-gray-700" : "text-gray-300"}`}>
+                      <span className={`text-[11px] font-bold ${w.total > 0 ? "text-gray-700" : "text-gray-300"}`}>
                         {w.total > 0 ? formatRpShort(w.total) : ""}
                       </span>
                       <div
                         className={`w-full rounded-t-md transition-all duration-500 ${isCurrent ? "bg-primary" : "bg-primary/25"}`}
                         style={{ height: `${heightPct}%`, minHeight: 4 }}
                       />
-                      <span className="text-[9px] text-gray-400 font-medium">
+                      <span className="text-[11px] text-gray-500 font-medium">
                         {w.start.toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit" })}
                       </span>
                     </div>
@@ -218,14 +218,14 @@ export default function EarningsDashboard({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-gray-900 truncate">{n.jobTitle}</p>
                         {isMultiDay && n.nominal != null ? (
-                          <p className="text-[10px] text-primary/70 font-medium">
+                          <p className="text-[11px] text-primary/70 font-medium">
                             {formatRp(n.nominal)}/hari × {n.jumlahHari} hari
                           </p>
                         ) : (
-                          <p className="text-[10px] text-gray-500">{n.timestamp.toLocaleDateString("id-ID")}</p>
+                          <p className="text-[11px] text-gray-500">{n.timestamp.toLocaleDateString("id-ID")}</p>
                         )}
                       </div>
-                      <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                         {n.status === "diterima" ? "Selesai" : "Diproses"}
                       </span>
                     </div>

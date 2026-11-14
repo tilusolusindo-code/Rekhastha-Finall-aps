@@ -94,7 +94,7 @@ function RemoteMilestone({ activeJob, onJobUpdate }: BoronganWorkerPanelProps) {
               href={activeJob.proofUrl}
               target="_blank"
               rel="noreferrer"
-              className="block text-[11px] font-medium text-emerald-700 underline truncate"
+              className="block text-[12px] font-medium text-emerald-700 underline truncate"
             >
               {activeJob.proofUrl}
             </a>
@@ -102,7 +102,7 @@ function RemoteMilestone({ activeJob, onJobUpdate }: BoronganWorkerPanelProps) {
         </div>
       ) : (
         <>
-          <p className="text-[11px] text-gray-500 leading-snug">
+          <p className="text-[12px] text-gray-500 leading-snug">
             Kirim link hasil kerja (Google Drive / Figma / GitHub) untuk ditinjau employer.
           </p>
           <input
@@ -113,7 +113,7 @@ function RemoteMilestone({ activeJob, onJobUpdate }: BoronganWorkerPanelProps) {
             placeholder="https://drive.google.com/..."
             className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-500"
           />
-          {error && <p className="text-[11px] font-semibold text-red-600">{error}</p>}
+          {error && <p className="text-[12px] font-semibold text-red-600">{error}</p>}
           <button
             data-testid="button-submit-proof"
             onClick={submit}
@@ -178,7 +178,7 @@ function OnsiteDailyQr({ activeJob, onJobUpdate }: BoronganWorkerPanelProps) {
 
       {/* Progress */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-[11px] font-bold">
+        <div className="flex items-center justify-between text-[12px] font-bold">
           <span className="text-gray-600">
             Hari ke-{Math.min(daysPaid, totalDays)} dari {totalDays}
           </span>
@@ -197,13 +197,13 @@ function OnsiteDailyQr({ activeJob, onJobUpdate }: BoronganWorkerPanelProps) {
           <p className="text-xs font-black text-emerald-700">
             Upah harian cair: {fmtRp(lastPayout.netToWorker)} (Hari ke-{lastPayout.dayIndex} dari {totalDays})
           </p>
-          <p className="text-[10px] text-emerald-600/80 mt-0.5">
+          <p className="text-[11px] text-emerald-600/80 mt-0.5">
             Bruto {fmtRp(lastPayout.grossFraction)} − biaya {fmtRp(lastPayout.platformFee)}
           </p>
         </div>
       )}
 
-      {error && <p className="text-[11px] font-semibold text-red-600">{error}</p>}
+      {error && <p className="text-[12px] font-semibold text-red-600">{error}</p>}
 
       {done ? (
         <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2.5">
@@ -222,7 +222,7 @@ function OnsiteDailyQr({ activeJob, onJobUpdate }: BoronganWorkerPanelProps) {
           <ScanLine className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-black text-amber-800">Scan QR masuk terlebih dahulu</p>
-            <p className="text-[11px] text-amber-700 mt-0.5 leading-snug">
+            <p className="text-[12px] text-amber-700 mt-0.5 leading-snug">
               Minta employer untuk menampilkan QR presensi masuk hari ini sebelum dapat check-out.
             </p>
           </div>

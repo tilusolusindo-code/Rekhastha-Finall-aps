@@ -253,20 +253,20 @@ export default function JobSheet({
                 )}
               </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Users className="w-3.5 h-3.5 text-gray-400" />
+                <Users className="w-3.5 h-3.5 text-gray-500" />
                 <span className="text-sm text-gray-500">{job.kuota} orang dibutuhkan</span>
                 {job.namaPerusahaan && (
-                  <span className="flex items-center gap-1 text-[10px] text-gray-500">
+                  <span className="flex items-center gap-1 text-[11px] text-gray-500">
                     <Building2 className="w-3 h-3" /> {job.namaPerusahaan}
                   </span>
                 )}
                 {job.nibPerusahaan?.length === 13 && (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                     <ShieldCheck className="w-3 h-3" /> NIB Terverifikasi
                   </span>
                 )}
                 {verified && (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                     <ShieldCheck className="w-3 h-3" /> Akun Terverifikasi
                   </span>
                 )}
@@ -279,7 +279,7 @@ export default function JobSheet({
             <Calendar className="w-4 h-4 text-primary shrink-0" />
             <div>
               <p className="text-xs font-semibold text-primary">{durasiLabel}</p>
-              <p className="text-[10px] text-gray-500">Biaya admin flat sesuai kategori, dibayar perusahaan</p>
+              <p className="text-[11px] text-gray-500">Biaya admin flat sesuai kategori, dibayar perusahaan</p>
             </div>
           </div>
 
@@ -327,7 +327,7 @@ export default function JobSheet({
                 <span className="font-bold text-gray-800">Anda terima bersih (100%)</span>
                 <span className="font-bold text-primary text-lg">{formatRp(workerGets)}</span>
               </div>
-              <p className="text-[10px] text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
+              <p className="text-[11px] text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 leading-relaxed">
                 Segala kewajiban perpajakan menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku.
               </p>
             </div>
@@ -345,7 +345,7 @@ export default function JobSheet({
                   ["Bank", workerProfile.namaBank || "—"],
                 ].map(([label, val]) => (
                   <div key={label}>
-                    <p className="text-[10px] text-gray-400">{label}</p>
+                    <p className="text-[11px] text-gray-500">{label}</p>
                     <p className="text-xs font-semibold text-gray-800 truncate">{val}</p>
                   </div>
                 ))}
@@ -478,7 +478,7 @@ export default function JobSheet({
                           }}
                           className="block w-full text-xs text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-xs file:font-bold file:text-emerald-700"
                         />
-                        <span className="mt-1 block text-[10px] text-gray-400">
+                        <span className="mt-1 block text-[11px] text-gray-500">
                           {question.answerType === "photo" ? "JPG/PNG/WEBP" : "PDF/DOC/DOCX"}, maksimal 10MB
                           {questionFiles[question.id] ? ` · dipilih: ${questionFiles[question.id]!.name}` : ""}
                         </span>
@@ -517,7 +517,7 @@ export default function JobSheet({
             <section className="space-y-2.5">
               <h4 className="text-xs font-bold text-gray-800">Informasi pendukung</h4>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium text-gray-600">Pengalaman kerja</span>
+                <span className="mb-1 block text-[12px] font-medium text-gray-600">Pengalaman kerja</span>
                 <textarea
                   value={supportingInfo.experience ?? ""}
                   onChange={(event) => setSupportingInfo((info) => ({ ...info, experience: event.target.value.slice(0, 2000) }))}
@@ -528,7 +528,7 @@ export default function JobSheet({
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium text-gray-600">Pendidikan</span>
+                <span className="mb-1 block text-[12px] font-medium text-gray-600">Pendidikan</span>
                 <input
                   value={supportingInfo.education ?? ""}
                   onChange={(event) => setSupportingInfo((info) => ({ ...info, education: event.target.value.slice(0, 500) }))}
@@ -538,7 +538,7 @@ export default function JobSheet({
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium text-gray-600">Keahlian</span>
+                <span className="mb-1 block text-[12px] font-medium text-gray-600">Keahlian</span>
                 <input
                   value={supportingInfo.skills ?? ""}
                   onChange={(event) => setSupportingInfo((info) => ({ ...info, skills: event.target.value.slice(0, 1000) }))}
@@ -548,7 +548,7 @@ export default function JobSheet({
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium text-gray-600">Ketersediaan mulai kerja</span>
+                <span className="mb-1 block text-[12px] font-medium text-gray-600">Ketersediaan mulai kerja</span>
                 <input
                   value={supportingInfo.availability ?? ""}
                   onChange={(event) => setSupportingInfo((info) => ({ ...info, availability: event.target.value.slice(0, 500) }))}
@@ -562,7 +562,7 @@ export default function JobSheet({
             <section className="border-t border-gray-100 pt-3 space-y-3">
               <div>
                 <h4 className="text-xs font-bold text-gray-800">CV dan dokumen pendukung</h4>
-                <p className="mt-1 text-[10px] leading-relaxed text-gray-500">
+                <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
                   {hasProfileDocs
                     ? "Jika CV atau portofolio baru tidak dipilih, berkas profil Anda akan digunakan."
                     : "PDF, DOC, DOCX, JPG, PNG, atau WEBP; maksimal 10MB per berkas."}
@@ -576,7 +576,7 @@ export default function JobSheet({
                 disabled={docsUploading}
                 className="w-full flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors disabled:opacity-60"
               >
-                <Upload className="w-4 h-4 text-gray-400 shrink-0" />
+                <Upload className="w-4 h-4 text-gray-500 shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 truncate">
                   {newCvFile ? newCvFile.name : `Unggah CV baru${job.requestedApplicationDocuments?.includes("cv") ? " · wajib" : " · opsional"}`}
                 </span>
@@ -589,7 +589,7 @@ export default function JobSheet({
                 disabled={docsUploading}
                 className="w-full flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors disabled:opacity-60"
               >
-                <Upload className="w-4 h-4 text-gray-400 shrink-0" />
+                <Upload className="w-4 h-4 text-gray-500 shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 truncate">
                   {newPortfolioFile ? newPortfolioFile.name : `Unggah portofolio${job.requestedApplicationDocuments?.includes("portfolio") ? " · wajib" : " · opsional"}`}
                 </span>
@@ -603,7 +603,7 @@ export default function JobSheet({
                 disabled={docsUploading}
                 className="w-full flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors disabled:opacity-60"
               >
-                <Upload className="w-4 h-4 text-gray-400 shrink-0" />
+                <Upload className="w-4 h-4 text-gray-500 shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 truncate">
                   {documentFiles.length
                     ? `${documentFiles.length} dokumen dipilih`
@@ -611,7 +611,7 @@ export default function JobSheet({
                 </span>
               </button>
               {documentFiles.length > 0 && (
-                <p className="text-[10px] text-gray-500">{documentFiles.map((file) => file.name).join(", ")}</p>
+                <p className="text-[11px] text-gray-500">{documentFiles.map((file) => file.name).join(", ")}</p>
               )}
 
               <input ref={photoInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp" className="hidden"
@@ -622,7 +622,7 @@ export default function JobSheet({
                 disabled={docsUploading}
                 className="w-full flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors disabled:opacity-60"
               >
-                <Upload className="w-4 h-4 text-gray-400 shrink-0" />
+                <Upload className="w-4 h-4 text-gray-500 shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 truncate">
                   {photoFiles.length
                     ? `${photoFiles.length} foto dipilih`
@@ -630,10 +630,10 @@ export default function JobSheet({
                 </span>
               </button>
               {photoFiles.length > 0 && (
-                <p className="text-[10px] text-gray-500">{photoFiles.map((file) => file.name).join(", ")}</p>
+                <p className="text-[11px] text-gray-500">{photoFiles.map((file) => file.name).join(", ")}</p>
               )}
 
-              <p className="text-[10px] leading-relaxed text-gray-400">
+              <p className="text-[11px] leading-relaxed text-gray-500">
                 Jika pemberi kerja adalah agensi, profil terbatas Anda (nama depan, foto, keahlian, rating, dan jawaban teks) dapat diteruskan kepada klien agensi. Kontak, rekening, dan berkas Anda tidak ikut dibagikan.
               </p>
 

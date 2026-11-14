@@ -105,7 +105,7 @@ export function RekhasthaLogo({
   wordmarkClassName = "text-lg",
 }: RekhasthaLogoProps) {
   const wordColor = variant === "light" ? "text-white" : "text-primary";
-  const subColor = variant === "light" ? "text-emerald-100" : "text-gray-400";
+  const subColor = variant === "light" ? "text-emerald-100" : "text-gray-500";
 
   return (
     <div className="flex items-center gap-2.5">
@@ -116,7 +116,7 @@ export function RekhasthaLogo({
             Rekhastha
           </span>
           {showSubtitle && (
-            <span className={`text-[10px] font-semibold tracking-wide mt-0.5 ${subColor}`}>
+            <span className={`text-[11px] font-semibold tracking-wide mt-0.5 ${subColor}`}>
               by Tilu Saudara Solusindo
             </span>
           )}

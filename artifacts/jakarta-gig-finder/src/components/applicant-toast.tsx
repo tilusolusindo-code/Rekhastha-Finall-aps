@@ -91,18 +91,18 @@ export default function ApplicantToast({
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-900 text-sm truncate">{notification.applicantName}</p>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span className="flex items-center gap-0.5 text-[11px] font-bold text-amber-600">
+              <span className="flex items-center gap-0.5 text-[12px] font-bold text-amber-600">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> Baru
               </span>
               {notification.hasNpwp && (
-                <span className="flex items-center gap-0.5 text-[11px] font-semibold text-emerald-600">
+                <span className="flex items-center gap-0.5 text-[12px] font-semibold text-emerald-600">
                   <ShieldCheck className="w-3 h-3" /> NPWP ✓
                 </span>
               )}
-              <span className="text-[10px] text-gray-400">{notification.bank}</span>
+              <span className="text-[11px] text-gray-500">{notification.bank}</span>
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 shrink-0">{secs}s</p>
+          <p className="text-[11px] text-gray-500 shrink-0">{secs}s</p>
         </div>
 
         {/* Actions */}

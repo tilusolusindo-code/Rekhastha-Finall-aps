@@ -223,10 +223,10 @@ export default function AppTour({ open, role, userId, onClose }: AppTourProps) {
 
       <div style={cardStyle} className="rounded-2xl bg-white p-4 shadow-2xl">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[11px] font-black uppercase tracking-wide text-emerald-700">
+          <p className="text-[12px] font-black uppercase tracking-wide text-emerald-700">
             Langkah {index + 1} dari {steps.length}
           </p>
-          <button type="button" onClick={finish} aria-label="Tutup tur" className="-mr-1 -mt-1 rounded-full p-1 text-gray-400 hover:bg-gray-100">
+          <button type="button" onClick={finish} aria-label="Tutup tur" className="-mr-1 -mt-1 rounded-full p-1 text-gray-500 hover:bg-gray-100">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -236,11 +236,11 @@ export default function AppTour({ open, role, userId, onClose }: AppTourProps) {
           <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-800">{step.action}</p>
         )}
         {step.target && !box && (
-          <p className="mt-2 text-[11px] text-gray-400">Tombol ini baru terlihat pada layar tertentu. Buka Panduan untuk langkah lengkapnya.</p>
+          <p className="mt-2 text-[12px] text-gray-500">Tombol ini baru terlihat pada layar tertentu. Buka Panduan untuk langkah lengkapnya.</p>
         )}
 
         <div className="mt-3 flex items-center justify-between gap-2">
-          <button type="button" onClick={finish} className="text-xs font-bold text-gray-400 hover:text-gray-600">
+          <button type="button" onClick={finish} className="text-xs font-bold text-gray-500 hover:text-gray-600">
             Lewati
           </button>
           <div className="flex gap-2">

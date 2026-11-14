@@ -61,7 +61,7 @@ export default function FavoriteWorkersSection({ jobs }: Props) {
         <p className="text-sm font-bold text-gray-900">Pekerja Favorit</p>
       </div>
       {items === null ? (
-        <div className="p-4 flex justify-center"><Loader2 className="w-4 h-4 animate-spin text-gray-400" /></div>
+        <div className="p-4 flex justify-center"><Loader2 className="w-4 h-4 animate-spin text-gray-500" /></div>
       ) : items.length === 0 ? (
         <p className="px-4 py-4 text-xs text-gray-500">
           Belum ada. Setelah menerima pelamar, tekan ikon bintang di kartunya agar mudah mengajaknya bekerja lagi.
@@ -85,11 +85,11 @@ export default function FavoriteWorkersSection({ jobs }: Props) {
                     type="button"
                     disabled={jobs.length === 0}
                     onClick={() => setInviting(inviting === w.workerId ? null : w.workerId)}
-                    className="text-[11px] font-bold bg-primary text-white px-3 py-1.5 rounded-lg disabled:opacity-40"
+                    className="text-[12px] font-bold bg-primary text-white px-3 py-1.5 rounded-lg disabled:opacity-40"
                   >
                     Ajak
                   </button>
-                  <button type="button" onClick={() => void remove(w.workerId)} className="text-[10px] text-gray-400 hover:text-red-500">Hapus</button>
+                  <button type="button" onClick={() => void remove(w.workerId)} className="text-[11px] text-gray-500 hover:text-red-500">Hapus</button>
                 </div>
               </div>
               {inviting === w.workerId && (
@@ -111,7 +111,7 @@ export default function FavoriteWorkersSection({ jobs }: Props) {
         </ul>
       )}
       {jobs.length === 0 && items && items.length > 0 && (
-        <p className="px-4 pb-3 text-[11px] text-amber-700">Anda perlu lowongan aktif untuk mengajak pekerja.</p>
+        <p className="px-4 pb-3 text-[12px] text-amber-700">Anda perlu lowongan aktif untuk mengajak pekerja.</p>
       )}
       {message && <p className="px-4 pb-3 text-xs font-semibold text-emerald-700">{message}</p>}
       {error && <p role="alert" className="px-4 pb-3 text-xs font-semibold text-red-600">{error}</p>}

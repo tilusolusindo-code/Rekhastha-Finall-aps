@@ -75,14 +75,14 @@ export default function PaySlipModal({ job, workerProfile, clockedInAt, clockedO
 
         {/* Slip content */}
         <div className="px-5 py-4" id="pay-slip-content">
-          <div className="pay-slip-card font-mono text-[11px] border border-dashed border-gray-300 rounded-xl p-4 space-y-0 bg-gray-50">
+          <div className="pay-slip-card font-mono text-[12px] border border-dashed border-gray-300 rounded-xl p-4 space-y-0 bg-gray-50">
             {/* Header */}
             <div className="text-center pb-3 border-b border-dashed border-gray-300">
               <p className="font-bold text-base text-gray-900">REKHASTHA</p>
-              <p className="text-gray-500 text-[10px]">Platform Tenaga Kerja Harian Indonesia</p>
-              <p className="text-gray-500 text-[10px]">Indonesia</p>
+              <p className="text-gray-500 text-[11px]">Platform Tenaga Kerja Harian Indonesia</p>
+              <p className="text-gray-500 text-[11px]">Indonesia</p>
               <p className="font-bold text-sm mt-2 text-gray-800">SLIP GAJI</p>
-              <p className="text-[10px] text-gray-500">No: RKH/{slipDate.getFullYear()}/{String(job.id).padStart(4, "0")}</p>
+              <p className="text-[11px] text-gray-500">No: RKH/{slipDate.getFullYear()}/{String(job.id).padStart(4, "0")}</p>
             </div>
 
             {/* Worker identity */}
@@ -108,7 +108,7 @@ export default function PaySlipModal({ job, workerProfile, clockedInAt, clockedO
 
             {/* Earnings breakdown */}
             <div className="py-3 border-b border-dashed border-gray-300 space-y-1">
-              <p className="font-bold text-[10px] text-gray-700 mb-1.5">RINCIAN PENGHASILAN</p>
+              <p className="font-bold text-[11px] text-gray-700 mb-1.5">RINCIAN PENGHASILAN</p>
               {isMultiDay ? (
                 <>
                   <Row label="Tarif Harian" value={`${formatRp(job.nominal)} / hari`} />
@@ -136,7 +136,7 @@ export default function PaySlipModal({ job, workerProfile, clockedInAt, clockedO
 
             {/* Deductions */}
             <div className="py-3 border-b border-dashed border-gray-300 space-y-1">
-              <p className="font-bold text-[10px] text-gray-700 mb-1.5">POTONGAN</p>
+              <p className="font-bold text-[11px] text-gray-700 mb-1.5">POTONGAN</p>
               <Row label="Potongan Pekerja" value={`- ${formatRp(0)}`} />
               <Row label="Biaya admin flat (dibayar perusahaan)" value={job.adminFeeAmount == null ? "—" : formatRp(job.adminFeeAmount)} />
             </div>
@@ -152,7 +152,7 @@ export default function PaySlipModal({ job, workerProfile, clockedInAt, clockedO
             </div>
 
             {/* Footer */}
-            <div className="pt-4 text-center text-[9px] text-gray-400 border-t border-dashed border-gray-300 mt-3 space-y-0.5">
+            <div className="pt-4 text-center text-[11px] text-gray-500 border-t border-dashed border-gray-300 mt-3 space-y-0.5">
               <p className="leading-tight">Segala kewajiban perpajakan menjadi tanggung jawab</p>
               <p className="leading-tight">mandiri masing-masing pihak sesuai hukum yang berlaku.</p>
               <p className="mt-1">Dicetak: {new Date().toLocaleString("id-ID")}</p>

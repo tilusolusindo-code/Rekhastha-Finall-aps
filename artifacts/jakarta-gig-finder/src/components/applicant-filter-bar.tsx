@@ -15,7 +15,7 @@ export function ApplicantFilterBar({
   const [more, setMore] = useState(false);
   const set = <K extends keyof ApplicantFilters>(k: K, v: ApplicantFilters[K]) => onChange({ ...filters, [k]: v });
   const active = isFiltersActive(filters);
-  const chip = (on: boolean) => `px-2.5 py-1 rounded-full text-[11px] font-bold border ${on ? "bg-violet-600 text-white border-violet-600" : "bg-white text-gray-600 border-gray-200"}`;
+  const chip = (on: boolean) => `px-2.5 py-1 rounded-full text-[11px] font-bold border ${on ? "bg-primary text-white border-primary" : "bg-white text-gray-600 border-gray-200"}`;
   const sel = "px-2.5 py-2 border border-gray-200 rounded-xl text-xs bg-white";
   return (
     <div className="px-5 py-3 border-b border-gray-100 space-y-2 bg-white">
@@ -26,7 +26,7 @@ export function ApplicantFilterBar({
             placeholder="Cari nama, keahlian, atau isi jawaban" className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-xs" />
         </div>
         <button onClick={() => setMore((v) => !v)}
-          className={`px-3 rounded-xl border text-xs font-bold flex items-center gap-1 ${more || active ? "border-violet-300 text-violet-700 bg-violet-50" : "border-gray-200 text-gray-600"}`}>
+          className={`px-3 rounded-xl border text-xs font-bold flex items-center gap-1 ${more || active ? "border-primary/30 text-primary bg-primary/5" : "border-gray-200 text-gray-600"}`}>
           Filter <ChevronDown className={`w-3 h-3 transition-transform ${more ? "rotate-180" : ""}`} />
         </button>
       </div>
@@ -64,7 +64,7 @@ export function ApplicantFilterBar({
       )}
       <div className="flex items-center justify-between text-[11px] text-gray-500">
         <span data-testid="text-owner-ats-count">{shown} dari {total} pelamar</span>
-        {active && <button onClick={() => onChange({ ...EMPTY_FILTERS, sort: filters.sort })} className="font-bold text-violet-700">Reset filter</button>}
+        {active && <button onClick={() => onChange({ ...EMPTY_FILTERS, sort: filters.sort })} className="font-bold text-primary">Reset filter</button>}
       </div>
     </div>
   );

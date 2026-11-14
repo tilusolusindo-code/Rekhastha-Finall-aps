@@ -58,7 +58,7 @@ export function ShortlistControls({
         </button>
         {on && (
           <button type="button" onClick={() => setShare(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-bold text-violet-700">
+            className="flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
             <Link2 className="h-3 w-3" /> Bagikan ke klien
           </button>
         )}
@@ -119,7 +119,7 @@ export function ClientShareDialog({ jobId, jobTitle, onClose }: { jobId: number;
           <button onClick={onClose} aria-label="Tutup" className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"><X className="h-4 w-4" /></button>
         </div>
 
-        <p className="rounded-xl bg-violet-50 p-3 text-[11px] leading-relaxed text-violet-900">
+        <p className="rounded-xl bg-primary/5 p-3 text-[11px] leading-relaxed text-primary">
           Klien tidak perlu daftar. Ia hanya melihat <b>nama depan + inisial</b>, foto profil, keahlian, rating, dan jawaban teks pelamar yang sudah Anda masukkan ke shortlist.
           Kontak, rekening, NIK, CV, dan berkas unggahan <b>tidak</b> ditampilkan. Klien hanya bisa menilai Setuju/Tidak; keputusan akhir tetap Anda.
         </p>
@@ -132,7 +132,7 @@ export function ClientShareDialog({ jobId, jobTitle, onClose }: { jobId: number;
               <option value={3}>Berlaku 3 hari</option><option value={7}>Berlaku 7 hari</option><option value={14}>Berlaku 14 hari</option>
             </select>
             <button onClick={create} disabled={busy}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-violet-700 py-2.5 text-sm font-black text-white disabled:opacity-50">
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary py-2.5 text-sm font-black text-white disabled:opacity-50">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />} Buat tautan
             </button>
           </div>

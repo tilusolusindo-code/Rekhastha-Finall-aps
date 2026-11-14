@@ -23,7 +23,7 @@ interface PendingInvitation {
 
 const ROLE_INFO: Record<TeamRole, { label: string; short: string; icon: ReactElement; color: string; bg: string; can: string[] }> = {
   hr: {
-    label: "HR / Rekrutmen", short: "HR", icon: <Users className="w-3.5 h-3.5" />, color: "text-violet-700", bg: "bg-violet-100",
+    label: "HR / Rekrutmen", short: "HR", icon: <Users className="w-3.5 h-3.5" />, color: "text-primary", bg: "bg-primary/10",
     can: ["Lihat lamaran (tanpa rekening & NIK)", "Tinjau, terima & tolak pelamar", "Lihat daftar lowongan"],
   },
   supervisor: {
@@ -108,8 +108,8 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
       <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto shadow-2xl">
         <div className="sticky top-0 bg-white z-10 px-5 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Users className="w-4 h-4 text-violet-700" />
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Users className="w-4 h-4 text-primary" />
             </div>
             <div>
               <h2 className="text-base font-black text-gray-900">Kelola Tim</h2>
@@ -147,14 +147,14 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
                 <label className="text-[11px] font-bold text-gray-500 block mb-1">Email (akun pekerja Rekhastha)</label>
                 <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
                   placeholder="email@contoh.com"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-violet-500 bg-white" />
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary/70 bg-white" />
               </div>
               <div>
                 <label className="text-[11px] font-bold text-gray-500 block mb-1">Peran</label>
                 <div className="flex rounded-xl border border-gray-200 overflow-hidden bg-white">
                   {ROLES.map(r => (
                     <button key={r} type="button" onClick={() => setInviteRole(r)}
-                      className={`flex-1 py-2 text-[11px] font-bold transition-colors ${inviteRole === r ? "bg-violet-700 text-white" : "text-gray-500 hover:bg-gray-50"}`}>
+                      className={`flex-1 py-2 text-[11px] font-bold transition-colors ${inviteRole === r ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-50"}`}>
                       {ROLE_INFO[r].short}
                     </button>
                   ))}
@@ -167,7 +167,7 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
                 </div>
               )}
               <button type="submit" disabled={inviting || !inviteEmail}
-                className="w-full bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white font-black py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
+                className="w-full bg-primary hover:bg-primary disabled:opacity-50 text-white font-black py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
                 {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                 {inviting ? "Mengirim..." : "Kirim Undangan"}
               </button>

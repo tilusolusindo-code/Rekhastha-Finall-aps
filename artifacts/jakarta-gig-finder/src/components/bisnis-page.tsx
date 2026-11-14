@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { TeamMemberBisnisView } from "./team-membership-banner";
 import {
   Crown, CheckCircle2, Star, QrCode, Calculator, Users, Shield,
   Zap, Clock, RefreshCw, AlertCircle, ChevronRight, X, Sparkles,
@@ -66,18 +65,6 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
   const [status, setStatus]     = useState<BisnisStatus | null>(null);
   const [loading, setLoading]   = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [membership, setMembership] = useState<any>(null);
-  const [membershipLoaded, setMembershipLoaded] = useState(false);
-
-  // Cek apakah user ini anggota tim seseorang
-  useEffect(() => {
-    fetch("/api/team/my-membership", { credentials: "same-origin" })
-      .then(r => r.json())
-      .then(d => setMembership(d.membership ?? null))
-      .catch(() => {})
-      .finally(() => setMembershipLoaded(true));
-  }, []);
-
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [buyStep, setBuyStep]   = useState<BuyStep>("idle");
   const [buyError, setBuyError] = useState("");
@@ -124,11 +111,6 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
     if (!best) return p;
     return (p.promoPrice / p.durationDays) < (best.promoPrice / best.durationDays) ? p : best;
   }, null);
-
-  // ── Kalau user adalah anggota tim, tampilkan view khusus ──────────────────
-  if (membershipLoaded && membership) {
-    return <TeamMemberBisnisView membership={membership} />;
-  }
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -184,7 +166,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                 </button>
                 <button onClick={() => setShowTeam(true)}
                   className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
-                  style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", color: "#c4b5fd" }}>
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)", color: "#e5e7eb" }}>
                   <Users className="w-3.5 h-3.5" /> Kelola Tim
                 </button>
               </div>

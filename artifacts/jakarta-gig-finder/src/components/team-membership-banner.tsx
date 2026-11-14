@@ -29,7 +29,7 @@ const ROLE_INFO: Record<TeamRole, {
   label: string; icon: ReactElement; color: string; bg: string; desc: string; can: string[]; cannot: string[];
 }> = {
   hr: {
-    label: "HR / Rekrutmen", icon: <Users className="w-4 h-4" />, color: "text-violet-700", bg: "bg-violet-100",
+    label: "HR / Rekrutmen", icon: <Users className="w-4 h-4" />, color: "text-primary", bg: "bg-primary/10",
     desc: "Tinjau, terima, dan tolak pelamar",
     can: ["Melihat lamaran dan profil pelamar", "Meninjau, menerima, dan menolak pelamar", "Membuat shortlist dan membagikannya ke klien", "Melihat daftar lowongan"],
     cannot: ["Rekening, NIK, dan NPWP pelamar", "Presensi, pembayaran, dan keuangan"],
@@ -91,15 +91,15 @@ export function TeamMembershipBanner() {
         const r = ROLE_INFO[inv.role] ?? ROLE_INFO.hr;
         const expires = new Date(inv.expires_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
         return (
-          <section key={inv.id} className="overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-[0_10px_28px_-10px_rgba(217,119,6,0.35)]">
-            <div className="h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300" />
+          <section key={inv.id} className="overflow-hidden rounded-2xl border border-primary/20 bg-white shadow-[0_10px_28px_-10px_rgba(6,95,70,0.35)]">
+            <div className="h-1 bg-gradient-to-r from-primary to-primary/50" />
             <div className="p-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-sm">
                   <Mail className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-amber-600">Undangan tim</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-primary">Undangan tim</p>
                   <p className="text-sm font-black leading-snug text-gray-900">{inv.company_name} mengundang Anda</p>
                   <span className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${r.bg} ${r.color}`}>{r.icon} {r.label}</span>
                 </div>
@@ -140,13 +140,13 @@ export function TeamMembershipBanner() {
         const r = ROLE_INFO[m.role] ?? ROLE_INFO.hr;
         const since = new Date(m.acceptedAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
         return (
-          <section key={m.companyId} className="overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-[0_10px_28px_-10px_rgba(109,40,217,0.35)]">
+          <section key={m.companyId} className="overflow-hidden rounded-2xl border border-primary/10 bg-white shadow-[0_10px_28px_-10px_rgba(6,95,70,0.35)]">
             <div className="flex items-center gap-3 p-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-sm">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-sm">
                 <Building2 className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black uppercase tracking-wider text-violet-600">Anggota tim</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-primary">Anggota tim</p>
                 <p className="truncate text-sm font-black text-gray-900">{m.companyName}</p>
                 <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-gray-500">
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${r.bg} ${r.color}`}>{r.icon} {r.label}</span>
@@ -156,9 +156,28 @@ export function TeamMembershipBanner() {
             <div className="flex items-center gap-1.5 border-t border-gray-100 bg-gray-50/80 px-4 py-2 text-[10px] text-gray-500">
               <ShieldCheck className="h-3 w-3 text-emerald-600" /> Aktif sejak {since} · {r.desc}
             </div>
+            <details className="group border-t border-gray-100 px-4 py-2.5">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-[11px] font-black text-gray-700">
+                Hak akses Anda <ChevronDown className="h-3.5 w-3.5 text-gray-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="mt-2 grid gap-2 rounded-xl bg-gray-50 p-3 text-[11px] leading-snug">
+                <div>
+                  <p className="mb-1 font-black text-emerald-700">Yang bisa Anda lakukan</p>
+                  <ul className="space-y-0.5 text-gray-700">
+                    {r.can.map(t => <li key={t} className="flex gap-1.5"><Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />{t}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <p className="mb-1 font-black text-gray-500">Tidak dapat diakses</p>
+                  <ul className="space-y-0.5 text-gray-500">
+                    {r.cannot.map(t => <li key={t} className="flex gap-1.5"><X className="mt-0.5 h-3 w-3 shrink-0 text-gray-400" />{t}</li>)}
+                  </ul>
+                </div>
+              </div>
+            </details>
             <div className="flex items-center gap-2 px-4 py-3">
               <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_TEAM_EVENT))}
-                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-violet-600 py-2.5 text-xs font-black text-white shadow-sm active:scale-[0.98]">
+                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-primary py-2.5 text-xs font-black text-white shadow-sm active:scale-[0.98]">
                 Buka ruang kerja <ChevronRight className="h-3.5 w-3.5" />
               </button>
               <button disabled={busy !== null}
@@ -237,7 +256,7 @@ function ApplicantDetail({ a }: { a: WorkerApplication }) {
                 <div key={q.id} className="rounded-xl bg-gray-50 px-3 py-2">
                   <p className="text-[11px] font-bold text-gray-700">{q.prompt}{q.required && <span className="text-red-500"> *</span>}</p>
                   {isFile
-                    ? (f ? <a href={f.url} target="_blank" rel="noopener noreferrer" className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-violet-700"><FileText className="w-3 h-3" />{f.fileName}</a>
+                    ? (f ? <a href={f.url} target="_blank" rel="noopener noreferrer" className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold text-primary"><FileText className="w-3 h-3" />{f.fileName}</a>
                          : <p className={`mt-0.5 text-xs font-semibold ${q.required ? "text-red-500" : "text-gray-400"}`}>Belum dilampirkan</p>)
                     : <p className={`mt-0.5 text-xs break-words whitespace-pre-wrap ${ans ? "text-gray-700" : "text-gray-400"}`}>{ans || "Tidak dijawab"}</p>}
                 </div>
@@ -247,7 +266,7 @@ function ApplicantDetail({ a }: { a: WorkerApplication }) {
         )}
         {files.filter(f => !f.questionId).length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
-            {files.filter(f => !f.questionId).map(f => <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold text-violet-700"><FileText className="w-3 h-3" />{f.fileName}</a>)}
+            {files.filter(f => !f.questionId).map(f => <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold text-primary"><FileText className="w-3 h-3" />{f.fileName}</a>)}
           </div>
         )}
       </section>
@@ -281,7 +300,7 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
   const jobs = Array.from(new Map(rows.map(r => [r.jobId, r.jobTitle])).entries());
   const shown = filterApplicants(rows, filters);
   const active = isFiltersActive(filters);
-  const chip = (on: boolean) => `px-2.5 py-1 rounded-full text-[11px] font-bold border ${on ? "bg-violet-600 text-white border-violet-600" : "bg-white text-gray-600 border-gray-200"}`;
+  const chip = (on: boolean) => `px-2.5 py-1 rounded-full text-[11px] font-bold border ${on ? "bg-primary text-white border-primary" : "bg-white text-gray-600 border-gray-200"}`;
   const sel = "px-2.5 py-2 border border-gray-200 rounded-xl text-xs bg-white";
 
   return (
@@ -293,7 +312,7 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
             <input data-testid="input-ats-search" value={filters.search} onChange={e => set("search", e.target.value)} placeholder="Cari nama, keahlian, atau isi jawaban"
               className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-xs bg-white" />
           </div>
-          <button onClick={() => setShowFilters(v => !v)} className={`px-3 rounded-xl border text-xs font-bold flex items-center gap-1 ${showFilters || active ? "border-violet-300 text-violet-700 bg-violet-50" : "border-gray-200 text-gray-600"}`}>
+          <button onClick={() => setShowFilters(v => !v)} className={`px-3 rounded-xl border text-xs font-bold flex items-center gap-1 ${showFilters || active ? "border-primary/30 text-primary bg-primary/5" : "border-gray-200 text-gray-600"}`}>
             Filter <ChevronDown className={`w-3 h-3 transition-transform ${showFilters ? "rotate-180" : ""}`} />
           </button>
         </div>
@@ -330,7 +349,7 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
         )}
         <div className="flex items-center justify-between text-[11px] text-gray-500">
           <span data-testid="text-ats-count">{shown.length} dari {rows.length} pelamar</span>
-          {active && <button onClick={() => setFilters(f => ({ ...EMPTY_FILTERS, sort: f.sort }))} className="font-bold text-violet-700">Reset filter</button>}
+          {active && <button onClick={() => setFilters(f => ({ ...EMPTY_FILTERS, sort: f.sort }))} className="font-bold text-primary">Reset filter</button>}
         </div>
       </div>
       {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
@@ -359,8 +378,8 @@ function ApplicationsPanel({ companyId, canDecide }: { companyId: string; canDec
             </p>
           )}
           <div className="flex gap-3 mt-2">
-            {a.cvLink && <a href={a.cvLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">CV <ExternalLink className="w-3 h-3" /></a>}
-            {a.portfolioLink && <a href={a.portfolioLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-violet-700 flex items-center gap-1">Portofolio <ExternalLink className="w-3 h-3" /></a>}
+            {a.cvLink && <a href={a.cvLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary flex items-center gap-1">CV <ExternalLink className="w-3 h-3" /></a>}
+            {a.portfolioLink && <a href={a.portfolioLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-primary flex items-center gap-1">Portofolio <ExternalLink className="w-3 h-3" /></a>}
           </div>
           <button data-testid={`button-detail-${a.id}`} onClick={() => toggle(a.id)} className="mt-2 w-full py-2 rounded-xl bg-gray-50 text-xs font-bold text-gray-700 flex items-center justify-center gap-1">
             {isOpen ? "Sembunyikan detail" : "Lihat data diri, pertanyaan & jawaban"} <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
@@ -476,7 +495,7 @@ function TeamWorkspaceInner({ memberships }: { memberships: Membership[] }) {
         <div className="flex gap-2 mb-4">
           {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-4 py-2 rounded-full text-xs font-bold ${current === t.key ? "bg-violet-700 text-white" : "bg-white border border-gray-200 text-gray-600"}`}>{t.label}</button>
+              className={`px-4 py-2 rounded-full text-xs font-bold ${current === t.key ? "bg-primary text-white" : "bg-white border border-gray-200 text-gray-600"}`}>{t.label}</button>
           ))}
         </div>
         {current === "applications" && <ApplicationsPanel key={m.companyId} companyId={m.companyId} canDecide={can("applications.decide")} />}
@@ -503,7 +522,7 @@ class WorkspaceBoundary extends Component<{ children: ReactNode }, { failed: boo
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
         <p className="text-base font-black text-gray-900">Ruang kerja tim gagal ditampilkan</p>
         <p className="text-sm text-gray-500">Terjadi kesalahan saat memuat data. Coba muat ulang halaman.</p>
-        <button onClick={() => window.location.reload()} className="rounded-xl bg-violet-700 px-4 py-2 text-sm font-black text-white">Muat ulang</button>
+        <button onClick={() => window.location.reload()} className="rounded-xl bg-primary px-4 py-2 text-sm font-black text-white">Muat ulang</button>
       </div>
     );
   }

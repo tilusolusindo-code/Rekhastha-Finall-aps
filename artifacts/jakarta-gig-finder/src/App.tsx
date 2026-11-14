@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import AdminPortal from "@/pages/admin";
 import PrivasiPage from "@/pages/privasi";
+import { PwaInstallCard } from "@/components/pwa-install-card";
 import KlienPage, { getClientToken } from "@/pages/klien";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ function App() {
           <Router />
         </WouterRouter>
         <Toaster />
+        <PwaInstallCard />
       </TooltipProvider>
     </QueryClientProvider>
   );

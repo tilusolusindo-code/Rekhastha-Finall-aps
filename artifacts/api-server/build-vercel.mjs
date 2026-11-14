@@ -82,6 +82,12 @@ await writeFile(
           headers: { "cache-control": "public, max-age=31536000, immutable" },
           continue: true,
         },
+        {
+          // Service worker harus selalu diperiksa ulang agar pembaruan sampai ke pengguna.
+          src: "^/(sw\\.js|manifest\\.webmanifest|offline\\.html)$",
+          headers: { "cache-control": "public, max-age=0, must-revalidate" },
+          continue: true,
+        },
         { handle: "filesystem" },
         { src: "^/(.*)$", dest: "/index.html" },
       ],

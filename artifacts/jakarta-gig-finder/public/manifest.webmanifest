@@ -1,0 +1,19 @@
+{
+  "name": "Rekhastha — Kerja Harian",
+  "short_name": "Rekhastha",
+  "description": "Cari lowongan kerja harian atau pasang lowongan untuk usaha Anda. Presensi QR dan GPS, upah, dan PPh 21 dalam satu aplikasi.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#065F46",
+  "theme_color": "#065F46",
+  "lang": "id",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

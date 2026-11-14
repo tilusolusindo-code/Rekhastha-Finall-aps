@@ -278,6 +278,21 @@ const COMPANY_TOGGLES: Array<[NotifKey, string]> = [
 
 /** Pilihan jenis email notifikasi; tersimpan langsung saat diubah. */
 
+/** Kartu pengaturan notifikasi yang bisa dipakai di halaman profil (tanpa membuka dialog Edit Profil). */
+export function NotificationSettingsCard({ user, company = false, onUserUpdated }: { user: AuthUser; company?: boolean; onUserUpdated: (u: AuthUser) => void }) {
+  return (
+    <details className="group mx-4 mt-3 rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm" data-testid="notification-settings-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-gray-800">
+        Notifikasi
+        <span className="text-[11px] font-semibold text-gray-400 group-open:hidden">Atur</span>
+      </summary>
+      <div className="mt-2">
+        <NotificationToggles user={user} company={company} onUserUpdated={onUserUpdated} />
+      </div>
+    </details>
+  );
+}
+
 /** Notifikasi push di perangkat ini (muncul walau aplikasi tertutup). */
 function PushToggle() {
   const support = pushSupport();

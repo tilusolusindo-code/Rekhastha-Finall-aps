@@ -9,6 +9,7 @@ import EscrowWalletPanel from "@/components/escrow-wallet-panel";
 import EscrowTimeline from "@/components/escrow-timeline";
 import { submitDocuments, submitKyc } from "@/lib/auth-client";
 import { TeamMembershipBanner } from "@/components/team-membership-banner";
+import { NotificationSettingsCard } from "@/components/profile-edit";
 
 interface WorkerProfilePageProps {
   currentUser: AuthUser;
@@ -153,6 +154,7 @@ export default function WorkerProfilePage({
 
       {/* ── Undangan / keanggotaan tim (kartu melayang di bawah header) ── */}
       <TeamMembershipBanner />
+      <NotificationSettingsCard user={currentUser} onUserUpdated={onUserUpdated} />
 
       {/* ── Tab bar ─────────────────────────────────────── */}
       <div className="flex bg-white border-b border-gray-100 px-3 gap-0.5 mt-3">

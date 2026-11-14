@@ -71,16 +71,16 @@ function BroadcastRadar() {
           className="absolute flex flex-col items-center gap-1 -translate-x-1/2 -translate-y-1/2"
           style={{ top: w.top, left: w.left }}
         >
-          <div className="w-7 h-7 rounded-full bg-white border-2 border-emerald-500 flex items-center justify-center text-[11px] font-black text-emerald-700 shadow-md">
+          <div className="w-7 h-7 rounded-full bg-white border-2 border-emerald-500 flex items-center justify-center text-[12px] font-black text-emerald-700 shadow-md">
             {w.name.slice(0, 1)}
           </div>
-          <span className="flex items-center gap-0.5 text-[9px] font-bold text-gray-800 bg-white/95 px-1.5 py-0.5 rounded-full shadow-sm whitespace-nowrap">
+          <span className="flex items-center gap-0.5 text-[11px] font-bold text-gray-800 bg-white/95 px-1.5 py-0.5 rounded-full shadow-sm whitespace-nowrap">
             <ShieldCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> {w.name} · {w.km} km
           </span>
         </div>
       ))}
 
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-orange-700 bg-white/85 px-2 py-0.5 rounded-full whitespace-nowrap">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[11px] font-semibold text-orange-700 bg-white/85 px-2 py-0.5 rounded-full whitespace-nowrap">
         📡 Mitra standby terdekat: Ahmad · Rian · Siti
       </div>
     </div>
@@ -465,7 +465,7 @@ export default function HiringModePanel({
             {within1hr && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 space-y-1">
                 <p className="text-xs font-bold text-red-800 text-center">⚠️ Kompensasi Pembatalan</p>
-                <p className="text-[11px] text-red-700 text-center leading-relaxed">
+                <p className="text-[12px] text-red-700 text-center leading-relaxed">
                   Pembatalan dalam 1 jam pertama mengharuskan pembayaran kompensasi <span className="font-black">Rp {CANCELLATION_FEE_1HR.toLocaleString("id-ID")}</span> kepada pekerja sesuai ketentuan Rekhastha.
                 </p>
               </div>
@@ -499,7 +499,7 @@ export default function HiringModePanel({
             <div key={job.id} className="flex items-center justify-between gap-2 rounded-xl bg-white border border-amber-100 px-3 py-2">
               <div className="min-w-0">
                 <p className="truncate text-xs font-bold text-gray-800">{job.posisi}</p>
-                <p className="text-[11px] text-gray-500 tabular-nums">{formatRp((job.escrowAmount ?? 0) + (job.adminFeeAmount ?? 0))}</p>
+                <p className="text-[12px] text-gray-500 tabular-nums">{formatRp((job.escrowAmount ?? 0) + (job.adminFeeAmount ?? 0))}</p>
               </div>
               <button
                 type="button"
@@ -527,17 +527,17 @@ export default function HiringModePanel({
       <div className="p-4 grid grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
           <p className="text-2xl font-black text-emerald-800 tabular-nums">{customJobs.length}</p>
-          <p className="text-[10px] font-medium text-gray-500 mt-0.5">Lowongan</p>
+          <p className="text-[11px] font-medium text-gray-500 mt-0.5">Lowongan</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
           <p className="text-2xl font-black text-emerald-700 tabular-nums">{notifications.length}</p>
-          <p className="text-[10px] font-medium text-gray-500 mt-0.5">Pelamar</p>
+          <p className="text-[11px] font-medium text-gray-500 mt-0.5">Pelamar</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
           <p className="text-2xl font-black text-emerald-600">
             {customJobs.filter(j => j.escrowStatus === "locked").length}
           </p>
-          <p className="text-[10px] font-medium text-gray-500 mt-0.5">Escrow Aktif</p>
+          <p className="text-[11px] font-medium text-gray-500 mt-0.5">Escrow Aktif</p>
         </div>
       </div>
 
@@ -551,8 +551,7 @@ export default function HiringModePanel({
                 ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md ring-2 ring-amber-400/70"
                 : "text-gray-500 hover:text-emerald-700"
             }`}>
-            <Zap className={`w-3.5 h-3.5 ${hiringMode === "cepat" ? "text-amber-300" : ""}`} />
-            ⚡ Broadcast Instan
+            Broadcast Instan
           </button>
           <button
             onClick={() => { setHiringMode("lama"); setBroadcastState("idle"); setFormOpen(true); }}
@@ -561,12 +560,11 @@ export default function HiringModePanel({
                 ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-md ring-2 ring-amber-400/70"
                 : "text-gray-500 hover:text-emerald-700"
             }`}>
-            <CalendarDays className={`w-3.5 h-3.5 ${hiringMode === "lama" ? "text-amber-300" : ""}`} />
             Posting reguler
           </button>
         </div>
         {/* Mode description pill */}
-        <div className={`mt-2 rounded-xl px-3 py-2 text-[11px] leading-relaxed font-medium border ${
+        <div className={`mt-2 rounded-xl px-3 py-2 text-[12px] leading-relaxed font-medium border ${
           hiringMode === "cepat"
             ? "bg-emerald-50 text-emerald-800 border-emerald-200"
             : "bg-emerald-50/60 text-emerald-800 border-emerald-200"
@@ -658,10 +656,10 @@ export default function HiringModePanel({
                                 : "bg-white text-gray-700 border-gray-200 hover:border-primary/40"
                             }`}
                           >
-                            <p className={`text-[10px] font-bold leading-tight ${active ? "text-white" : ""}`}>{categoryLabels[cat].name}</p>
-                            <p className={`text-[9px] mt-0.5 leading-tight ${active ? "text-white/70" : "text-gray-400"}`}>{categoryLabels[cat].desc}</p>
+                            <p className={`text-[11px] font-bold leading-tight ${active ? "text-white" : ""}`}>{categoryLabels[cat].name}</p>
+                            <p className={`text-[11px] mt-0.5 leading-tight ${active ? "text-white/70" : "text-gray-500"}`}>{categoryLabels[cat].desc}</p>
                             <p className={`text-xs font-black mt-1 ${active ? "text-amber-300" : "text-primary"}`}>
-                              <span className={cat === jobCategory ? "line-through opacity-60 text-[10px] mr-1" : "line-through opacity-50 text-[10px] mr-1"}>
+                              <span className={cat === jobCategory ? "line-through opacity-60 text-[11px] mr-1" : "line-through opacity-50 text-[11px] mr-1"}>
                                 {formatRp(ORIGINAL_PRICE_BY_CATEGORY[cat])}
                               </span>
                               {cat === jobCategory && instantListingPrice === 0 ? "Diwaive" : formatRp(price)}
@@ -683,14 +681,14 @@ export default function HiringModePanel({
                         <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                           <Banknote className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                           <div className="min-w-0">
-                            <p className="text-[11px] font-bold text-amber-900 leading-tight">
+                            <p className="text-[12px] font-bold text-amber-900 leading-tight">
                               {info.name} —{" "}
                               <>
                                 <span className="line-through text-amber-600/70 mr-1">{formatRp(instantListPrice)}</span>
                                 Harga promo <span className="text-primary font-black">{instantListingPrice === 0 ? "Diwaive" : formatRp(instantListingPrice)}</span>
                               </>
                             </p>
-                            <p className="text-[10px] text-amber-700 leading-tight mt-0.5">{info.examples}</p>
+                            <p className="text-[11px] text-amber-700 leading-tight mt-0.5">{info.examples}</p>
                           </div>
                         </div>
                       );
@@ -701,36 +699,36 @@ export default function HiringModePanel({
                       <button
                         type="button"
                         onClick={() => setShowFeeExplanation(o => !o)}
-                        className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-semibold underline underline-offset-2"
+                        className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 font-semibold underline underline-offset-2"
                       >
                         Rincian harga posting
                         {showFeeExplanation ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                       </button>
                       {showFeeExplanation && (
                         <div className="mt-1.5 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 space-y-1.5">
-                          <p className="text-[10px] font-bold text-blue-900">Harga normal untuk semua kategori adalah Rp75.000, dengan harga promo Rp50.000. Biaya berlaku untuk posting Reguler maupun Instan Kilat; biaya dapat diwaive selama masa uji coba atau langganan aktif.</p>
+                          <p className="text-[11px] font-bold text-blue-900">Harga normal untuk semua kategori adalah Rp75.000, dengan harga promo Rp50.000. Biaya berlaku untuk posting Reguler maupun Instan Kilat; biaya dapat diwaive selama masa uji coba atau langganan aktif.</p>
                           <ul className="space-y-1">
-                            <li className="flex items-start gap-1.5 text-[10px] text-blue-800 leading-relaxed">
+                            <li className="flex items-start gap-1.5 text-[11px] text-blue-800 leading-relaxed">
                               <span className="font-black text-primary shrink-0">{formatRp(ORIGINAL_PRICE_BY_CATEGORY.umum)} → {formatRp(INSTANT_PRICE_BY_CATEGORY.umum)}</span>
                               <span><span className="font-semibold">Umum / Manual</span> — Harga normal → harga promo.</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[10px] text-blue-800 leading-relaxed">
+                            <li className="flex items-start gap-1.5 text-[11px] text-blue-800 leading-relaxed">
                               <span className="font-black text-primary shrink-0">{formatRp(ORIGINAL_PRICE_BY_CATEGORY.terampil)} → {formatRp(INSTANT_PRICE_BY_CATEGORY.terampil)}</span>
                               <span><span className="font-semibold">Terampil / Teknis</span> — Harga normal → harga promo.</span>
                             </li>
-                            <li className="flex items-start gap-1.5 text-[10px] text-blue-800 leading-relaxed">
+                            <li className="flex items-start gap-1.5 text-[11px] text-blue-800 leading-relaxed">
                               <span className="font-black text-primary shrink-0">{formatRp(ORIGINAL_PRICE_BY_CATEGORY.profesional)} → {formatRp(INSTANT_PRICE_BY_CATEGORY.profesional)}</span>
                               <span><span className="font-semibold">Profesional</span> — Harga normal → harga promo.</span>
                             </li>
                           </ul>
-                          <p className="text-[9px] text-blue-600 leading-relaxed border-t border-blue-200 pt-1.5">
+                          <p className="text-[11px] text-blue-600 leading-relaxed border-t border-blue-200 pt-1.5">
                             🟢 Pekerja selalu menerima 100% upah penuh — biaya posting flat dibayar terpisah oleh perusahaan.
                           </p>
                         </div>
                       )}
                     </div>
 
-                    <p className="text-[10px] text-gray-400 mt-1">
+                    <p className="text-[11px] text-gray-500 mt-1">
                       {hiringMode === "cepat" ? "Biaya admin flat + upah dibayar perusahaan · pekerja terima 100% upah" : "Upah + biaya admin flat dibayar perusahaan · pekerja terima 100% upah"}
                     </p>
                   </div>
@@ -756,7 +754,7 @@ export default function HiringModePanel({
                       {paymentInputLabels[pembayaran]} *
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">Rp</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium">Rp</span>
                       <input value={nominalRaw} onChange={handleNominalChange}
                         placeholder="cth: 150.000"
                         className={`${inputCls} pl-10`} />
@@ -772,11 +770,11 @@ export default function HiringModePanel({
                           maxLength={150}
                           placeholder="cth: Butuh cepat untuk angkat barang gudang, wajib sepatu tertutup & kaos hitam. Langsung datang!"
                           rows={2} className={`${inputCls} resize-none`} />
-                        <p className="text-[10px] text-gray-400 text-right mt-0.5">{deskripsi.length}/150</p>
+                        <p className="text-[11px] text-gray-500 text-right mt-0.5">{deskripsi.length}/150</p>
                       </div>
                       <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-xl px-2.5 py-2">
                         <CalendarDays className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="text-[10px] font-bold text-emerald-800 leading-tight">
+                        <span className="text-[11px] font-bold text-emerald-800 leading-tight">
                           Tanggal kerja hari ini otomatis. Tentukan lokasi penempatan di peta.
                         </span>
                       </div>
@@ -823,18 +821,18 @@ export default function HiringModePanel({
                             >
                               <div className="font-bold">{opt.label}</div>
                               {opt.value === "harian" && (
-                                <div className="text-[10px] text-gray-400 mt-0.5">Bayar per shift · PPh 21 saja</div>
+                                <div className="text-[11px] text-gray-500 mt-0.5">Bayar per shift · PPh 21 saja</div>
                               )}
                               {opt.value !== "harian" && (
-                                <div className="text-[10px] text-gray-400 mt-0.5">Bayar per bulan · PPh 21</div>
+                                <div className="text-[11px] text-gray-500 mt-0.5">Bayar per bulan · PPh 21</div>
                               )}
                             </button>
                           ))}
                         </div>
                         {durasiKontrak !== "harian" && (
                           <div className="mt-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
-                            <p className="text-[11px] text-blue-700 font-semibold">Kontrak Bulanan</p>
-                            <p className="text-[10px] text-blue-600 mt-0.5 leading-relaxed">
+                            <p className="text-[12px] text-blue-700 font-semibold">Kontrak Bulanan</p>
+                            <p className="text-[11px] text-blue-600 mt-0.5 leading-relaxed">
                               Nominal diisi sebagai gaji per bulan. PPh 21 dihitung berdasarkan status PTKP pekerja.
                             </p>
                           </div>
@@ -859,7 +857,7 @@ export default function HiringModePanel({
                   <section className="rounded-2xl border border-slate-200 bg-white p-3 space-y-3">
                     <div>
                       <p className="text-xs font-bold text-gray-800">Pertanyaan &amp; berkas lamaran</p>
-                      <p className="mt-0.5 text-[10px] text-gray-500">
+                      <p className="mt-0.5 text-[11px] text-gray-500">
                         Pelamar akan mengisi pertanyaan ini dan melampirkan dokumen yang dipilih.
                       </p>
                     </div>
@@ -893,13 +891,13 @@ export default function HiringModePanel({
                         aria-label="Jenis jawaban"
                         value={questionType}
                         onChange={(event) => setQuestionType(event.target.value as JobApplicationQuestion["answerType"])}
-                        className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-[11px]"
+                        className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-[12px]"
                       >
                         <option value="short">Jawaban singkat</option>
                         <option value="long">Jawaban panjang</option>
                         <option value="yes_no">Ya / Tidak</option>
                       </select>
-                      <label className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                      <label className="flex items-center gap-1.5 text-[12px] text-gray-600">
                         <input
                           type="checkbox"
                           checked={questionRequired}
@@ -913,7 +911,7 @@ export default function HiringModePanel({
                       <ul className="space-y-1.5">
                         {applicationQuestions.map((question, index) => (
                           <li key={question.id} className="flex items-start gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
-                            <span className="min-w-0 flex-1 text-[11px] text-gray-700">
+                            <span className="min-w-0 flex-1 text-[12px] text-gray-700">
                               {index + 1}. {question.prompt}
                               {question.required && <span className="ml-1 font-bold text-red-500">*</span>}
                             </span>
@@ -921,7 +919,7 @@ export default function HiringModePanel({
                               type="button"
                               onClick={() => setApplicationQuestions((items) => items.filter((item) => item.id !== question.id))}
                               aria-label={`Hapus pertanyaan ${index + 1}`}
-                              className="text-gray-400 hover:text-red-500"
+                              className="text-gray-500 hover:text-red-500"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -931,7 +929,7 @@ export default function HiringModePanel({
                     )}
 
                     <div className="border-t border-gray-100 pt-2">
-                      <p className="mb-2 text-[11px] font-semibold text-gray-700">Dokumen yang diminta</p>
+                      <p className="mb-2 text-[12px] font-semibold text-gray-700">Dokumen yang diminta</p>
                       <div className="grid grid-cols-2 gap-2">
                         {([
                           ["cv", "CV / resume"],
@@ -939,7 +937,7 @@ export default function HiringModePanel({
                           ["file", "Dokumen pendukung"],
                           ["photo", "Foto"],
                         ] as [RequestedApplicationDocument, string][]).map(([kind, label]) => (
-                          <label key={kind} className="flex items-center gap-2 text-[11px] text-gray-600">
+                          <label key={kind} className="flex items-center gap-2 text-[12px] text-gray-600">
                             <input
                               type="checkbox"
                               checked={requestedApplicationDocuments.includes(kind)}
@@ -949,7 +947,7 @@ export default function HiringModePanel({
                           </label>
                         ))}
                       </div>
-                      <p className="mt-1.5 text-[10px] text-gray-400">
+                      <p className="mt-1.5 text-[11px] text-gray-500">
                         CV/portofolio tersimpan di profil pelamar dapat digunakan sebagai pengganti unggahan baru.
                       </p>
                     </div>
@@ -967,7 +965,7 @@ export default function HiringModePanel({
                     <span className={`text-xs font-bold ${hiringMode === "cepat" ? "text-orange-800" : "text-blue-800"}`}>
                       Rincian Biaya Posting
                     </span>
-                    <span className="ml-auto text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800">
+                    <span className="ml-auto text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800">
                       {instantListingPrice === 0 ? "DIWAIVE" : formatRp(instantListingPrice)}
                     </span>
                   </div>
@@ -980,7 +978,7 @@ export default function HiringModePanel({
                       <span>Biaya Admin Flat ({jobCategory})</span>
                       <span className="font-semibold">{instantListingPrice === 0 ? "Diwaive" : formatRp(instantListingPrice)}</span>
                     </div>
-                    <p className="text-[10px] text-emerald-700/80 leading-relaxed pt-0.5">
+                    <p className="text-[11px] text-emerald-700/80 leading-relaxed pt-0.5">
                       🟢 Pekerja menerima 100% upah utuh. Biaya admin flat ditagihkan sekali ke perusahaan dan tidak memotong upah.
                     </p>
                   </div>
@@ -991,14 +989,14 @@ export default function HiringModePanel({
                     {hiringMode === "cepat"
                       ? <LockOpen className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                       : <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                    <span className={`text-[10px] font-bold ${
+                    <span className={`text-[11px] font-bold ${
                       hiringMode === "cepat" ? "text-orange-800" : "text-blue-800"
                     }`}>
                       Status: ⏳ Menunggu Pembayaran
                     </span>
                   </div>
                   {/* Tax footnote */}
-                  <p className="text-[10px] text-gray-400 italic leading-relaxed border-t border-dashed border-gray-200 pt-1.5 mt-1">
+                  <p className="text-[11px] text-gray-500 italic leading-relaxed border-t border-dashed border-gray-200 pt-1.5 mt-1">
                     *Catatan: Segala kewajiban perpajakan atas transaksi ini menjadi tanggung jawab mandiri masing-masing pihak sesuai hukum yang berlaku.
                   </p>
                 </div>
@@ -1014,7 +1012,7 @@ export default function HiringModePanel({
                     className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${
                       formValid
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md active:scale-[0.98]"
-                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-gray-100 text-gray-500 cursor-not-allowed"
                     }`}>
                     <CreditCard className="w-4 h-4" />
                     {payingInstant ? "Membuat tagihan…" : formValid ? "Buat Lowongan & Bayar" : "Isi Posisi & Upah untuk Lanjut"}
@@ -1027,7 +1025,7 @@ export default function HiringModePanel({
                     className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${
                       formValid
                         ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md active:scale-[0.98]"
-                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-gray-100 text-gray-500 cursor-not-allowed"
                     }`}>
                     <Briefcase className="w-4 h-4" />
                     {posting ? "Membuat tagihan…" : formValid ? "Buat Lowongan & Bayar" : "Isi Posisi & Upah untuk Lanjut"}
@@ -1044,7 +1042,7 @@ export default function HiringModePanel({
 
         {/* Section label */}
         {customJobs.length > 0 && (
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
             {hiringMode === "cepat" ? `Lowongan broadcast instan (${activeJobs.length})` : `Lowongan posting reguler (${activeJobs.length})`}
           </p>
         )}
@@ -1077,7 +1075,7 @@ export default function HiringModePanel({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-bold text-gray-900 text-sm">{job.posisi}</p>
-                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
                         isCepatJob
                           ? "bg-orange-50 text-orange-700"
                           : "bg-blue-50 text-blue-700"
@@ -1086,26 +1084,26 @@ export default function HiringModePanel({
                         {isCepatJob ? "Instan" : "Terjadwal"}
                       </span>
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{job.namaPerusahaan || currentUser.name}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">{job.namaPerusahaan || currentUser.name}</p>
                   </div>
                   {/* Escrow status */}
                   {phase === "sengketa" ? (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-extrabold text-red-700">
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-extrabold text-red-700">
                       <AlertTriangle className="h-2.5 w-2.5" /> Sengketa
                     </span>
                   ) : isJobLocked ? (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-800">
                       <Lock className="w-2.5 h-2.5" /> Escrow terkunci
                     </span>
                   ) : (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">
                       <Clock className="h-2.5 w-2.5" /> Menunggu seleksi
                     </span>
                   )}
                 </div>
 
                 {/* Pay row */}
-                <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-wrap">
+                <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Banknote className="w-3 h-3" />
                     {formatRp(job.nominal)} / {paymentUnits[job.pembayaran]}
@@ -1125,7 +1123,7 @@ export default function HiringModePanel({
 
                 {/* Lama fee breakdown sub-line */}
                 {isJobLocked && !isCepatJob && job.jumlahHari && job.jumlahHari > 1 && (
-                  <div className="flex items-center gap-1 text-[10px] text-gray-400 pl-0.5 border-l-2 border-emerald-200 ml-0.5">
+                  <div className="flex items-center gap-1 text-[11px] text-gray-500 pl-0.5 border-l-2 border-emerald-200 ml-0.5">
                     <span>{formatRp(job.nominal)}/hari × {job.jumlahHari} hari × {job.kuota} orang</span>
                   </div>
                 )}
@@ -1134,18 +1132,18 @@ export default function HiringModePanel({
                 <button
                   onClick={() => setExpandedJobId(jobExpanded ? null : job.id)}
                   className="w-full flex items-center gap-2 bg-gray-50 hover:bg-gray-100 rounded-xl px-3 py-2 transition-colors">
-                  <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <Users className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                   <span className="text-xs text-gray-600 flex-1 text-left">
                     {applicants.length > 0 ? `${applicants.length} pelamar` : "Belum ada pelamar"}
                   </span>
                   {pending > 0 && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">{pending} menunggu</span>
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">{pending} menunggu</span>
                   )}
                   {accepted > 0 && (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">{accepted} diterima</span>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-800">{accepted} diterima</span>
                   )}
                   {applicants.length > 0 && (
-                    jobExpanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    jobExpanded ? <ChevronUp className="w-3.5 h-3.5 text-gray-500 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                   )}
                 </button>
 
@@ -1173,21 +1171,21 @@ export default function HiringModePanel({
                             }
                           />
                           <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-bold truncate ${isLocked ? "text-gray-400 blur-[2px] select-none" : "text-gray-900"}`}>
+                            <p className={`text-xs font-bold truncate ${isLocked ? "text-gray-500 blur-[2px] select-none" : "text-gray-900"}`}>
                               {isLocked ? "Pelamar Terkunci" : maskName(notif.applicantName)}
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
                               {isLocked ? (
-                                <span className="text-[10px] font-bold text-amber-700 flex items-center gap-0.5">
+                                <span className="text-[11px] font-bold text-amber-700 flex items-center gap-0.5">
                                   <Lock className="w-2.5 h-2.5" /> Perlu Rekhastha Premium
                                 </span>
                               ) : (
                                 <>
-                                  <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                                  <span className="text-[11px] text-gray-500 flex items-center gap-0.5">
                                     <MapPin className="w-2.5 h-2.5" /> {km} km
                                   </span>
                                   {notif.hasNpwp && (
-                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                                       <ShieldCheck className="w-2.5 h-2.5" /> Verified Mitra
                                     </span>
                                   )}
@@ -1199,27 +1197,27 @@ export default function HiringModePanel({
                             <button
                               onClick={handleSubscribe}
                               disabled={subscribing}
-                              className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-lg hover:bg-amber-200 transition-colors shrink-0 disabled:opacity-60">
+                              className="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-lg hover:bg-amber-200 transition-colors shrink-0 disabled:opacity-60">
                               🔓 Buka {formatRp(SUBSCRIPTION_PRICE_MONTHLY)}/bln
                             </button>
                           ) : notif.status === "diterima" || notif.status === "selesai" ? (
-                            <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1 shrink-0">
+                            <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1 shrink-0">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Diterima
                             </span>
                           ) : !isCepatJob && !isJobLocked ? (
                             <button
                               onClick={() => setEscrowConfirmJobId(job.id)}
-                              className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors shrink-0">
+                              className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors shrink-0">
                               Terima & Kunci Upah
                             </button>
                           ) : (
-                            <span className="text-[10px] text-gray-400 shrink-0">Menunggu</span>
+                            <span className="text-[11px] text-gray-500 shrink-0">Menunggu</span>
                           )}
                         </div>
                       );
                     })}
                     {!isPremium && applicants.length > FREE_APPLICANT_LIMIT && (
-                      <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-center">
+                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-center">
                         Menampilkan {FREE_APPLICANT_LIMIT} dari {applicants.length} pelamar secara gratis. Berlangganan Rekhastha Premium untuk melihat semua.
                       </p>
                     )}
@@ -1238,19 +1236,19 @@ export default function HiringModePanel({
                       <div className="flex items-center gap-2">
                         <Lock className="w-3.5 h-3.5 text-blue-700 shrink-0" />
                         <span className="text-xs font-bold text-blue-900">Konfirmasi Penguncian Upah</span>
-                        <span className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full ${
+                        <span className={`ml-auto text-[11px] font-black px-2 py-0.5 rounded-full ${
                           confirmIsFree ? "bg-emerald-200 text-emerald-800" : "bg-blue-200 text-blue-800"
                         }`}>
                           {confirmIsFree ? "BIAYA DIWAIVE" : "TERMASUK TAGIHAN"}
                         </span>
                       </div>
-                      <div className="space-y-1.5 text-[11px]">
+                      <div className="space-y-1.5 text-[12px]">
                         <div className="flex justify-between text-gray-700">
                           <span>Upah Bersih Pekerja ({job.kuota} orang{confirmDays > 1 ? ` × ${confirmDays} hari` : ""})</span>
                           <span className="font-semibold text-emerald-700">{formatRp(confirmBase)}</span>
                         </div>
                         {confirmDays > 1 && (
-                          <div className="flex justify-between text-gray-500 text-[10px] pl-2 border-l-2 border-emerald-200">
+                          <div className="flex justify-between text-gray-500 text-[11px] pl-2 border-l-2 border-emerald-200">
                             <span>{formatRp(job.nominal)}/hari × {confirmDays} hari × {job.kuota} orang</span>
                             <span>= {formatRp(confirmBase)}</span>
                           </div>
@@ -1265,7 +1263,7 @@ export default function HiringModePanel({
                           <span>Total Dana yang Dikunci</span>
                           <span>{formatRp(confirmTotal)}</span>
                         </div>
-                        <p className="text-[10px] text-emerald-700/80 leading-relaxed pt-0.5">
+                        <p className="text-[11px] text-emerald-700/80 leading-relaxed pt-0.5">
                           🟢 Pekerja menerima 100% upah utuh. Biaya admin terpisah dari escrow upah.
                         </p>
                       </div>
@@ -1318,7 +1316,7 @@ export default function HiringModePanel({
                 {job.escrowStatus === "disputed" && (
                   <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                    <p className="text-[10px] text-red-600 flex-1">Dana dibekukan · Menunggu resolusi admin Rekhastha</p>
+                    <p className="text-[11px] text-red-600 flex-1">Dana dibekukan · Menunggu resolusi admin Rekhastha</p>
                   </div>
                 )}
               </div>
@@ -1346,11 +1344,11 @@ export default function HiringModePanel({
                     <div key={job.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-gray-800 truncate">{job.posisi}</p>
-                        <p className="text-[10px] text-gray-400">
+                        <p className="text-[11px] text-gray-500">
                           {formatRp(job.nominal)} / {paymentUnits[job.pembayaran]} · {done} pekerja
                         </p>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
                         cancelled
                           ? "bg-gray-50 text-gray-600 border-gray-200"
                           : "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -1368,7 +1366,7 @@ export default function HiringModePanel({
         {/* Legacy jobs (no hiring mode) */}
         {hiringMode === "lama" && legacyJobs.length > 0 && (
           <>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-4">📁 Lowongan Lama</p>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-4">📁 Lowongan Lama</p>
             {legacyJobs.map(job => {
               const applicants = notifications.filter(n => n.jobId === job.id);
               const pending = applicants.filter(n => n.status === "ditinjau").length;
@@ -1378,9 +1376,9 @@ export default function HiringModePanel({
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-bold text-gray-900 text-sm">{job.posisi}</p>
-                      <p className="text-[10px] text-gray-400">{job.namaPerusahaan || currentUser.name}</p>
+                      <p className="text-[11px] text-gray-500">{job.namaPerusahaan || currentUser.name}</p>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                       job.escrowStatus === "locked" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                       job.escrowStatus === "disputed" ? "bg-red-50 text-red-700 border-red-200" :
                       "bg-gray-50 text-gray-500 border-gray-200"
@@ -1389,10 +1387,10 @@ export default function HiringModePanel({
                     </span>
                   </div>
                   <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 text-xs">
-                    <Users className="w-3.5 h-3.5 text-gray-400" />
+                    <Users className="w-3.5 h-3.5 text-gray-500" />
                     <span className="text-gray-600 flex-1">{applicants.length > 0 ? `${applicants.length} pelamar` : "Belum ada pelamar"}</span>
-                    {pending > 0 && <span className="text-[10px] font-bold text-amber-600">{pending} menunggu</span>}
-                    {accepted > 0 && <span className="text-[10px] font-bold text-emerald-600">{accepted} diterima</span>}
+                    {pending > 0 && <span className="text-[11px] font-bold text-amber-600">{pending} menunggu</span>}
+                    {accepted > 0 && <span className="text-[11px] font-bold text-emerald-600">{accepted} diterima</span>}
                   </div>
                   {job.escrowStatus === "locked" && (
                     <button onClick={() => onDispute(job.id)}

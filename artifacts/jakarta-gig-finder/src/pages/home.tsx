@@ -1941,7 +1941,7 @@ export default function Home() {
             {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
           </button>
           <nav className={`flex-1 flex flex-col gap-1 pt-5 ${sidebarCollapsed ? "px-3 items-center" : "px-3"}`}>
-            {!sidebarCollapsed && <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">Menu</p>}
+            {!sidebarCollapsed && <p className="px-3 pb-1 text-[12px] font-bold uppercase tracking-wider text-gray-500">Menu</p>}
             <SidebarBtn icon={<HomeIcon className="w-5 h-5" />} label={mode === "pekerja" ? "Radar" : "Beranda"} collapsed={sidebarCollapsed} active={activeTab === "home"} onClick={() => setActiveTab("home")} />
             <SidebarBtn icon={<MessageSquare className="w-5 h-5" />} label="Chat" tour="nav-chat" collapsed={sidebarCollapsed} active={activeTab === "chat"} onClick={() => setActiveTab("chat")}
               badge={mode === "perusahaan" ? notifications.filter(n => n.status === "diterima" || n.status === "ditinjau").length : undefined} />
@@ -1965,7 +1965,7 @@ export default function Home() {
               </div>
               <div className={`flex-1 min-w-0 ${sidebarCollapsed ? "hidden" : ""}`}>
                 <p className="text-sm font-bold text-gray-900 truncate">{currentUser.name}</p>
-                <p className="text-[10px] font-semibold text-gray-500 truncate">{mode === "perusahaan" ? "🏢 Perusahaan" : "👷 Pekerja"}</p>
+                <p className="text-[11px] font-semibold text-gray-500 truncate">{mode === "perusahaan" ? "🏢 Perusahaan" : "👷 Pekerja"}</p>
               </div>
             </button>
           </div>
@@ -2003,7 +2003,7 @@ export default function Home() {
                         <div>
                           <p className="text-sm font-bold text-gray-900">{activeJob.posisi}</p>
                           <p className="text-xs text-primary font-medium">{activeJob.namaPerusahaan || "Perusahaan"}</p>
-                          <p className="text-[10px] text-gray-500 mt-0.5">
+                          <p className="text-[11px] text-gray-500 mt-0.5">
                             {jobStatus === "clocked_in" ? "🟢 Sedang bekerja" : jobStatus === "completed" ? "✅ Selesai" : isAccepted ? "⏳ Menunggu Clock-In" : "⌛ Menunggu persetujuan perusahaan"}
                           </p>
                         </div>
@@ -2015,7 +2015,7 @@ export default function Home() {
                           <MessageSquare className="w-3.5 h-3.5" /> Chat
                         </button>
                       ) : (
-                        <div className="flex items-center gap-1 text-[10px] text-gray-400 font-semibold shrink-0">
+                        <div className="flex items-center gap-1 text-[11px] text-gray-500 font-semibold shrink-0">
                           <Lock className="w-3 h-3" /> Menunggu
                         </div>
                       )}
@@ -2034,7 +2034,7 @@ export default function Home() {
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{job.posisi}</p>
                           <p className="text-xs text-gray-500 truncate">{job.namaPerusahaan || "Perusahaan"}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">Rp {job.nominal.toLocaleString("id-ID")} / {paymentUnits[job.pembayaran]}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">Rp {job.nominal.toLocaleString("id-ID")} / {paymentUnits[job.pembayaran]}</p>
                         </div>
                       </div>
                       {isAccepted ? (
@@ -2044,7 +2044,7 @@ export default function Home() {
                           <MessageSquare className="w-3.5 h-3.5" /> Chat
                         </button>
                       ) : (
-                        <div className="flex items-center gap-1 text-[10px] text-gray-400 font-semibold shrink-0 px-2">
+                        <div className="flex items-center gap-1 text-[11px] text-gray-500 font-semibold shrink-0 px-2">
                           <Lock className="w-3 h-3" /> Menunggu persetujuan
                         </div>
                       )}
@@ -2080,12 +2080,12 @@ export default function Home() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="text-sm font-bold text-gray-900">{n.applicantName}</p>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isAccepted ? "bg-primary/10 text-primary" : "bg-amber-100 text-amber-700"}`}>
+                              <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${isAccepted ? "bg-primary/10 text-primary" : "bg-amber-100 text-amber-700"}`}>
                                 {isAccepted ? "Diterima" : "Ditinjau"}
                               </span>
                             </div>
                             <p className="text-xs text-gray-500 truncate">{n.jobTitle}</p>
-                            {n.hasNpwp && <p className="text-[10px] text-primary font-medium mt-0.5">✓ NPWP Terverifikasi</p>}
+                            {n.hasNpwp && <p className="text-[11px] text-primary font-medium mt-0.5">✓ NPWP Terverifikasi</p>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -2200,7 +2200,7 @@ export default function Home() {
                   <button onClick={() => setCompanyView("jobs")}
                     className={`flex-1 relative flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-bold rounded-xl transition-colors ${companyView === "jobs" ? "text-primary" : "text-gray-500"}`}>
                     <Briefcase className="w-4 h-4" /> Lowongan
-                    {customJobs.length > 0 && <span className={`w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center transition-colors ${companyView === "jobs" ? "bg-primary text-white" : "bg-gray-300 text-white"}`}>{customJobs.length}</span>}
+                    {customJobs.length > 0 && <span className={`w-4 h-4 rounded-full text-[11px] font-black flex items-center justify-center transition-colors ${companyView === "jobs" ? "bg-primary text-white" : "bg-gray-300 text-white"}`}>{customJobs.length}</span>}
                   </button>
                   <button onClick={() => setCompanyView("analytics")} data-testid="button-analytics-tab"
                     className={`flex-1 relative flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-bold rounded-xl transition-colors ${companyView === "analytics" ? "text-primary" : "text-gray-500"}`}>
@@ -2226,7 +2226,7 @@ export default function Home() {
                     </span>
                     <div className="min-w-0">
                       <p className={`text-xs font-black leading-tight ${radarOn ? "text-primary" : "text-gray-500"}`}>Status Radar Mencari Kerja</p>
-                      <p className="text-[10px] text-gray-500 leading-tight">{radarOn ? "Aktif — menerima lowongan instan terdekat" : "Mati — tidak menerima panggilan instan"}</p>
+                      <p className="text-[11px] text-gray-500 leading-tight">{radarOn ? "Aktif — menerima lowongan instan terdekat" : "Mati — tidak menerima panggilan instan"}</p>
                     </div>
                   </div>
                   <button
@@ -2251,7 +2251,7 @@ export default function Home() {
                       {workerProfile ? "Lengkapi Profil" : "Daftar & Verifikasi"}
                     </button>
                   )}
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${isSuspended ? "bg-red-100 text-red-600" : reputationPoints < 80 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
+                  <span className={`text-[12px] font-bold px-2.5 py-1 rounded-full ${isSuspended ? "bg-red-100 text-red-600" : reputationPoints < 80 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
                     {isSuspended ? "Suspended" : `Rep: ${reputationPoints}`}
                   </span>
                 </div>
@@ -2275,7 +2275,7 @@ export default function Home() {
                             <span className="relative">
                               <Icon className="h-[18px] w-[18px]" />
                               {!!badge && badge > 0 && (
-                                <span className="absolute -right-3 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black text-white ring-2 ring-gray-100">
+                                <span className="absolute -right-3 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[11px] font-black text-white ring-2 ring-gray-100">
                                   {badge > 9 ? "9+" : badge}
                                 </span>
                               )}
@@ -2292,7 +2292,7 @@ export default function Home() {
                   <div className="rounded-xl px-3 py-2 border border-red-200 bg-red-50 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                      <p className="text-[10px] font-semibold text-red-700 leading-tight">
+                      <p className="text-[11px] font-semibold text-red-700 leading-tight">
                         Masa tenggang Clock-In. Denda otomatis belum aktif.
                       </p>
                     </div>
@@ -2307,7 +2307,7 @@ export default function Home() {
                   <div className="rounded-xl px-3 py-2 border border-orange-200 bg-orange-50 flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0">
                       <Users className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
-                      <p className="text-[10px] font-semibold text-orange-700 leading-tight">
+                      <p className="text-[11px] font-semibold text-orange-700 leading-tight">
                         Mode Butuh Cepat: Anda melewati masa tenggang. Lowongan "{standbyReroute.jobTitle}" dialihkan otomatis ke pekerja standby berikutnya (<span className="font-black">{standbyReroute.workerName}</span>).
                       </p>
                     </div>
@@ -2321,7 +2321,7 @@ export default function Home() {
                   <div className="rounded-xl px-3 py-2 border border-amber-200 bg-amber-50 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
-                      <p className="text-[10px] font-semibold text-amber-700 leading-tight">
+                      <p className="text-[11px] font-semibold text-amber-700 leading-tight">
                         Jendela sengketa Pemberi Kerja. Escrow cair otomatis bila lewat.
                       </p>
                     </div>
@@ -2335,7 +2335,7 @@ export default function Home() {
                 {activeJob && jobStatus === "completed" && contractClosed && (
                   <div className="rounded-xl px-3 py-2 border border-emerald-200 bg-emerald-50 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <p className="text-[10px] font-bold text-emerald-700 leading-tight">
+                    <p className="text-[11px] font-bold text-emerald-700 leading-tight">
                       Kontrak DITUTUP & FINAL (CLOSED & UNAPPEALABLE) — escrow telah cair otomatis.
                     </p>
                   </div>
@@ -2344,10 +2344,10 @@ export default function Home() {
                 {activeJob && (
                   <div className={`rounded-xl px-3 py-2.5 border flex items-center justify-between gap-2 ${jobStatus === "clocked_in" ? "bg-primary text-white border-primary" : jobStatus === "completed" ? "bg-gray-50 border-gray-200" : jobStatus === "accepted" ? "bg-amber-50 border-amber-200" : "bg-gray-100 border-gray-200"}`}>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Briefcase className={`w-4 h-4 shrink-0 ${jobStatus === "clocked_in" ? "text-white" : jobStatus === "completed" ? "text-gray-400" : jobStatus === "accepted" ? "text-amber-600" : "text-gray-400"}`} />
+                      <Briefcase className={`w-4 h-4 shrink-0 ${jobStatus === "clocked_in" ? "text-white" : jobStatus === "completed" ? "text-gray-500" : jobStatus === "accepted" ? "text-amber-600" : "text-gray-500"}`} />
                       <div className="flex-1 min-w-0">
                         <p className={`text-xs font-bold truncate ${jobStatus === "clocked_in" ? "text-white" : "text-gray-900"}`}>{activeJob.posisi}</p>
-                        <p className={`text-[10px] ${jobStatus === "clocked_in" ? "text-white/70" : "text-gray-500"}`}>
+                        <p className={`text-[11px] ${jobStatus === "clocked_in" ? "text-white/70" : "text-gray-500"}`}>
                           {jobStatus === "applied" ? "⌛ Menunggu persetujuan perusahaan" : jobStatus === "accepted" ? "Diterima — belum Clock-In" : jobStatus === "clocked_in" ? "Sedang bekerja..." : "Selesai"}
                         </p>
                       </div>
@@ -2355,32 +2355,32 @@ export default function Home() {
                     <div className="flex gap-1.5 shrink-0">
                       {jobStatus === "completed" ? (
                         <>
-                          <button onClick={() => setShowPaySlip(true)} className="text-[10px] font-bold bg-primary text-white px-2.5 py-1.5 rounded-lg">Slip Gaji</button>
+                          <button onClick={() => setShowPaySlip(true)} className="text-[11px] font-bold bg-primary text-white px-2.5 py-1.5 rounded-lg">Slip Gaji</button>
                           <button onClick={() => handleOpenChatFromJob(activeJob)}
-                            className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1.5 rounded-lg flex items-center">
+                            className="text-[11px] font-bold bg-primary/10 text-primary px-2 py-1.5 rounded-lg flex items-center">
                             <MessageSquare className="w-3 h-3" />
                           </button>
-                          <button onClick={() => { setActiveJob(null); setJobStatus(null); }} className="text-[10px] font-bold bg-gray-200 text-gray-600 px-2 py-1.5 rounded-lg">Tutup</button>
+                          <button onClick={() => { setActiveJob(null); setJobStatus(null); }} className="text-[11px] font-bold bg-gray-200 text-gray-600 px-2 py-1.5 rounded-lg">Tutup</button>
                         </>
                       ) : jobStatus === "applied" ? (
                         /* Pending acceptance — show only a cancel option */
                         <>
-                          <div className="flex items-center gap-1 text-[10px] text-gray-400 font-semibold">
+                          <div className="flex items-center gap-1 text-[11px] text-gray-500 font-semibold">
                             <Lock className="w-3 h-3" /> Menunggu
                           </div>
-                          <button data-testid="button-cancel-job" onClick={handleWorkerCancelJob} className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1.5 rounded-lg">Batal</button>
+                          <button data-testid="button-cancel-job" onClick={handleWorkerCancelJob} className="text-[11px] font-bold bg-red-100 text-red-600 px-3 py-2.5 rounded-lg">Batal</button>
                         </>
                       ) : (
                         <>
                           <button data-testid="button-open-clock-in" onClick={() => setShowClockIn(true)}
-                            className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg ${jobStatus === "clocked_in" ? "bg-white/20 text-white" : "bg-primary text-white"}`}>
+                            className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg ${jobStatus === "clocked_in" ? "bg-white/20 text-white" : "bg-primary text-white"}`}>
                             {jobStatus === "clocked_in" ? "Clock-Out" : "Clock-In"}
                           </button>
                           {jobStatus === "clocked_in" && (
-                            <button onClick={handleWorkerDispute} className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1.5 rounded-lg">⚠️ Sengketa</button>
+                            <button onClick={handleWorkerDispute} className="text-[11px] font-bold bg-amber-100 text-amber-700 px-3 py-2.5 rounded-lg">⚠️ Sengketa</button>
                           )}
                           {jobStatus !== "clocked_in" && (
-                            <button data-testid="button-cancel-job" onClick={handleWorkerCancelJob} className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1.5 rounded-lg">Batal</button>
+                            <button data-testid="button-cancel-job" onClick={handleWorkerCancelJob} className="text-[11px] font-bold bg-red-100 text-red-600 px-3 py-2.5 rounded-lg">Batal</button>
                           )}
                         </>
                       )}
@@ -2475,9 +2475,9 @@ export default function Home() {
                   <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-lg">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-extrabold text-gray-900">{selectedJob.posisi}</p>
-                      <p className="text-[11px] font-semibold text-emerald-700">Ketuk untuk detail dan lamar</p>
+                      <p className="text-[12px] font-semibold text-emerald-700">Ketuk untuk detail dan lamar</p>
                     </div>
-                    <button onClick={() => setSelectedJob(null)} aria-label="Tutup" className="shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setSelectedJob(null)} aria-label="Tutup" className="shrink-0 rounded-full p-1.5 text-gray-500 hover:bg-gray-100"><X className="w-4 h-4" /></button>
                   </div>
                 )}
                 <JobSheet job={selectedJob} onClose={() => setSelectedJob(null)} workerProfile={workerProfile} currentUser={currentUser}
@@ -2550,16 +2550,16 @@ export default function Home() {
                           </p>
                         </div>
                         {job.hiringMode === "lama" ? (
-                          <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-[11px] font-extrabold text-blue-700">
+                          <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2.5 text-[12px] font-extrabold text-blue-700">
                             <CalendarDays className="h-3 w-3" /> Reguler
                           </span>
                         ) : (
-                          <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-orange-50 px-2.5 text-[11px] font-extrabold text-orange-700">
+                          <span className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-orange-50 px-2.5 text-[12px] font-extrabold text-orange-700">
                             <Zap className="h-3 w-3" /> Instan
                           </span>
                         )}
                       </div>
-                      {job.flaggedSuspect && <span className="self-start rounded bg-yellow-100 px-1.5 py-0.5 text-[10px] font-bold text-yellow-700">Ditinjau</span>}
+                      {job.flaggedSuspect && <span className="self-start rounded bg-yellow-100 px-1.5 py-0.5 text-[11px] font-bold text-yellow-700">Ditinjau</span>}
                       {job.deskripsi && <p className="line-clamp-2 text-sm text-gray-600">{job.deskripsi}</p>}
                       {job.hiringMode === "lama" && (job.jobDate || job.jamKerja || job.alamat) && (
                         <div className="flex flex-col gap-1.5 rounded-xl bg-gray-50 px-3 py-2.5 text-[12px] font-medium text-gray-600">
@@ -2599,7 +2599,7 @@ export default function Home() {
                             </button>
                           )}
                           <Button disabled={isSuspended}
-                            className={`h-11 rounded-full px-6 text-[15px] font-extrabold ${isSuspended ? "cursor-not-allowed bg-gray-200 text-gray-400" : "bg-primary text-white hover:bg-primary/90"}`}
+                            className={`h-11 rounded-full px-6 text-[15px] font-extrabold ${isSuspended ? "cursor-not-allowed bg-gray-200 text-gray-500" : "bg-primary text-white hover:bg-primary/90"}`}
                             onClick={() => !isSuspended && setSelectedJob(job)}>
                             {isSuspended ? "Ditangguhkan" : "Lamar"}
                           </Button>
@@ -2709,20 +2709,21 @@ function ChatEmptyState({ label, sub }: { label: string; sub: string }) {
         <MessageSquare className="w-8 h-8 text-gray-300" />
       </div>
       <p className="font-bold text-gray-700 text-sm">{label}</p>
-      <p className="text-xs text-gray-400 leading-relaxed">{sub}</p>
+      <p className="text-xs text-gray-500 leading-relaxed">{sub}</p>
     </div>
   );
 }
 
 function NavBtn({ icon, label, active, onClick, tour }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void; tour?: string }) {
+  // Hanya ikon (tanpa tulisan) agar bilah bawah lebih ringkas; label tetap tersedia untuk pembaca layar.
   return (
-    <button onClick={onClick} data-tour={tour}
-      className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[68px] pb-safe active:scale-95 transition-transform ${active ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}>
-      <div className={`flex items-center justify-center p-1.5 rounded-full transition-colors ${active ? "bg-emerald-50 text-primary" : ""}`}>
+    <button onClick={onClick} data-tour={tour} aria-label={label} title={label} aria-current={active ? "page" : undefined}
+      className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[60px] pb-safe active:scale-95 transition-transform ${active ? "text-primary" : "text-gray-500 hover:text-gray-600"}`}>
+      <div className={`flex items-center justify-center p-2.5 rounded-full transition-colors [&_svg]:w-6 [&_svg]:h-6 ${active ? "bg-emerald-50 text-primary" : ""}`}>
         {icon}
       </div>
-      <span className={`text-[10px] ${active ? "font-bold" : "font-medium"}`}>{label}</span>
-      {active && <span className="w-4 h-1 rounded-full bg-primary mt-0.5" />}
+      <span className="sr-only">{label}</span>
+      {active && <span className="w-4 h-1 rounded-full bg-primary" />}
     </button>
   );
 }
@@ -2735,7 +2736,7 @@ function SidebarBtn({ icon, label, active, onClick, badge, tour, collapsed }: { 
       <span className="relative shrink-0">
         {icon}
         {!!badge && badge > 0 && (
-          <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+          <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
             {badge > 9 ? "9+" : badge}
           </span>
         )}

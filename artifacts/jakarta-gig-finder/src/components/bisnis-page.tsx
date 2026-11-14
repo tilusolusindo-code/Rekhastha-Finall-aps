@@ -229,7 +229,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
         <>
           {/* ── PILIH PAKET ── */}
           <div className="px-4 pt-6 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-widest mb-4"
+            <p className="text-[12px] font-bold uppercase tracking-widest mb-4"
               style={{ color: "rgba(255,255,255,0.6)" }}>Pilih Paket</p>
 
             <div className="grid grid-cols-2 gap-3">
@@ -250,29 +250,29 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                     }}>
 
                     {isBest && (
-                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-black px-2.5 py-0.5 rounded-full"
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-black px-2.5 py-0.5 rounded-full"
                         style={{ background: "linear-gradient(90deg,#f59e0b,#d97706)", color: "#fff" }}>
                         ✦ TERBAIK
                       </div>
                     )}
                     {discount > 0 && (
-                      <div className="absolute top-3 right-3 text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                      <div className="absolute top-3 right-3 text-[11px] font-black px-1.5 py-0.5 rounded-full"
                         style={{ background: "rgba(239,68,68,0.9)", color: "#fff" }}>
                         -{discount}%
                       </div>
                     )}
 
                     <p className={`font-black text-sm leading-tight ${isBest ? "text-amber-200" : "text-white"}`}>{plan.label}</p>
-                    <p className="text-[10px] mt-0.5 font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>{plan.durationDays} hari</p>
+                    <p className="text-[11px] mt-0.5 font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>{plan.durationDays} hari</p>
 
                     <div className="mt-3">
-                      <p className="text-[10px] line-through leading-none" style={{ color: "rgba(255,255,255,0.55)" }}>
+                      <p className="text-[11px] line-through leading-none" style={{ color: "rgba(255,255,255,0.55)" }}>
                         {fmt(plan.originalPrice)}
                       </p>
                       <p className={`font-black text-lg leading-tight ${isBest ? "text-amber-300" : "text-white"}`}>
                         {fmt(plan.promoPrice)}
                       </p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+                      <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
                         ~{fmt(perDay)}/hari
                       </p>
                     </div>
@@ -288,7 +288,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
 
           {/* ── FITUR PER TIER ── */}
           <div className="px-4 pt-6 pb-10">
-            <p className="text-[11px] font-bold uppercase tracking-widest mb-5"
+            <p className="text-[12px] font-bold uppercase tracking-widest mb-5"
               style={{ color: "rgba(255,255,255,0.6)" }}>Fitur per Paket</p>
 
             <div className="space-y-5">
@@ -297,7 +297,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                 return (
                   <div key={tier.minMonths}>
                     {/* Tier label */}
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold mb-3 border ${tier.pill}`}>
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold mb-3 border ${tier.pill}`}>
                       {tier.minMonths === 12 ? "👑" : tier.minMonths === 1 ? "✦" : "+"} {tier.label}
                     </div>
 
@@ -387,7 +387,7 @@ export default function BisnisPage({ currentUser, onOpenPayments }: BisnisPagePr
                   </div>
                   <div className="text-right">
                     <p className="font-black text-amber-400 text-lg">{fmt(selectedPlan.promoPrice)}</p>
-                    <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.6)" }}>{selectedPlan.durationDays} hari</p>
+                    <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.6)" }}>{selectedPlan.durationDays} hari</p>
                   </div>
                 </div>
 

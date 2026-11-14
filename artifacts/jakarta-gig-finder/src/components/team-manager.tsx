@@ -113,7 +113,7 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h2 className="text-base font-black text-gray-900">Kelola Tim</h2>
-              <p className="text-[11px] text-gray-400">Undang anggota tim dengan akses terbatas</p>
+              <p className="text-[12px] text-gray-500">Undang anggota tim dengan akses terbatas</p>
             </div>
           </div>
           <button onClick={onClose} aria-label="Tutup" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">✕</button>
@@ -125,36 +125,36 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
               const r = ROLE_INFO[key];
               return (
                 <div key={key} className={`${r.bg} rounded-xl p-3`}>
-                  <div className={`${r.color} flex items-center gap-1.5 mb-1.5`}>{r.icon}<p className="text-[11px] font-black">{r.label}</p></div>
+                  <div className={`${r.color} flex items-center gap-1.5 mb-1.5`}>{r.icon}<p className="text-[12px] font-black">{r.label}</p></div>
                   <ul className="space-y-0.5">
-                    {r.can.map(c => <li key={c} className="text-[10px] text-gray-600 leading-tight">• {c}</li>)}
+                    {r.can.map(c => <li key={c} className="text-[11px] text-gray-600 leading-tight">• {c}</li>)}
                   </ul>
                 </div>
               );
             })}
           </div>
-          <p className="text-[11px] text-gray-500 leading-relaxed -mt-2">
+          <p className="text-[12px] text-gray-500 leading-relaxed -mt-2">
             Anggota tidak bisa melihat data keuangan, rekening, atau NIK pelamar, dan tidak bisa mengubah lowongan, pembayaran, atau tim.
           </p>
 
           <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
             <p className="text-xs font-black text-gray-700 mb-3 flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Undang Anggota Baru
-              <span className="ml-auto text-[10px] font-semibold text-gray-400">{used}/{maxSlots} terpakai</span>
+              <span className="ml-auto text-[11px] font-semibold text-gray-500">{used}/{maxSlots} terpakai</span>
             </p>
             <form onSubmit={handleInvite} className="space-y-3">
               <div>
-                <label className="text-[11px] font-bold text-gray-500 block mb-1">Email (akun pekerja Rekhastha)</label>
+                <label className="text-[12px] font-bold text-gray-500 block mb-1">Email (akun pekerja Rekhastha)</label>
                 <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
                   placeholder="email@contoh.com"
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary/70 bg-white" />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-gray-500 block mb-1">Peran</label>
+                <label className="text-[12px] font-bold text-gray-500 block mb-1">Peran</label>
                 <div className="flex rounded-xl border border-gray-200 overflow-hidden bg-white">
                   {ROLES.map(r => (
                     <button key={r} type="button" onClick={() => setInviteRole(r)}
-                      className={`flex-1 py-2 text-[11px] font-bold transition-colors ${inviteRole === r ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-50"}`}>
+                      className={`flex-1 py-2 text-[12px] font-bold transition-colors ${inviteRole === r ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-50"}`}>
                       {ROLE_INFO[r].short}
                     </button>
                   ))}
@@ -184,12 +184,12 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
                   <div key={i.id} className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-900 truncate">{i.email}</p>
-                      <p className="text-[11px] text-gray-500">
+                      <p className="text-[12px] text-gray-500">
                         {ROLE_INFO[i.role]?.label ?? i.role} · berlaku sampai {new Date(i.expires_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
                       </p>
                     </div>
                     <button onClick={() => handleCancelInvite(i)} disabled={busyKey === `i${i.id}`}
-                      className="px-3 py-1.5 rounded-lg bg-white border border-amber-200 text-[11px] font-bold text-amber-700 hover:bg-amber-100 disabled:opacity-40">
+                      className="px-3 py-1.5 rounded-lg bg-white border border-amber-200 text-[12px] font-bold text-amber-700 hover:bg-amber-100 disabled:opacity-40">
                       Batalkan
                     </button>
                   </div>
@@ -203,9 +203,9 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
               <Users className="w-3.5 h-3.5" /> Anggota Aktif ({members.length})
             </p>
             {loading ? (
-              <div className="py-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+              <div className="py-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-gray-500" /></div>
             ) : members.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-400">Belum ada anggota tim.</div>
+              <div className="py-8 text-center text-sm text-gray-500">Belum ada anggota tim.</div>
             ) : (
               <div className="space-y-2">
                 {members.map(m => {
@@ -218,10 +218,10 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-900 truncate">{m.name}</p>
-                        <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                        <p className="text-xs text-gray-500 truncate">{m.email}</p>
                         <select value={m.role} disabled={busy} onChange={e => handleRole(m, e.target.value as TeamRole)}
                           aria-label={`Peran ${m.name}`}
-                          className={`mt-1 text-[11px] font-bold rounded-lg px-2 py-1 border-0 ${r.bg} ${r.color}`}>
+                          className={`mt-1 text-[12px] font-bold rounded-lg px-2 py-1 border-0 ${r.bg} ${r.color}`}>
                           {ROLES.map(k => <option key={k} value={k}>{ROLE_INFO[k].label}</option>)}
                         </select>
                       </div>
@@ -236,7 +236,7 @@ export default function TeamManager({ onClose }: { onClose: () => void }) {
             )}
           </div>
 
-          <p className="text-[11px] text-gray-400 text-center leading-relaxed">
+          <p className="text-[12px] text-gray-500 text-center leading-relaxed">
             Fitur tim tersedia selama paket <span className="font-bold">Bisnis</span> aktif. Jika paket berakhir, akses anggota otomatis berhenti.
             Undangan harus diterima oleh yang bersangkutan (akun pekerja dengan email yang sama).
           </p>

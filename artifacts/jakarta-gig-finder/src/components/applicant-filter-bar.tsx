@@ -15,13 +15,13 @@ export function ApplicantFilterBar({
   const [more, setMore] = useState(false);
   const set = <K extends keyof ApplicantFilters>(k: K, v: ApplicantFilters[K]) => onChange({ ...filters, [k]: v });
   const active = isFiltersActive(filters);
-  const chip = (on: boolean) => `px-2.5 py-1 rounded-full text-[11px] font-bold border ${on ? "bg-primary text-white border-primary" : "bg-white text-gray-600 border-gray-200"}`;
+  const chip = (on: boolean) => `px-2.5 py-1 rounded-full text-[12px] font-bold border ${on ? "bg-primary text-white border-primary" : "bg-white text-gray-600 border-gray-200"}`;
   const sel = "px-2.5 py-2 border border-gray-200 rounded-xl text-xs bg-white";
   return (
     <div className="px-5 py-3 border-b border-gray-100 space-y-2 bg-white">
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input data-testid="input-owner-ats-search" value={filters.search} onChange={(e) => set("search", e.target.value)}
             placeholder="Cari nama, keahlian, atau isi jawaban" className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-xs" />
         </div>
@@ -62,7 +62,7 @@ export function ApplicantFilterBar({
           </select>
         </div>
       )}
-      <div className="flex items-center justify-between text-[11px] text-gray-500">
+      <div className="flex items-center justify-between text-[12px] text-gray-500">
         <span data-testid="text-owner-ats-count">{shown} dari {total} pelamar</span>
         {active && <button onClick={() => onChange({ ...EMPTY_FILTERS, sort: filters.sort })} className="font-bold text-primary">Reset filter</button>}
       </div>

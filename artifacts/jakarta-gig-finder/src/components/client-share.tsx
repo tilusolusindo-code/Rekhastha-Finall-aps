@@ -15,7 +15,7 @@ export function ClientDecisionBadge({ decision, note }: { decision: ClientDecisi
   if (!decision) return null;
   const ok = decision === "setuju";
   return (
-    <div className={`rounded-lg px-2.5 py-1.5 text-[11px] ${ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>
+    <div className={`rounded-lg px-2.5 py-1.5 text-[12px] ${ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>
       <span className="font-black">Klien: {ok ? "Setuju" : "Tidak"}</span>
       {note ? <span className="font-normal"> — {note}</span> : null}
     </div>
@@ -52,19 +52,19 @@ export function ShortlistControls({
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={toggle} disabled={busy || !editable}
-          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold disabled:opacity-50 ${on ? "bg-amber-100 text-amber-800" : "border border-gray-200 bg-white text-gray-600"}`}>
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-bold disabled:opacity-50 ${on ? "bg-amber-100 text-amber-800" : "border border-gray-200 bg-white text-gray-600"}`}>
           {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Star className={`h-3 w-3 ${on ? "fill-amber-500 text-amber-500" : ""}`} />}
           {on ? "Di shortlist" : "Masukkan shortlist"}
         </button>
         {on && (
           <button type="button" onClick={() => setShare(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-[11px] font-bold text-primary">
+            className="flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-[12px] font-bold text-primary">
             <Link2 className="h-3 w-3" /> Bagikan ke klien
           </button>
         )}
       </div>
       {on && <ClientDecisionBadge decision={clientDecision} note={clientNote} />}
-      {error && <p className="text-[11px] font-semibold text-red-600">{error}</p>}
+      {error && <p className="text-[12px] font-semibold text-red-600">{error}</p>}
       {share && <ClientShareDialog jobId={jobId} jobTitle={jobTitle} onClose={() => setShare(false)} />}
     </div>
   );
@@ -114,12 +114,12 @@ export function ClientShareDialog({ jobId, jobTitle, onClose }: { jobId: number;
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-base font-black text-gray-900">Bagikan shortlist ke klien</h3>
-            <p className="truncate text-[11px] text-gray-500">{jobTitle}</p>
+            <p className="truncate text-[12px] text-gray-500">{jobTitle}</p>
           </div>
           <button onClick={onClose} aria-label="Tutup" className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"><X className="h-4 w-4" /></button>
         </div>
 
-        <p className="rounded-xl bg-primary/5 p-3 text-[11px] leading-relaxed text-primary">
+        <p className="rounded-xl bg-primary/5 p-3 text-[12px] leading-relaxed text-primary">
           Klien tidak perlu daftar. Ia hanya melihat <b>nama depan + inisial</b>, foto profil, keahlian, rating, dan jawaban teks pelamar yang sudah Anda masukkan ke shortlist.
           Kontak, rekening, NIK, CV, dan berkas unggahan <b>tidak</b> ditampilkan. Klien hanya bisa menilai Setuju/Tidak; keputusan akhir tetap Anda.
         </p>
@@ -140,9 +140,9 @@ export function ClientShareDialog({ jobId, jobTitle, onClose }: { jobId: number;
 
         {created && (
           <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-            <p className="text-[11px] font-bold text-emerald-800">Tautan dibuat — salin sekarang, tidak akan ditampilkan lagi.</p>
-            <p className="mt-1 break-all rounded-lg bg-white px-2 py-1.5 font-mono text-[11px] text-gray-700">{created}</p>
-            <button onClick={copy} className="mt-2 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-black text-white">
+            <p className="text-[12px] font-bold text-emerald-800">Tautan dibuat — salin sekarang, tidak akan ditampilkan lagi.</p>
+            <p className="mt-1 break-all rounded-lg bg-white px-2 py-1.5 font-mono text-[12px] text-gray-700">{created}</p>
+            <button onClick={copy} className="mt-2 flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2.5 text-[12px] font-black text-white">
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />} {copied ? "Tersalin" : "Salin tautan"}
             </button>
           </div>
@@ -151,13 +151,13 @@ export function ClientShareDialog({ jobId, jobTitle, onClose }: { jobId: number;
 
         <div className="mt-4">
           <p className="mb-2 text-xs font-black text-gray-700">Tautan aktif</p>
-          {loading ? <Loader2 className="mx-auto h-4 w-4 animate-spin text-gray-400" />
-            : links.length === 0 ? <p className="text-[11px] text-gray-400">Belum ada tautan aktif.</p>
+          {loading ? <Loader2 className="mx-auto h-4 w-4 animate-spin text-gray-500" />
+            : links.length === 0 ? <p className="text-[12px] text-gray-500">Belum ada tautan aktif.</p>
             : <ul className="space-y-1.5">{links.map((l) => (
                 <li key={l.id} className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-gray-800">{l.label || "Tanpa nama"}</p>
-                    <p className="text-[10px] text-gray-400">berlaku sampai {new Date(l.expiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</p>
+                    <p className="text-[11px] text-gray-500">berlaku sampai {new Date(l.expiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</p>
                   </div>
                   <button onClick={() => { if (confirm("Cabut tautan ini? Klien tidak bisa membukanya lagi.")) void revoke(l.id); }}
                     aria-label="Cabut tautan" className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
